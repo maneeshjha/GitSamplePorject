@@ -1,0 +1,1556 @@
+package com.inf.dvo.mbm.Bean.Master;
+
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.util.ArrayList;
+
+import com.inf.dvo.mbm.Bean.CommonMethodBean;
+import com.inf.dvo.mbm.Bean.SendMailBean;
+import com.inf.dvo.mbm.DAO.CommonForm;
+import com.inf.dvo.mbm.DAO.Master.BankForm;
+import com.inf.dvo.mbm.DAO.Master.NonSalaryPaymentForm;
+import com.inf.dvo.mbm.DAO.Master.SalarySlipForm;
+import com.inf.dvo.mbm.DBConnection.DBConnection;
+
+public class SalarySlipBean 
+{
+	DBConnection	dbConn	=	new DBConnection();
+
+	
+	/**
+	 * Method Name  : getdataForInsertion
+	 * Purpose		: To getdataForInsertion
+	 * @author		: Prashant
+	 * Date			: 16/04/2012 
+	 */
+		
+	public ArrayList<CommonForm> getdataForInsertion(String month, String year) 
+	{
+		ArrayList<CommonForm>	dataList	=	new ArrayList<CommonForm>();
+		Connection				con			=	null;
+		Statement				st			=	null;
+		ResultSet				rs			=	null;
+		String					query		=	"";
+		
+		try
+		{
+				query	+=	"	select	asd.attendancedtlsid,asd.attendanceid,ash.month,ash.year,asd.noofdays,asd.employeeid,em.employee_code,em.employee_name, " +
+							"			em.department,dm.department_name,em.designation,gvd.groupvalue_name,em.joining_salary,em.paid_employee,em.pf_account_no, " +
+							"			em.esic_account_no,em.current_salary,em.salarystructureid,ssh.structure_name,asd.workingdays " +
+							"	from	attendance_sheet_dtls asd" +
+							"	inner join  attendance_sheet_header	ash 		on 		ash.attendencesheetid	=	asd.attendanceid " +
+							"													and		ash.month				=	'"+month+"' " +
+							"													and		ash.year				=	'"+year+"' " +
+							"	inner join employee_master 			em			on		em.employeeid			=	asd.employeeid " +
+							"													and		em.paid_employee		=	'YES' " +
+							"	inner join department_master		dm			on		dm.departmentid			=	em.department " +
+							"	inner join groupvalue				gvd			on		gvd.groupvalueid		=	em.designation " +
+							"	left outer  join salary_structure_header ssh	on		em.salarystructureid	=	ssh.structureid ";
+				con		=	dbConn.connect();
+				st		=	con.createStatement();
+				rs		=	st.executeQuery(query);
+				while(rs.next())
+				{
+					CommonForm cForm	=	new CommonForm();
+					cForm.setField1(rs.getString(1));//attendancedtlsid
+					cForm.setField2(rs.getString(2));//attendanceid		
+					cForm.setField3(rs.getString(3));//month
+					cForm.setField4(rs.getString(4));//year
+					cForm.setField5(rs.getString(5)==null?"0":rs.getString(5));//noofdays
+					cForm.setField6(rs.getString(6));//employeeid
+					cForm.setField7(rs.getString(7));//employee_code
+					cForm.setField8(rs.getString(8));//employee_name
+					cForm.setField9(rs.getString(9));//department
+					cForm.setField10(rs.getString(10));//department_name		
+					cForm.setField11(rs.getString(11));//designation
+					cForm.setField12(rs.getString(12));//groupvalue_name(designation_name)
+					cForm.setField13(rs.getString(13));//joining_salary
+					cForm.setField14(rs.getString(14));//paid_employee
+					cForm.setField15(rs.getString(15));//pf_account_no
+					cForm.setField16(rs.getString(16));//esic_account_no
+					cForm.setField17(rs.getString(17)==null?"0":rs.getString(17));//current_salary
+					cForm.setField18(rs.getString(18));//salarystructureid
+					cForm.setField19(rs.getString(19));//structure_name
+					cForm.setField20(rs.getString(20)==null?"0":rs.getString(20));//workingdays
+					dataList.add(cForm);
+				}
+		}
+		catch (Exception e) 
+		{
+			System.out.println("Exception In SalarySlipBean.getdataForInsertion : "+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				System.out.println("Exception While Closing The Connection in SalarySlipBean.getdataForInsertion :"+e);
+			}
+		}
+		return	dataList;
+	}
+
+	/**
+	 * Method Name  : generateSalarySlip
+	 * Purpose		: To generateSalarySlip
+	 * @author		: Prashant
+	 * Date			: 16/04/2012 
+	 * @param userName 
+	 * @param mode 
+	 */
+	public String generateSalarySlip(ArrayList<CommonForm> dataList, String userName, String mode) 
+	{
+		SalarySlipBean		salarySlipBean		=	new SalarySlipBean();
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		String				outputString		=	"";
+		Connection			con					=	null;
+		Statement			st					=	null;
+		PreparedStatement	pst					=	null;
+		String				query				=	"";
+		try
+		{
+			con		=	dbConn.connect();
+			if(mode!= null && mode.length() > 0 && mode.equalsIgnoreCase("new"))
+			{	
+				if(dataList!= null && dataList.size() > 0)
+				{	
+					for(int i=0;i<dataList.size();i++)
+					{
+						CommonForm	cForm				=	dataList.get(i);
+						String		salaryStructId		=	cForm.getField18();
+						String		salaryStructName	=	cForm.getField19();
+						String		empId				=	cForm.getField6();
+						String		empCode				=	cForm.getField7();
+						String		month				=	cForm.getField3();
+						String		year				=	cForm.getField4();
+						String		empName				=	cForm.getField8();
+						String		departmentName		=	cForm.getField10();
+						String		designationName		=	cForm.getField12();
+						String		pfAcNo				=	cForm.getField15();
+						String		esicno				=	cForm.getField16();
+						String		actualWorking		=	cForm.getField5();
+						String		grossSal			=	cForm.getField17();
+						Double		netSalary			=	0.0;
+						Double		totalEarning		=	0.0;
+						Double		totalDeduction		=	0.0;
+						String		paidEmployee		=	cForm.getField14();	
+						double 		workingDays			=	Double.parseDouble(cForm.getField20());
+						
+						if (workingDays>0)
+						{
+							grossSal	=	""+(Double.parseDouble(grossSal) / workingDays) * Double.parseDouble(actualWorking);
+							grossSal	=	""+Math.rint(Double.parseDouble(grossSal));
+						}else
+						{
+							grossSal	=	""+0.0;
+						}
+						
+						if(paidEmployee!= null && paidEmployee.equalsIgnoreCase("YES"))
+						{
+							if(salaryStructId!= null && salaryStructId.length() > 0)
+							{
+								ArrayList<CommonForm> dataForCalclatingSalary	=	salarySlipBean.getDataForCalcultingSalary(salaryStructId);
+								if(dataForCalclatingSalary!= null && dataForCalclatingSalary.size() > 0)
+								{
+									for(int j=0;j<dataForCalclatingSalary.size();j++)
+									{
+										CommonForm	salaryForm		=	dataForCalclatingSalary.get(j);
+										String		percent_amount	=	salaryForm.getField1();
+										String		value			=	salaryForm.getField2();
+										String		add_dedcut		=	salaryForm.getField3();
+										if(add_dedcut!= null && add_dedcut.equalsIgnoreCase("Earnings"))
+										{
+											if(percent_amount!= null && percent_amount.equalsIgnoreCase("%"))
+											{
+												Double	sal		=	Double.parseDouble(grossSal);
+												sal				=	(sal*Double.parseDouble(value))/100;
+												totalEarning	+=	sal;
+											}	
+											if(percent_amount!= null && percent_amount.equalsIgnoreCase("Amount"))
+											{
+												Double	sal		=	Double.parseDouble(value);//Double.parseDouble(grossSal);
+												totalEarning	+=	sal;
+											}
+										}
+										if(add_dedcut!= null && add_dedcut.equalsIgnoreCase("Deduction"))
+										{
+											if(percent_amount!= null && percent_amount.equalsIgnoreCase("%"))
+											{
+												Double	sal		=	Double.parseDouble(grossSal);
+												sal				=	(sal*Double.parseDouble(value))/100;
+												totalDeduction	+=	sal;	
+											}	
+											if(percent_amount!= null && percent_amount.equalsIgnoreCase("Amount"))
+											{
+												Double	sal		=	Double.parseDouble(value);//Double.parseDouble(grossSal);
+												totalDeduction	+=	sal;
+											}
+										}
+										
+									}			
+								}
+									netSalary	=	totalEarning-totalDeduction;									
+							}
+							
+							
+							query	=	"	insert into salary_slip_header (salarystructureid, salarystructurename, employeeid ,empcode, month, year, empname, departmentname, designationname, " +
+										"									pf_account_no, esic_account_no, actualworkingdays, gross_salary, total_earnings, total_deduction, " +
+										"									net_salary, createdby, createdon, updatedby, updatedon	)" +
+										"	values	(	?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, sysdate(), ?, sysdate()	)";
+							pst		=	con.prepareStatement(query);
+							pst.setString(1, salaryStructId);
+							pst.setString(2, salaryStructName);
+							pst.setString(3, empId);
+							pst.setString(4, empCode);
+							pst.setString(5, month);
+							pst.setString(6, year);
+							pst.setString(7, empName);
+							pst.setString(8, departmentName);
+							pst.setString(9, designationName);
+							pst.setString(10, pfAcNo);
+							pst.setString(11, esicno);
+							pst.setString(12, actualWorking);
+							pst.setString(13, grossSal);
+							pst.setString(14, ""+totalEarning);
+							pst.setString(15, ""+totalDeduction);
+							pst.setString(16, ""+netSalary);
+							pst.setString(17, userName);
+							pst.setString(18, userName);
+							int	count	=	pst.executeUpdate();
+							if(count > 0)
+							{
+								outputString			=	"PASS. SALARY SLIP GENERATED SUCCESSFULLY FOR : "+month.toUpperCase()+"-"+year+".";
+								String	salarySlipId	=	commonMethodBean.getDataOnOneCondition("salary_slip_header", "salaryslipid","employeeid", empId);
+								if(salarySlipId!= null && salarySlipId.length() > 0)
+								{
+									if(salaryStructId!= null && salaryStructId.length() > 0)
+									{
+										ArrayList<CommonForm> dataForCalclatingSalary	=	salarySlipBean.getDataForCalcultingSalary(salaryStructId);
+										if(dataForCalclatingSalary!= null && dataForCalclatingSalary.size() > 0)
+										{
+											for(int k=0;k<dataForCalclatingSalary.size();k++)
+											{
+												CommonForm	sForm				=	dataForCalclatingSalary.get(k);
+												String		percent_amount		=	sForm.getField1();
+												String		value				=	sForm.getField2();
+												String		add_dedcut			=	sForm.getField3();
+												String		salaryHeadName		=	sForm.getField4();
+												String		salryStructId		=	sForm.getField5();
+												Double		calculated_value	=	0.0;
+												
+												if(add_dedcut!= null && add_dedcut.equalsIgnoreCase("Earnings"))
+												{
+													if(percent_amount!= null && percent_amount.equalsIgnoreCase("%"))
+													{
+														Double	sal			=	Double.parseDouble(grossSal);
+														sal					=	(sal*Double.parseDouble(value))/100;
+														calculated_value	=	sal;
+													}	
+													if(percent_amount!= null && percent_amount.equalsIgnoreCase("Amount"))
+													{
+														Double	sal		=	Double.parseDouble(value);//Double.parseDouble(grossSal);
+														calculated_value	=	sal;
+													}
+												}
+												if(add_dedcut!= null && add_dedcut.equalsIgnoreCase("Deduction"))
+												{
+													if(percent_amount!= null && percent_amount.equalsIgnoreCase("%"))
+													{
+														Double	sal		=	Double.parseDouble(grossSal);
+														sal				=	(sal*Double.parseDouble(value))/100;
+														calculated_value	=	sal;
+													}	
+													if(percent_amount!= null && percent_amount.equalsIgnoreCase("Amount"))
+													{
+														Double	sal		=	Double.parseDouble(value);//Double.parseDouble(grossSal);
+														calculated_value	=	sal;
+													}
+												}
+												
+												query	=	"	insert into salary_slip_dtls (	salaryslipid, salarystructdtlsid, salaryheadname, calculated_value, earningsordedcut, " +
+															"								createdby, cretaedon, updatedby, updatedon	)	" +
+															"	values	( ?, ?, ?, ?, ?, ?, sysdate(), ?, sysdate()	) ";
+												pst		=	con.prepareStatement(query);
+												pst.setString(1, salarySlipId);
+												pst.setString(2, salryStructId);
+												pst.setString(3, salaryHeadName);
+												pst.setString(4, ""+calculated_value);
+												pst.setString(5, add_dedcut);
+												pst.setString(6, userName);
+												pst.setString(7, userName);
+												int cnt	=	pst.executeUpdate();
+												if(cnt > 0)
+												{
+													pst.close();
+												}
+											}	
+										}
+									}
+								}
+							}
+							
+						}//end of paidemp if loop	
+					}//end of for
+					pst.close();
+				}//end of if	
+			}//end of mode value
+			
+			if(mode!=null && mode.length()>0 && mode.equalsIgnoreCase("old"))
+			{
+				if(dataList!= null && dataList.size() > 0)
+				{	
+					int		deleteCount				=	0;
+					int		deletCountOfSalarySlip	=	0;
+					int		salarySlipCount			=	0;
+					for(int i=0;i<dataList.size();i++)
+					{
+						CommonForm	cForm				=	dataList.get(i);
+						String		salaryStructId		=	cForm.getField18();
+						String		salaryStructName	=	cForm.getField19();
+						String		empId				=	cForm.getField6();
+						String		empCode				=	cForm.getField7();
+						String		month				=	cForm.getField3();
+						String		year				=	cForm.getField4();
+						String		empName				=	cForm.getField8();
+						String		departmentName		=	cForm.getField10();
+						String		designationName		=	cForm.getField12();
+						String		pfAcNo				=	cForm.getField15();
+						String		esicno				=	cForm.getField16();
+						String		actualWorking		=	cForm.getField5();
+						String		grossSal			=	cForm.getField17();
+						Double		netSalary			=	0.0;
+						Double		totalEarning		=	0.0;
+						Double		totalDeduction		=	0.0;
+						String		paidEmployee		=	cForm.getField14();	
+						double 		workingDays			=	Double.parseDouble(cForm.getField20());
+						
+						if (workingDays>0)
+						{
+							grossSal	=	""+(Double.parseDouble(grossSal) / workingDays) * Double.parseDouble(actualWorking);
+							grossSal	=	""+Math.rint(Double.parseDouble(grossSal));
+						}else
+						{
+							grossSal	=	""+0.0;
+						}
+						
+						if(paidEmployee!= null && paidEmployee.equalsIgnoreCase("YES"))
+						{
+							if(salaryStructId!= null && salaryStructId.length() > 0)
+							{
+								ArrayList<CommonForm> dataForCalclatingSalary	=	salarySlipBean.getDataForCalcultingSalary(salaryStructId);
+								if(dataForCalclatingSalary!= null && dataForCalclatingSalary.size() > 0)
+								{
+									for(int j=0;j<dataForCalclatingSalary.size();j++)
+									{
+										CommonForm	salaryForm		=	dataForCalclatingSalary.get(j);
+										String		percent_amount	=	salaryForm.getField1();
+										String		value			=	salaryForm.getField2();
+										String		add_dedcut		=	salaryForm.getField3();
+										if(add_dedcut!= null && add_dedcut.equalsIgnoreCase("Earnings"))
+										{
+											if(percent_amount!= null && percent_amount.equalsIgnoreCase("%"))
+											{
+												Double	sal		=	Double.parseDouble(grossSal);
+												sal				=	(sal*Double.parseDouble(value))/100;
+												totalEarning	+=	sal;
+											}	
+											if(percent_amount!= null && percent_amount.equalsIgnoreCase("Amount"))
+											{
+												Double	sal		=	Double.parseDouble(value);//Double.parseDouble(grossSal);
+												totalEarning	+=	sal;
+											}
+										}
+										if(add_dedcut!= null && add_dedcut.equalsIgnoreCase("Deduction"))
+										{
+											if(percent_amount!= null && percent_amount.equalsIgnoreCase("%"))
+											{
+												Double	sal		=	Double.parseDouble(grossSal);
+												sal				=	(sal*Double.parseDouble(value))/100;
+												totalDeduction	+=	sal;	
+											}	
+											if(percent_amount!= null && percent_amount.equalsIgnoreCase("Amount"))
+											{
+												Double	sal		=	Double.parseDouble(value);//Double.parseDouble(grossSal);
+												totalDeduction	+=	sal;
+											}
+										}
+										
+									}			
+								}
+									netSalary	=	totalEarning-totalDeduction;	
+							}
+							
+							if(deleteCount == 0)
+							{
+								deleteCount	=	1;
+								
+								//String	salarySlipId	=	commonMethodBean.getDataOnOneCondition("salary_slip_header", "salaryslipid","employeeid", empId);
+								ArrayList<CommonForm> salarySlipIdList	=	salarySlipBean.getSalarySlipId(month,year);
+								if(salarySlipIdList!= null && salarySlipIdList.size() > 0)
+								{	
+									for(int listCount=0;listCount<salarySlipIdList.size();listCount++)
+									{
+										CommonForm	salarySlipIdForm	=	salarySlipIdList.get(listCount);
+										String		salarySlipId		=	salarySlipIdForm.getField1();
+										query		=	"	delete " +
+														"	from	salary_slip_dtls" +
+														"	where	salaryslipid	=	'"+salarySlipId+"'";
+										st			=	con.createStatement();
+										salarySlipCount	+=	st.executeUpdate(query);
+										
+									}	
+								
+								}
+								query		=	"	delete " +
+												"	from	salary_slip_header" +
+												"	where				month	=	'"+month+"'" +
+												"				and 	year	=	'"+year+"'";
+								st				=	con.createStatement();
+								deletCountOfSalarySlip	=	st.executeUpdate(query);
+							}
+							
+							if(deletCountOfSalarySlip > 0)
+							{	
+								query	=	"	insert into salary_slip_header (salarystructureid, salarystructurename, employeeid ,empcode, month, year, empname, departmentname, designationname, " +
+											"									pf_account_no, esic_account_no, actualworkingdays, gross_salary, total_earnings, total_deduction, " +
+											"									net_salary, createdby, createdon, updatedby, updatedon	)" +
+											"	values	(	?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, sysdate(), ?, sysdate()	)";
+								pst		=	con.prepareStatement(query);
+								pst.setString(1, salaryStructId);
+								pst.setString(2, salaryStructName);
+								pst.setString(3, empId);
+								pst.setString(4, empCode);
+								pst.setString(5, month);
+								pst.setString(6, year);
+								pst.setString(7, empName);
+								pst.setString(8, departmentName);
+								pst.setString(9, designationName);
+								pst.setString(10, pfAcNo);
+								pst.setString(11, esicno);
+								pst.setString(12, actualWorking);
+								pst.setString(13, grossSal);
+								pst.setString(14, ""+totalEarning);
+								pst.setString(15, ""+totalDeduction);
+								pst.setString(16, ""+netSalary);
+								pst.setString(17, userName);
+								pst.setString(18, userName);
+								int	count	=	pst.executeUpdate();
+								if(count > 0)
+								{
+									outputString			=	"PASS. SALARY SLIP UPDATED SUCCESSFULLY FOR : "+month.toUpperCase()+"-"+year+".";
+									String	salarySlipId	=	commonMethodBean.getDataOnOneCondition("salary_slip_header", "salaryslipid","employeeid", empId);
+									
+									if(salarySlipCount > 0)
+									{	
+										if(salarySlipId!= null && salarySlipId.length() > 0)
+										{
+											if(salaryStructId!= null && salaryStructId.length() > 0)
+											{
+												ArrayList<CommonForm> dataForCalclatingSalary	=	salarySlipBean.getDataForCalcultingSalary(salaryStructId);
+												if(dataForCalclatingSalary!= null && dataForCalclatingSalary.size() > 0)
+												{
+													for(int k=0;k<dataForCalclatingSalary.size();k++)
+													{
+														CommonForm	sForm				=	dataForCalclatingSalary.get(k);
+														String		percent_amount		=	sForm.getField1();
+														String		value				=	sForm.getField2();
+														String		add_dedcut			=	sForm.getField3();
+														String		salaryHeadName		=	sForm.getField4();
+														String		salryStructId		=	sForm.getField5();
+														Double		calculated_value	=	0.0;
+														
+														if(add_dedcut!= null && add_dedcut.equalsIgnoreCase("Earnings"))
+														{
+															if(percent_amount!= null && percent_amount.equalsIgnoreCase("%"))
+															{
+																Double	sal			=	Double.parseDouble(grossSal);
+																sal					=	(sal*Double.parseDouble(value))/100;
+																calculated_value	=	sal;
+															}	
+															if(percent_amount!= null && percent_amount.equalsIgnoreCase("Amount"))
+															{
+																Double	sal		=	Double.parseDouble(value);//Double.parseDouble(grossSal);
+																calculated_value	=	sal;
+															}
+														}
+														if(add_dedcut!= null && add_dedcut.equalsIgnoreCase("Deduction"))
+														{
+															if(percent_amount!= null && percent_amount.equalsIgnoreCase("%"))
+															{
+																Double	sal		=	Double.parseDouble(grossSal);
+																sal				=	(sal*Double.parseDouble(value))/100;
+																calculated_value	=	sal;
+															}	
+															if(percent_amount!= null && percent_amount.equalsIgnoreCase("Amount"))
+															{
+																Double	sal		=	Double.parseDouble(value);//Double.parseDouble(grossSal);
+																calculated_value	=	sal;
+															}
+														}
+														
+														
+														
+														query	=	"	insert into salary_slip_dtls (	salaryslipid, salarystructdtlsid, salaryheadname, calculated_value, earningsordedcut, " +
+																	"								createdby, cretaedon, updatedby, updatedon	)	" +
+																	"	values	( ?, ?, ?, ?, ?, ?, sysdate(), ?, sysdate()	) ";
+														pst		=	con.prepareStatement(query);
+														pst.setString(1, salarySlipId);
+														pst.setString(2, salryStructId);
+														pst.setString(3, salaryHeadName);
+														pst.setString(4, ""+calculated_value);
+														pst.setString(5, add_dedcut);
+														pst.setString(6, userName);
+														pst.setString(7, userName);
+														int cnt	=	pst.executeUpdate();
+														if(cnt > 0)
+														{
+															pst.close();
+														}
+													}	
+												}
+											}
+										}
+									}//end of if loop of delete salary slip id.	
+								}
+							}// end of deletCountOfSalarySlip if loop	
+							
+						}//end of paidemp if loop	
+					}//end of for
+					pst.close();
+				}//end of if
+				
+				
+			}//end of mode if loop
+			
+		}//end try
+		catch(Exception e)
+		{
+			outputString = "ERROR";
+			System.out.println("ERROR In SalarySlipBean.generateSalarySlip :"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				outputString = "ERROR";
+				System.out.println("Exception While Closing The Connection in SalarySlipBean.generateSalarySlip :"+e);
+			}
+		}
+		return outputString;
+	}
+
+	/**
+	 * Method Name  : getDataForCalcultingSalary
+	 * Purpose		: To getDataForCalcultingSalary
+	 * @author		: Prashant
+	 * Date			: 16/04/2012 
+	 * @param userName 
+	 */
+	private ArrayList<CommonForm> getDataForCalcultingSalary(String salaryStructId) 
+	{
+		ArrayList<CommonForm>	dataList	=	new ArrayList<CommonForm>();
+		Connection				con			=	null;
+		Statement				st			=	null;
+		ResultSet				rs			=	null;
+		String					query		=	"";
+		
+		try
+		{
+				query	+=	"	select	ssd.Percent_Amount,ssd.value,ssd.deduct_add,shm.salaryheadname,ssd.structuredtlsid " +
+							"	from	salary_structure_dtls ssd" +
+							"	inner join salary_structure_header	ssh		on		ssd.structureid			=	ssh.structureid " +
+							"												and		ssd.structureid			=	'"+salaryStructId+"'" +
+							"	inner join salary_head_master		shm		on		shm.salaryheadid		=	ssd.salaryheadid ";
+				con		=	dbConn.connect();
+				st		=	con.createStatement();
+				rs		=	st.executeQuery(query);
+				while(rs.next())
+				{
+					CommonForm cForm	=	new CommonForm();
+					cForm.setField1(rs.getString(1));//Percent_Amount
+					cForm.setField2(rs.getString(2));//value		
+					cForm.setField3(rs.getString(3));//deduct_add
+					cForm.setField4(rs.getString(4));//salaryheadname
+					cForm.setField5(rs.getString(5));//structuredtlsid
+					
+					dataList.add(cForm);
+				}
+		}
+		catch (Exception e) 
+		{
+			System.out.println("Exception In SalarySlipBean.getDataForCalcultingSalary : "+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				System.out.println("Exception While Closing The Connection in SalarySlipBean.getDataForCalcultingSalary :"+e);
+			}
+		}
+		return	dataList;
+	}
+	
+	/**
+	 * Method Name  : getMonth_YearWiseUploadCount
+	 * Purpose		: To getMonth_YearWiseUploadCount
+	 * @author		: Prashant
+	 * Date			: 17/04/2012 
+	 * @param userName 
+	 */
+	public int getMonth_YearWiseUploadCount(String month, String year) 
+	{
+		int						count		=	0;
+		Connection				con			=	null;
+		Statement				st			=	null;
+		ResultSet				rs			=	null;
+		String					query		=	"";
+		
+		try
+		{
+				query	+=	"	select 	count(salaryslipid) " +
+							"	from	salary_slip_header" +
+							"	where					month	=	'"+month+"' " +
+							"					and 	year	=	'"+year+"' ";
+				con		=	dbConn.connect();
+				st		=	con.createStatement();
+				rs		=	st.executeQuery(query);
+				if(rs.next())
+				{
+					count	=	rs.getInt(1);
+				}
+		}
+		catch (Exception e) 
+		{
+			System.out.println("Exception In SalarySlipBean.getMonth_YearWiseUploadCount : "+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				System.out.println("Exception While Closing The Connection in SalarySlipBean.getMonth_YearWiseUploadCount :"+e);
+			}
+		}
+		return count;
+	}
+	
+	
+	/**
+	 * Method Name  : getSalarySlipId
+	 * Purpose		: To getSalarySlipId
+	 * @author		: Prashant
+	 * Date			: 17/04/2012 
+	 * @param userName 
+	 */
+	private ArrayList<CommonForm> getSalarySlipId(String month, String year) 
+	{
+		ArrayList<CommonForm>	dataList	=	new ArrayList<CommonForm>();
+		Connection				con			=	null;
+		Statement				st			=	null;
+		ResultSet				rs			=	null;
+		String					query		=	"";
+		
+		try
+		{
+				query	+=	"	select	ssd.salaryslipid" +
+							"	from	salary_slip_dtls ssd" +
+							"	inner join salary_slip_header ssh	on		ssh.salaryslipid	=	ssd.salaryslipid" +
+							"										and		ssh.month			=	'"+month+"'" +
+							"										and		ssh.year			=	'"+year+"'";
+				con		=	dbConn.connect();
+				st		=	con.createStatement();
+				rs		=	st.executeQuery(query);
+				while(rs.next())
+				{
+					CommonForm cForm	=	new CommonForm();
+					cForm.setField1(rs.getString(1));//salaryslipid
+					
+					dataList.add(cForm);
+				}
+		}
+		catch (Exception e) 
+		{
+			System.out.println("Exception In SalarySlipBean.getSalarySlipId : "+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				System.out.println("Exception While Closing The Connection in SalarySlipBean.getSalarySlipId :"+e);
+			}
+		}
+		return	dataList;
+	}
+	
+	/**
+	 * Method Name  : getHeaderDetailsForSalarySlip
+	 * Purpose		: To getHeaderDetailsForSalarySlip
+	 * @author		: Prashant
+	 * Date			: 19/04/2012 
+	 * @param userName 
+	 */
+	public ArrayList<CommonForm> getHeaderDetailsForSalarySlip(String empId,String month, String year) 
+	{
+		CommonMethodBean		commonMethodBean	=	new CommonMethodBean();
+		ArrayList<CommonForm>	dataList		=	new ArrayList<CommonForm>();
+		SalarySlipBean			salarySlipBean	=	new SalarySlipBean();
+		Connection				con			=	null;
+		Statement				st			=	null;
+		ResultSet				rs			=	null;
+		String					query		=	"";
+		
+		try
+		{
+				query	+=	"	select 	salaryslipid, salarystructureid, salarystructurename, employeeid, empcode, month, year, " +
+							"			empname, departmentname, designationname, pf_account_no, esic_account_no, actualworkingdays," +
+							"			gross_salary, total_earnings, total_deduction, net_salary " +
+							"	from 	salary_slip_header " +
+							"	where	0=0	" ;
+				if(month!=null && month.length() > 0)
+				{
+				query	+=	"			and		month		=	'"+month+"'" ;
+				}
+				if(year!=null && year.length() > 0)
+				{
+				query	+=	"			and		year		=	'"+year+"'";
+				}
+				if(empId!=null && empId.length() > 0)
+				{
+				query	+=	"			and		employeeid	=	'"+empId+"'";
+				}
+				con		=	dbConn.connect();
+				st		=	con.createStatement();
+				rs		=	st.executeQuery(query);
+				while(rs.next())
+				{
+					CommonForm cForm	=	new CommonForm();
+					cForm.setField1(rs.getString(1));//salaryslipid
+					cForm.setField2(rs.getString(2));//salarystructureid		
+					cForm.setField3(rs.getString(3));//salarystructurename
+					cForm.setField4(rs.getString(4));//employeeid
+					cForm.setField5(rs.getString(5));//empcode
+					cForm.setField6(rs.getString(6));//month
+					cForm.setField7(rs.getString(7));//year
+					cForm.setField8(rs.getString(8));//empname
+					cForm.setField9(rs.getString(9));//departmentname
+					cForm.setField10(rs.getString(10));//designationname		
+					cForm.setField11(rs.getString(11)!=null && rs.getString(11).length() > 0 ? rs.getString(11) : "-");//pf_account_no
+					cForm.setField12(rs.getString(12)!=null && rs.getString(12).length() > 0 ? rs.getString(12) : "-");//esic_account_no
+					cForm.setField13(rs.getString(13));//actualworkingdays
+					cForm.setField14(commonMethodBean.applyFormater(rs.getString(14)));//gross_salary
+					cForm.setField15(commonMethodBean.applyFormater(rs.getString(15)));//total_earnings
+					cForm.setField16(commonMethodBean.applyFormater(rs.getString(16)));//total_deduction
+					cForm.setField17(commonMethodBean.applyFormater(rs.getString(17)));//net_salary	
+					
+					ArrayList<CommonForm> earningsList	=	salarySlipBean.getLineItemDetailsForEarningsAndDeduction(rs.getString(1),"Earnings");
+					if(earningsList!=null && earningsList.size() >0)
+					{
+						cForm.setCommonList1(earningsList);
+					}
+					else
+					{
+						earningsList	=	new ArrayList<CommonForm>();
+						cForm.setCommonList1(earningsList);
+					}
+					ArrayList<CommonForm> deductList	=	salarySlipBean.getLineItemDetailsForEarningsAndDeduction(rs.getString(1), "Deduction");
+					if(deductList!=null && deductList.size() > 0)
+					{
+						cForm.setCommonList2(deductList);
+					}
+					else
+					{
+						deductList	=	new ArrayList<CommonForm>();
+						cForm.setCommonList2(deductList);
+					}
+					ArrayList<CommonForm> companyNameList	=	salarySlipBean.getActiveCompanyDetails();
+					if(companyNameList!=null && companyNameList.size() > 0)
+					{
+						cForm.setCommonList(companyNameList);	
+					}
+					else
+					{
+						companyNameList	=	new ArrayList<CommonForm>();
+						cForm.setCommonList(companyNameList);
+					}
+					dataList.add(cForm);
+				}
+		}
+		catch (Exception e) 
+		{
+			System.out.println("Exception In SalarySlipBean.getHeaderDetailsForSalarySlip : "+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				System.out.println("Exception While Closing The Connection in SalarySlipBean.getHeaderDetailsForSalarySlip :"+e);
+			}
+		}
+		return	dataList;
+	}
+	
+
+	/**
+	 * Method Name  : getLineItemDetailsForEarningsAndDeduction
+	 * Purpose		: To getLineItemDetailsForEarningsAndDeduction
+	 * @author		: Prashant
+	 * Date			: 19/04/2012 
+	 * @param earning_deduction 
+	 * @param userName 
+	 */
+	public ArrayList<CommonForm> getLineItemDetailsForEarningsAndDeduction(String SalarySlipId,String earning_deduction) 
+	{
+		CommonMethodBean		commonMethodBean	=	new CommonMethodBean();
+		ArrayList<CommonForm>	dataList	=	new ArrayList<CommonForm>();
+		Connection				con			=	null;
+		Statement				st			=	null; 
+		ResultSet				rs			=	null;
+		String					query		=	"";
+		int						srNo		=	1;
+		
+		try
+		{
+				query	+=	"	select 	ssd.salarydtlsid, ssd.salaryslipid, ssd.salarystructdtlsid, ssd.salaryheadname, ssd.calculated_value, " +
+							"			ssd.earningsordedcut,ssh.employeeid " +
+							"	from 	salary_slip_dtls ssd" +
+							"	inner	join  salary_slip_header ssh	on	ssh.salaryslipid		=	ssd.salaryslipid" +
+							"											and	ssh.salaryslipid		=	'"+SalarySlipId+"'" +
+							"											and	ssd.earningsordedcut	=	'"+earning_deduction+"'";
+				con		=	dbConn.connect();
+				st		=	con.createStatement();
+				rs		=	st.executeQuery(query);
+				while(rs.next())
+				{
+					CommonForm cForm	=	new CommonForm();
+					cForm.setField1(rs.getString(1));//salarydtlsid
+					cForm.setField2(rs.getString(2));//salaryslipid		
+					cForm.setField3(rs.getString(3));//salarystructdtlsid
+					cForm.setField4(rs.getString(4));//salaryheadname
+					cForm.setField5(commonMethodBean.applyFormater(rs.getString(5)));//calculated_value
+					cForm.setField6(rs.getString(6));//earningsordedcut
+					cForm.setField7(rs.getString(7));//employeeid
+					cForm.setField8(""+srNo++);	
+					dataList.add(cForm);
+				}
+		}
+		catch (Exception e) 
+		{
+			System.out.println("Exception In SalarySlipBean.getLineItemDetailsForEarningsAndDeduction : "+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				System.out.println("Exception While Closing The Connection in SalarySlipBean.getLineItemDetailsForEarningsAndDeduction :"+e);
+			}
+		}
+		return	dataList;
+	}
+	
+	/**
+	 * Method Name  : getActiveCompanyCount
+	 * Purpose		: To getActiveCompanyCount
+	 * @author		: Prashant
+	 * Date			: 20/04/2012 
+	 * @param  
+	 * @param userName 
+	 */
+	public int getActiveCompanyCount() 
+	{
+		int						count		=	0;
+		Connection				con			=	null;
+		Statement				st			=	null; 
+		ResultSet				rs			=	null;
+		String					query		=	"";
+				
+		try
+		{
+				query	+=	"	select 	count(companyid)" +
+							"	from	company_master " +
+							"	where	status	=	'ACTIVE'";
+				con		=	dbConn.connect();
+				st		=	con.createStatement();
+				rs		=	st.executeQuery(query);
+				if(rs.next())
+				{
+					count	=	rs.getInt(1);
+				}
+		}
+		catch (Exception e) 
+		{
+			System.out.println("Exception In SalarySlipBean.getActiveCompanyCount : "+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				System.out.println("Exception While Closing The Connection in SalarySlipBean.getActiveCompanyCount :"+e);
+			}
+		}
+		return	count;
+	}
+	
+	/**
+	 * Method Name  : getActiveCompanyCount
+	 * Purpose		: To getActiveCompanyCount
+	 * @author		: Prashant
+	 * Date			: 20/04/2012 
+	 * @param  
+	 * @param userName 
+	 */
+	private ArrayList<CommonForm> getActiveCompanyDetails() 
+	{
+		ArrayList<CommonForm>	dataList	=	new ArrayList<CommonForm>();
+		Connection				con			=	null;
+		Statement				st			=	null; 
+		ResultSet				rs			=	null;
+		String					query		=	" ";
+		
+		try
+		{
+				query	+=	" 	select 	com.companyid, com.companyname, com.address1, com.address2, com.address3, com.cityid,cm.city_name,com.pincode, com.status " +
+							"	from	company_master com " +
+							"	inner join 	city_master 	cm		on	com.cityid		=	cm.cityid " +
+							"										and	com.status		=	'ACTIVE'";
+				con		=	dbConn.connect();
+				st		=	con.createStatement();
+				rs		=	st.executeQuery(query);
+				if(rs.next())
+				{
+					CommonForm cForm	=	new CommonForm();
+					cForm.setField1(rs.getString(1));//companyid
+					cForm.setField2(rs.getString(2));//companyname		
+					cForm.setField3(rs.getString(3));//address1
+					cForm.setField4(rs.getString(4)!=null && rs.getString(4).length() > 0 ? rs.getString(4) : " ");//address2
+					cForm.setField5(rs.getString(5)!=null && rs.getString(5).length() > 0 ? rs.getString(5) : " ");//address3
+					cForm.setField6(rs.getString(6));//cityid
+					cForm.setField7(rs.getString(7));//city_name
+					cForm.setField8(rs.getString(8));//pincode
+					cForm.setField8(rs.getString(8));//status
+					
+					dataList.add(cForm);
+				}
+		}
+		catch (Exception e) 
+		{
+			System.out.println("Exception In SalarySlipBean.getActiveCompanyDetails : "+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				System.out.println("Exception While Closing The Connection in SalarySlipBean.getActiveCompanyDetails :"+e);
+			}
+		}
+		return	dataList;
+	}
+	
+	/**
+	 * Method Name  : getCountAgainstParticularEmployee
+	 * Purpose		: To getCountAgainstParticularEmployee
+	 * @author		: Prashant
+	 * Date			: 25/04/2012 
+	 * @param  
+	 */
+	public int getCountAgainstParticularEmployee(String month, String year,String empId) 
+	{
+		int						count		=	0;
+		Connection				con			=	null;
+		Statement				st			=	null; 
+		ResultSet				rs			=	null;
+		String					query		=	"";
+				
+		try
+		{
+				query	+=	" 	select 	count(salaryslipid) " +
+							"	from	salary_slip_header " +
+							"	where	0 = 0 " +
+							"		and		month		=	'"+month+"'" +
+							"		and		year		=	'"+year+"'" +
+							"		and		employeeid	=	'"+empId+"'";
+				con		=	dbConn.connect();
+				st		=	con.createStatement();
+				rs		=	st.executeQuery(query);
+				if(rs.next())
+				{
+					count	=	rs.getInt(1);
+				}
+		}
+		catch (Exception e) 
+		{
+			System.out.println("Exception In SalarySlipBean.getCountAgainstParticularEmployee : "+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				System.out.println("Exception While Closing The Connection in SalarySlipBean.getCountAgainstParticularEmployee :"+e);
+			}
+		}
+		return	count;
+	}
+	
+	/**
+	 * Method Name  : getSalaryProcessingList
+	 * Purpose		: To getSalaryProcessingList
+	 * @author		: Prashant
+	 * Date			: 04/07/2012 
+	 * @param  
+	 */
+	public ArrayList<CommonForm> getSalaryProcessingList(SalarySlipForm salarySlipForm) 
+	{
+		ArrayList<CommonForm>	dataList	=	new ArrayList<CommonForm>();
+		CommonMethodBean		commonMethodBean	=	new CommonMethodBean();
+		Connection				con			=	null;
+		Statement				st			=	null; 
+		ResultSet				rs			=	null;
+		String					query		=	"";
+		int						srNo		=	1;
+		String					month		=	salarySlipForm.getMonth();
+		String					year		=	salarySlipForm.getYear();
+		String					empId		=	salarySlipForm.getEmpId();
+		
+		double					totalGrossSal	=	0.0;
+		double					totalWorkingDay	=	0.0;
+		double					totalEarning	=	0.0;
+		double					totalDeduction	=	0.0;
+		double					totalNetSalary	=	0.0;
+		double			totalProcessedSalary	=	0.0;
+		
+		try
+		{
+			query	=	"	select	ssh.month,ssh.year,ssh.empname,ssh.departmentname,ssh.designationname,ssh.actualworkingdays," +
+						"			em.joining_salary gross_salary,ssh.net_salary,ssh.total_deduction,ssh.total_earnings,ssh.salaryslipid,em.bank_acc_no,em.employeeid, ssh.salary_proceed " +
+						"	from	salary_slip_header ssh " +
+						"	inner join employee_master	em 	on	em.employeeid	=	ssh.employeeid" ;
+			if(month!=null && month.length() > 0)
+			{
+			query	+=	"									and	ssh.month		=	'"+month+"'" ;
+			}
+			if(year!=null && year.length() > 0)
+			{
+			query	+=	"									and	ssh.year		=	'"+year+"'" ;
+			}
+			if(empId!=null && empId.length() > 0)
+			{
+			query	+=	"									and	ssh.employeeid	=	'"+empId+"'" ;
+			}
+			query	+=	"	order by ssh.month";
+			
+			con		=	dbConn.connect();
+			st		=	con.createStatement();
+			rs		=	st.executeQuery(query);
+			
+			while(rs.next())
+			{
+				CommonForm	cForm	=	new  CommonForm();
+				cForm.setField1(""+(srNo++));
+				cForm.setField2(rs.getString(1));//month
+				cForm.setField3(rs.getString(2));//year
+				cForm.setField4(rs.getString(3));//empname
+				cForm.setField5(rs.getString(4));//departmentname
+				cForm.setField6(rs.getString(5));//designationname
+				cForm.setField7(rs.getString(6));//actualworkingdays
+				cForm.setField8(commonMethodBean.applyFormater(rs.getString(7)));//gross_salary
+				cForm.setField9(commonMethodBean.applyFormater(rs.getString(8)));//net_salary
+				cForm.setField10(commonMethodBean.applyFormater(rs.getString(9)));//total_deduction
+				cForm.setField11(commonMethodBean.applyFormater(rs.getString(10)));//total_earnings
+				
+				totalGrossSal	+=	Double.parseDouble(rs.getString(7)!=null && rs.getString(7).length() > 0 	? rs.getString(7) 	: ""+0.0);
+				totalWorkingDay	+=	Double.parseDouble(rs.getString(6)!=null && rs.getString(6).length() > 0 	? rs.getString(6) 	: ""+0.0);
+				totalEarning	+=	Double.parseDouble(rs.getString(10)!=null && rs.getString(10).length() > 0 	? rs.getString(10) 	: ""+0.0);
+				totalDeduction	+=	Double.parseDouble(rs.getString(9)!=null && rs.getString(9).length() > 0 	? rs.getString(9) 	: ""+0.0);
+				totalNetSalary	+=	Double.parseDouble(rs.getString(8)!=null && rs.getString(8).length() > 0 	? rs.getString(8) 	: ""+0.0);
+				
+				if(rs.getString(14)!=null && rs.getString(14).length()>0 && rs.getString(14).equalsIgnoreCase("PROCEED")){
+					
+				totalProcessedSalary+=Double.parseDouble(rs.getString(8)!=null && rs.getString(8).length() > 0 	? rs.getString(8) 	: ""+0.0);
+					
+				}
+				/*			This Block is Execute only last iteration
+				 * PurPose : Showing the Footer Details 
+				 * */
+				
+				if(rs.isLast())
+				{
+					cForm.setField12(commonMethodBean.applyFormater(""+totalGrossSal));//totalGrossSal
+					cForm.setField13(commonMethodBean.applyFormater(""+totalWorkingDay));//totalWorkingDay
+					cForm.setField14(commonMethodBean.applyFormater(""+totalEarning));//totalEarning
+					cForm.setField15(commonMethodBean.applyFormater(""+totalDeduction));//totalDeduction
+					cForm.setField16(commonMethodBean.applyFormater(""+totalNetSalary));//totalNetSalary
+					cForm.setField17("Grand Total");
+					cForm.setField22(commonMethodBean.applyFormater(""+totalProcessedSalary));//totalNetSalary
+					cForm.setField23(commonMethodBean.applyFormater(totalNetSalary-totalProcessedSalary+""));//totalpendingSalary
+				}
+				
+				cForm.setField18(rs.getString(11));//salaryslipid
+				cForm.setField19(rs.getString(12));//Account_No
+				cForm.setField20(rs.getString(13));//Emp ID
+				cForm.setField21(rs.getString(14)==null?"":rs.getString(14));//Salary_proceed_Status
+				dataList.add(cForm);
+			}
+			
+		}
+		catch (Exception e) 
+		{
+			System.out.println("Exception In SalarySlipBean.getSalaryProcessingList : "+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				System.out.println("Exception While Closing The Connection in SalarySlipBean.getSalaryProcessingList :"+e);
+			}
+		}
+		return dataList;
+	}
+
+	
+	
+	/**
+	 * Method Name  : updateBankDetails
+	 * Purpose		: To updateBankDetails
+	 * @author		: Prashant
+	 * Date			: 01/01/2013 
+	 */
+	public String updateBankDetails(String userName,String bankId,String refNo,String remark,String salarySId,String empName) 
+	{
+		
+		String				outputString		=	"ERROR";
+		Connection			con					=	null;
+		PreparedStatement	pst					=	null;
+		String				query				=	"";
+		try
+		{
+				
+					query		+=	"	update	salary_slip_header" +
+									"	set	bankid		= ?," +
+									"		ref_no		= ?," +
+									"		remark		= ?," +
+									"		updatedby	= ?," +
+									"		updatedon	= sysdate()" +
+									"	where	salaryslipid	= ?" ;
+										
+					
+					con			=	dbConn.connect();
+					pst			=	con.prepareStatement(query);
+					pst.setString(1, bankId);
+					pst.setString(2, refNo);
+					pst.setString(3, remark);
+					pst.setString(4, userName);
+					pst.setString(5, salarySId);
+					int	cnt		=	pst.executeUpdate();
+					if(cnt > 0)
+					{
+						outputString	=	"PASS.DETAILS SAVED SUCCESSFULLY AGAINST EMPLOYEE : "+empName+"	.";
+					}
+					else
+					{
+						outputString	=	"FAIL.PROBLEM WHILE SAVING DETAILS.";
+					}	
+			
+		}
+		catch(Exception e)
+		{
+			outputString = "ERROR";
+			System.out.println("ERROR In SalarySlipBean.updateBankDetails :"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				outputString = "ERROR";
+				System.out.println("Exception While Closing The Connection in SalarySlipBean.updateBankDetails :"+e);
+			}
+		}
+		return outputString;
+	}
+	
+	
+	/**
+	 * Method Name  : getAddedBankDetails
+	 * Purpose		: To getAddedBankDetails
+	 * @author		: Prashant
+	 * Date			: 01/01/2013 
+	 * @param  
+	 */
+	public ArrayList<CommonForm> getAddedBankDetails(String salSlipId) 
+	{
+		int						count		=	0;
+		ArrayList<CommonForm> 	dataList	=	new ArrayList<CommonForm>();
+		Connection				con			=	null;
+		Statement				st			=	null; 
+		ResultSet				rs			=	null;
+		String					query		=	"";
+				
+		try
+		{
+				query	+=	" 	select ssh.bankid,ssh.ref_no,ssh.remark,bm.bank_name " +
+							"   from salary_slip_header ssh" +
+							"	left outer join bank_master bm on bm.bankid = ssh.bankid" +
+							"	where salaryslipid  =   '"+salSlipId+"'	";
+				con		=	dbConn.connect();
+				st		=	con.createStatement();
+				rs		=	st.executeQuery(query);
+				if(rs.next())
+				{
+					CommonForm	cForm	=	new CommonForm();
+					cForm.setField1(rs.getString(1));//bankid
+					cForm.setField2(rs.getString(2));//ref_no
+					cForm.setField3(rs.getString(3));//remark
+					cForm.setField4(rs.getString(4));//bankName
+					
+					dataList.add(cForm);
+				}
+		}
+		catch (Exception e) 
+		{
+			System.out.println("Exception In SalarySlipBean.getAddedBankDetails : "+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				System.out.println("Exception While Closing The Connection in SalarySlipBean.getAddedBankDetails :"+e);
+			}
+		}
+		return	dataList;
+	}
+	
+	/**
+	 * Method Name  : sendSalaryProcessingMailToEmp
+	 * Purpose		: To send Salary Processing Mail To Emp
+	 * @author		: Sourabh
+	 * Date			: 12/08/2013 
+	 * @param  
+	 */
+	
+	
+	public String sendSalaryProcessingMailToEmp(SalarySlipForm salarySlipForm, String userName, String netSalary){
+		String				outputString		=	"";
+		Connection			con					=	null;
+		PreparedStatement	pst					=	null;
+		String				query				=	"";		
+		String 				empName				=  salarySlipForm.getEmpName().trim().toUpperCase();
+		String 				empId				=  salarySlipForm.getEmpId().trim().toUpperCase();			
+		String 				month				=  salarySlipForm.getMonth();
+		String 				year				=  salarySlipForm.getYear();
+		SalarySlipBean		salarySlipBean		=	new SalarySlipBean();
+		
+		try{
+			outputString="PASS.SALARY PROCESSED FOR EMPLOYEE: "+empName+" . ";
+			SendMailBean					sendMailBean	=	new SendMailBean();
+			String 								mailBody	=	"<table width='90%' cellpadding='2' cellspacing='2'>	" +
+					"	<tr> " +
+					"	<td width='80%' style='font-family:Arial, Helvetica, sans-serif;font-weight: bold;;font-size:12px;color:#000000;padding:6px;'>Dear "+empName+",</td>	" +
+					"	</tr>	" +
+					"	<tr>	" +
+					"	<td width='80%'>	" +
+					"	<table width='100%'>		" +
+					"	<tr>			" +
+					"	<td width='3%'>&nbsp;</td>			" +
+					"	<td width='97%' style='font-family: Arial, Helvetica, sans-serif;font-size:12px;color:#161616;height:17px;'>Your salary for the month " +month+" "+year+" has been proceeded. Rs. "+netSalary+" has been transferred to your account. </td> " +
+					"	</tr>	" +
+					"	</table>" +
+					"	</td>	" +
+					"   </tr>	" +						
+					"	<tr>	" +
+					"	<td width='80%' style='font-family:Arial, Helvetica, sans-serif;font-weight: bold;;font-size:12px;color:#000000;padding:6px;'>Regards ,</td>	" +
+					"	</tr>	" +
+					"	<tr>	" +
+					"	<td width='80%' style='font-family:Arial, Helvetica, sans-serif;font-weight: bold;;font-size:12px;color:#000000;padding:6px;'>INFINITI INFOSYSTEMS</td>	" +
+					"	</tr>	" +
+					"	</table>";
+			String		subjectLine				=	" HR INFINITI";
+			boolean 	debug					=	true;
+			String[] 	to						=	{salarySlipBean.getMailIdForEmpolyee(empName)};
+			String[] 	cc						=	{};
+			String[] 	bcc						=	{};
+			String 		subject					=	subjectLine;
+			String 		text					=	mailBody;
+			String 		attachFile				=	"";
+			boolean		mailresult				=	sendMailBean.sendMailAttach("", "", "", "", "", debug, to, cc, bcc, subject, text, attachFile);
+						outputString			+=   mailresult==true?" MAIL SENT SUCCESSFULLY.":" MAIL SENDING FAILED.";
+					
+		}
+		catch(Exception e)
+		{
+			outputString = "ERROR";
+			System.out.println("ERROR In SalarySlipBean.sendSalaryProcessingMail :"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				outputString = "ERROR";
+				System.out.println("Exception While Closing The Connection in SalarySlipBean.sendSalaryProcessingMail :"+e);
+			}
+		}
+		return outputString;
+	}
+
+	/**
+	 * Method Name  : getMailIdForEmpolyee
+	 * Purpose		: To get Mail Id For Empolyee
+	 * @author		: Sourabh
+	 * Date			: 12/08/2013 
+	 * @param  
+	 */
+	
+	public String getMailIdForEmpolyee(String empName) 
+	{
+		String					outputString	=	"";
+		Connection				con			=	null;
+		Statement				st			=	null;
+		ResultSet				rs			=	null;
+		String					query		=	"";
+		try
+		{
+			query			=	" 	select	email_id from	employee_master" +
+								"	where	employee_name	=	'"+empName+"'";
+			con				=	dbConn.connect();
+			st				=	con.createStatement();
+			rs				=	st.executeQuery(query);
+			rs.next();
+			outputString	=	rs.getString(1);			
+		}
+		catch(Exception e)
+		{
+			System.out.println("Exception In NonSalaryPaymentBean.getMailIdForEmpolyee : "+e); 
+		}
+		return outputString;
+	}
+	
+	/**
+	 * Method Name  : sendProcessSalary
+	 * Purpose		: To send Process Salary
+	 * @author		: Sourabh
+	 * Date			: 12/08/2013 
+	 * @param  
+	 */
+
+	public String sendProcessSalary(String month, String year,String empId, String salSlipID, String username, String empName,String netSal){
+		String				outputString		=	"";
+		Connection			con					=	null;
+		PreparedStatement	pst					=	null;
+		String				query				=	"";		
+		SalarySlipBean		salarySlipBean		=	new SalarySlipBean();
+		
+		
+		try
+		{
+			query	=	"	update 	salary_slip_header " +
+						"	set 	salary_proceed	= 	?, " +
+						"			updatedby		=	?, " +
+						"			updatedon		= 	sysdate()" +
+						"	where	salaryslipid 	= 	? ";
+			
+			con		=	dbConn.connect();
+			pst		=	con.prepareStatement(query);
+					
+			pst.setString(1,"PROCEED");
+			pst.setString(2,username);
+			pst.setString(3,salSlipID);		
+			int result	=	pst.executeUpdate();
+			if(result>0)
+			{
+	
+				query	=	"	select 	sum(net_salary) " +
+							"	from 	salary_slip_header " +
+							"	where 	0 = 0 " +
+							"	and		salary_proceed	=	'PROCEED'";
+				if(month!=null && month.length()>0)
+				{
+				query	+= 	" 	and		month			=	'"+month+"'";
+				}
+				if(year!=null && year.length()>0)
+				{
+				query	+= " 	and		year			=	'"+year+"'";
+				}
+				if(empId!=null && empId.length()>0)
+				{
+				//query	+= " 	and		employeeid		=	'"+empId+"'";
+				}
+					
+					ResultSet rs		=	pst.executeQuery(query);
+					if(rs.next())
+					{	
+						outputString		=	rs.getString(1);
+					}	
+				}
+		}
+		catch(Exception e)
+		{
+			outputString = "ERROR";
+			System.out.println("ERROR In SalarySlipBean.sendSalaryProcessingMail :"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				outputString = "ERROR";
+				System.out.println("Exception While Closing The Connection in SalarySlipBean.sendSalaryProcessingMail :"+e);
+			}
+		}
+		return outputString;						
+	}
+	
+	
+	/**
+	 * Method Name  : generateMailBodyForSalaryProcessingList
+	 * Purpose		: To generate Mail Body For Salary Processing List
+	 * @author		: Sourabh
+	 * Date			: 12/08/2013 
+	 * @param  
+	 */
+	
+	public String generateMailBodyForSalaryProcessingList(String empId, String month, String year, String netSalary, String empName) 
+	{
+						
+			String 	mailBody	=	"<table width='90%' cellpadding='2' cellspacing='2'>	" +
+					"	<tr> " +
+					"	<td width='80%' style='font-family:Arial, Helvetica, sans-serif;font-weight: bold;;font-size:12px;color:#000000;padding:6px;'>Dear "+empName+",</td>	" +
+					"	</tr>	" +
+					"	<tr>	" +
+					"	<td width='80%'>	" +
+					"	<table width='100%'>		" +
+					"	<tr>			" +
+					"	<td width='3%'>&nbsp;</td>			" +
+					"	<td width='97%' style='font-family: Arial, Helvetica, sans-serif;font-size:12px;color:#161616;height:17px;'>Your salary for the month " +month+" "+year+" has been proceeded. Rs. "+netSalary+" has been transferred to your account. </td> " +
+					"	</tr>	" +
+					"	</table>" +
+					"	</td>	" +
+					"   </tr>	" +						
+					"	<tr>	" +
+					"	<td width='80%' style='font-family:Arial, Helvetica, sans-serif;font-weight: bold;;font-size:12px;color:#000000;padding:6px;'>Regards ,</td>	" +
+					"	</tr>	" +
+					"	<tr>	" +
+					"	<td width='80%' style='font-family:Arial, Helvetica, sans-serif;font-weight: bold;;font-size:12px;color:#000000;padding:6px;'>INFINITI INFOSYSTEMS</td>	" +
+					"	</tr>	" +
+					"	</table>";
+		
+		return mailBody;
+	}
+	
+}

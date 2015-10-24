@@ -1,0 +1,75 @@
+package com.inf.dvo.mbm.DAO.Master;
+
+import javax.servlet.http.HttpServletRequest;
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionMapping;
+
+
+public class ProjectForm extends ActionForm
+{
+
+	private static final long serialVersionUID = 1L;
+	private String	projectId;
+	private String	projectName;
+	private String	projectDesc;
+	private String	status; 
+	private String [] userArray;
+	private String  clientId;
+	private String  contactParsonId;
+	public void reset(ActionMapping mapping,HttpServletRequest request)
+	{
+		projectId			=	null;
+		projectName			=	null;
+		projectDesc			=	null;
+		status				=	null;
+		userArray			=	null;
+		clientId			=	null;
+		contactParsonId		=	null;
+	}
+	public String getProjectId() {
+		return projectId;
+	}
+	public void setProjectId(String projectId) {
+		this.projectId = projectId;
+	}
+	public String getProjectName() {
+		return projectName;
+	}
+	public void setProjectName(String projectName) {
+		this.projectName = projectName;
+	}
+	public String getProjectDesc() {
+		return projectDesc;
+	}
+	public void setProjectDesc(String projectDesc) {
+		this.projectDesc = projectDesc;
+	}
+	public String getStatus() {
+		return status;
+	}
+	public void setStatus(String status) {
+		this.status = status;
+	}
+	public String[] getUserArray() {
+		return userArray;
+	}
+	public void setUserArray(String[] userArray) {
+		this.userArray = userArray;
+	}
+	public String getClientId() {
+		return clientId;
+	}
+	public void setClientId(String clientId) {
+		this.clientId = clientId;
+	}
+	public String getContactParsonId() {
+		return contactParsonId;
+	}
+	public void setContactParsonId(String contactParsonId) {
+		this.contactParsonId = contactParsonId;
+	}
+	
+	
+	
+	
+}

@@ -1,0 +1,15 @@
+com.mysql.jdbc.JDBC4PreparedStatement@719726: 	insert into 	webinarmaster					(						webinarName,description, whocanBnft,areasCovered,  					price,status, time,eventDate,speakerid,					industryid,createdon, 					createdby,updatedby, updatedon					)					values					(					'test', 'test', 'test', 'test',					** NOT SPECIFIED **, 'upcoming',** NOT SPECIFIED **,'13/01/2015','9','2',sysdate(),'admin', 'admin', sysdate()					)
+ERROR In WebinarBean.saveWebinarMaster :java.sql.SQLException: No value specified for parameter 5
+com.mysql.jdbc.JDBC4PreparedStatement@1132f26: 	insert into     webinarmaster					(					webinarName, description, whocanBnft, 					areasCovered, singlePrice, multipleSinglePrice, 					CorporateLivePrice, recordedPrice, status, pdt, 					edt, eventDate, speakerid, industryid, createdby, 					createdon, updatedby, updatedon, duration)					values					(					'test', 'test', 'test', 					'test', '150', '200', 					'250', '300', 'upcoming', 'test', 					'06/01/2015', '9', '2', 'admin', 'admin', 					sysdate(), '12', sysdate(), ** NOT SPECIFIED **					)
+ERROR In UserBean.getDataForModify :com.mysql.jdbc.exceptions.jdbc4.MySQLSyntaxErrorException: Unknown column 'speaker_id' in 'where clause'
+ERROR In UserBean.getDataForModify :com.mysql.jdbc.exceptions.jdbc4.MySQLSyntaxErrorException: Unknown column 'speaker_id' in 'where clause'
+com.mysql.jdbc.JDBC4PreparedStatement@10c94c0: 	update  webinarmaster   	set		webinarName				=	'test edited', 			description				=	'2', 			whocanBnft				=	'12', 			areasCovered			=	'ACTIVE', 			singlePrice				=	'admin', 			multipleSinglePrice		=	'19', 			CorporateLivePrice		=	** NOT SPECIFIED **, 			recordedPrice			=	** NOT SPECIFIED **, 			type					=	** NOT SPECIFIED **, 			pdt						=	** NOT SPECIFIED **, 			edt						=	** NOT SPECIFIED **, 			eventDate				=	** NOT SPECIFIED **, 			speakerid				=	** NOT SPECIFIED **, 			industryid				=	** NOT SPECIFIED **, 			duration				=	** NOT SPECIFIED **, 			status					=	** NOT SPECIFIED **, 			updatedby				=	** NOT SPECIFIED **, 			updatedon				=	sysdate()	where	webinarid				=	** NOT SPECIFIED **
+ERROR In UserBean.modifyUserMaster:java.sql.SQLException: No value specified for parameter 7
+D:\ComplianceKey\SpeakerPics\Chrysanthemum.jpg (The system cannot find the file specified)
+D:\ComplianceKey\SpeakerPics\logo.jpg (The system cannot find the file specified)
+D:\ComplianceKey\SpeakerPics\-.jpg (The system cannot find the file specified)
+D:\ComplianceKey\SpeakerPics\logo.jpg (The system cannot find the file specified)
+D:\ComplianceKey\SpeakerPics\login_image.jpg (The system cannot find the file specified)
+D:\ComplianceKey\SpeakerPics\login_image.jpg (The system cannot find the file specified)
+D:\ComplianceKey\SpeakerPics\login_image.png (The system cannot find the file specified)
+D:\ComplianceKey\SpeakerPics\login_image.png (The system cannot find the file specified)

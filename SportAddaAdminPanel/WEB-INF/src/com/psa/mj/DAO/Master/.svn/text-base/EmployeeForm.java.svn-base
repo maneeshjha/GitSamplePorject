@@ -1,0 +1,515 @@
+package com.inf.dvo.mbm.DAO.Master;
+
+import javax.servlet.http.HttpServletRequest;
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionMapping;
+
+
+public class EmployeeForm extends ActionForm
+{
+
+	private static final long serialVersionUID = 1L;
+	private String	empCode;
+	private String	firstName;
+	private String	middleName;
+	private String	lastName;
+	private String	localAddr;
+	private String	localCity;
+	private String	localCityId;
+	private String	permanatAddr;
+	private String	peramantCity;
+	private String	peramantCityId;
+	private String	contactNo;
+	private String	emergencyContNo;
+	private String	emailId;
+	private String	qualificationId;
+	private String	qualificationYear;
+	private String	experince;
+	private String	departementId;
+	private String	designationId;
+	private String	joiningSal;
+	private String	bankNameId;
+	private String	bankBranchId;
+	private String	bankAccountNo;
+	private String	bankAccountName;
+	private String	sex;
+	private String	maritalStatus;
+	private String	bloodGroup;
+	private String	panCardNo;	
+	private String	status;
+	private String	currentSal;
+	private String	dob;
+	private String	departementName;
+	private String	joiningDate;
+	private String	checkBoxValue;
+	private String	empId;
+	private	String	empName;
+	private	String	joiningFromDate;
+	private	String	joiningToDate;
+	private String	paidEmp;
+	private	String	postingLocation;
+	private	String	pfAcNo;
+	private	String	esicAcNo;
+	private String	refName;
+	private String	refAddr;
+	private String	reltionWithEmp;
+	private String	refPhoneNo;
+	private String	refEmailId;
+	private	String	addtionInfo;
+	private String	salStrucName;
+	private String	salStructId;
+	private String	curretDate;
+	private String	spouseName;
+	private String	spouseBirthday;
+	private String	anniversaryDate;
+	private String	empCategoryId;
+	private String	year;
+	
+	public void reset(ActionMapping mapping,HttpServletRequest request)
+	{
+			empCode			=	null;
+			firstName		=	null;
+			middleName		=	null;
+			lastName		=	null;
+			localAddr		=	null;
+			localCity		=	null;
+			localCityId		=	null;
+			permanatAddr	=	null;
+			peramantCity	=	null;
+			peramantCityId	=	null;
+			contactNo		=	null;
+			emergencyContNo	=	null;
+			emailId			=	null;
+			qualificationId	=	null;
+			qualificationYear	=	null;
+			experince		=	null;
+			departementId	=	null;
+			designationId	=	null;
+			joiningSal		=	null;
+			bankNameId		=	null;
+			bankBranchId	=	null;
+			bankAccountNo	=	null;
+			bankAccountName	=	null;
+			sex				=	null;
+			maritalStatus	=	null;
+			bloodGroup		=	null;
+			panCardNo		=	null;	
+			status			=	null;
+			currentSal		=	null;
+			dob				=	null;
+			departementName	=	null;
+			joiningDate		=	null;
+			checkBoxValue	=	null;
+			empId			=	null;
+			empName			=	null;
+			joiningFromDate	=	null;
+			joiningToDate	=	null;
+			paidEmp			=	null;
+			postingLocation	=	null;
+			pfAcNo			=	null;
+			esicAcNo		=	null;
+			refName			=	null;
+			refAddr			=	null;
+			reltionWithEmp	=	null;
+			refPhoneNo		=	null;
+			refEmailId		=	null;
+			addtionInfo		=	null;
+			salStrucName	=	null;
+			salStructId		=	null;
+			curretDate		=	null;
+			spouseName		=	null;
+			spouseBirthday	=	null;
+			anniversaryDate	=	null;
+			empCategoryId	=	null;
+			year			=	null;
+	}
+	
+	public String getYear() {
+		return year;
+	}
+
+	public void setYear(String year) {
+		this.year = year;
+	}
+
+	public static long getSerialversionuid() {
+		return serialVersionUID;
+	}
+
+	public String getEmpCode() {
+		return empCode;
+	}
+	public void setEmpCode(String empCode) {
+		this.empCode = empCode;
+	}
+	public String getFirstName() {
+		return firstName;
+	}
+	public void setFirstName(String firstName) {
+		this.firstName = firstName;
+	}
+	public String getMiddleName() {
+		return middleName;
+	}
+	public void setMiddleName(String middleName) {
+		this.middleName = middleName;
+	}
+	public String getLastName() {
+		return lastName;
+	}
+	public void setLastName(String lastName) {
+		this.lastName = lastName;
+	}
+	public String getLocalAddr() {
+		return localAddr;
+	}
+	public void setLocalAddr(String localAddr) {
+		this.localAddr = localAddr;
+	}
+	public String getLocalCity() {
+		return localCity;
+	}
+	public void setLocalCity(String localCity) {
+		this.localCity = localCity;
+	}
+	public String getLocalCityId() {
+		return localCityId;
+	}
+	public void setLocalCityId(String localCityId) {
+		this.localCityId = localCityId;
+	}
+	public String getPermanatAddr() {
+		return permanatAddr;
+	}
+	public void setPermanatAddr(String permanatAddr) {
+		this.permanatAddr = permanatAddr;
+	}
+	public String getPeramantCity() {
+		return peramantCity;
+	}
+	public void setPeramantCity(String peramantCity) {
+		this.peramantCity = peramantCity;
+	}
+	public String getPeramantCityId() {
+		return peramantCityId;
+	}
+	public void setPeramantCityId(String peramantCityId) {
+		this.peramantCityId = peramantCityId;
+	}
+	public String getContactNo() {
+		return contactNo;
+	}
+	public void setContactNo(String contactNo) {
+		this.contactNo = contactNo;
+	}
+	public String getEmergencyContNo() {
+		return emergencyContNo;
+	}
+	public void setEmergencyContNo(String emergencyContNo) {
+		this.emergencyContNo = emergencyContNo;
+	}
+	public String getEmailId() {
+		return emailId;
+	}
+	public void setEmailId(String emailId) {
+		this.emailId = emailId;
+	}
+	public String getQualificationId() {
+		return qualificationId;
+	}
+	public void setQualificationId(String qualificationId) {
+		this.qualificationId = qualificationId;
+	}
+	public String getQualificationYear() {
+		return qualificationYear;
+	}
+	public void setQualificationYear(String qualificationYear) {
+		this.qualificationYear = qualificationYear;
+	}
+	public String getExperince() {
+		return experince;
+	}
+	public void setExperince(String experince) {
+		this.experince = experince;
+	}
+	public String getDepartementId() {
+		return departementId;
+	}
+	public void setDepartementId(String departementId) {
+		this.departementId = departementId;
+	}
+	public String getDesignationId() {
+		return designationId;
+	}
+	public void setDesignationId(String designationId) {
+		this.designationId = designationId;
+	}
+	public String getJoiningSal() {
+		return joiningSal;
+	}
+	public void setJoiningSal(String joiningSal) {
+		this.joiningSal = joiningSal;
+	}
+	public String getBankNameId() {
+		return bankNameId;
+	}
+	public void setBankNameId(String bankNameId) {
+		this.bankNameId = bankNameId;
+	}
+	public String getBankBranchId() {
+		return bankBranchId;
+	}
+	public void setBankBranchId(String bankBranchId) {
+		this.bankBranchId = bankBranchId;
+	}
+	public String getBankAccountNo() {
+		return bankAccountNo;
+	}
+	public void setBankAccountNo(String bankAccountNo) {
+		this.bankAccountNo = bankAccountNo;
+	}
+	public String getBankAccountName() {
+		return bankAccountName;
+	}
+	public void setBankAccountName(String bankAccountName) {
+		this.bankAccountName = bankAccountName;
+	}
+	public String getSex() {
+		return sex;
+	}
+	public void setSex(String sex) {
+		this.sex = sex;
+	}
+	public String getMaritalStatus() {
+		return maritalStatus;
+	}
+	public void setMaritalStatus(String maritalStatus) {
+		this.maritalStatus = maritalStatus;
+	}
+	public String getBloodGroup() {
+		return bloodGroup;
+	}
+	public void setBloodGroup(String bloodGroup) {
+		this.bloodGroup = bloodGroup;
+	}
+	public String getPanCardNo() {
+		return panCardNo;
+	}
+	public void setPanCardNo(String panCardNo) {
+		this.panCardNo = panCardNo;
+	}
+	public String getStatus() {
+		return status;
+	}
+	public void setStatus(String status) {
+		this.status = status;
+	}
+	public String getCurrentSal() {
+		return currentSal;
+	}
+
+	public void setCurrentSal(String currentSal) {
+		this.currentSal = currentSal;
+	}
+
+	public String getDob() {
+		return dob;
+	}
+
+	public void setDob(String dob) {
+		this.dob = dob;
+	}
+
+	public String getDepartementName() {
+		return departementName;
+	}
+
+	public void setDepartementName(String departementName) {
+		this.departementName = departementName;
+	}
+
+	public String getJoiningDate() {
+		return joiningDate;
+	}
+
+	public void setJoiningDate(String joiningDate) {
+		this.joiningDate = joiningDate;
+	}
+
+	public String getCheckBoxValue() {
+		return checkBoxValue;
+	}
+
+	public void setCheckBoxValue(String checkBoxValue) {
+		this.checkBoxValue = checkBoxValue;
+	}
+
+	public String getEmpId() {
+		return empId;
+	}
+
+	public void setEmpId(String empId) {
+		this.empId = empId;
+	}
+
+	public String getEmpName() {
+		return empName;
+	}
+
+	public void setEmpName(String empName) {
+		this.empName = empName;
+	}
+
+	public String getJoiningFromDate() {
+		return joiningFromDate;
+	}
+
+	public void setJoiningFromDate(String joiningFromDate) {
+		this.joiningFromDate = joiningFromDate;
+	}
+
+	public String getJoiningToDate() {
+		return joiningToDate;
+	}
+
+	public void setJoiningToDate(String joiningToDate) {
+		this.joiningToDate = joiningToDate;
+	}
+
+	public String getPaidEmp() {
+		return paidEmp;
+	}
+
+	public void setPaidEmp(String paidEmp) {
+		this.paidEmp = paidEmp;
+	}
+	public String getPfAcNo() {
+		return pfAcNo;
+	}
+
+	public void setPfAcNo(String pfAcNo) {
+		this.pfAcNo = pfAcNo;
+	}
+
+	public String getEsicAcNo() {
+		return esicAcNo;
+	}
+
+	public void setEsicAcNo(String esicAcNo) {
+		this.esicAcNo = esicAcNo;
+	}
+
+	public String getRefName() {
+		return refName;
+	}
+
+	public void setRefName(String refName) {
+		this.refName = refName;
+	}
+
+	public String getRefAddr() {
+		return refAddr;
+	}
+
+	public void setRefAddr(String refAddr) {
+		this.refAddr = refAddr;
+	}
+
+	public String getReltionWithEmp() {
+		return reltionWithEmp;
+	}
+
+	public void setReltionWithEmp(String reltionWithEmp) {
+		this.reltionWithEmp = reltionWithEmp;
+	}
+
+	public String getRefPhoneNo() {
+		return refPhoneNo;
+	}
+
+	public void setRefPhoneNo(String refPhoneNo) {
+		this.refPhoneNo = refPhoneNo;
+	}
+
+	public String getRefEmailId() {
+		return refEmailId;
+	}
+
+	public void setRefEmailId(String refEmailId) {
+		this.refEmailId = refEmailId;
+	}
+
+	public String getAddtionInfo() {
+		return addtionInfo;
+	}
+
+	public void setAddtionInfo(String addtionInfo) {
+		this.addtionInfo = addtionInfo;
+	}
+
+	public String getPostingLocation() {
+		return postingLocation;
+	}
+
+	public void setPostingLocation(String postingLocation) {
+		this.postingLocation = postingLocation;
+	}
+
+	public String getSalStrucName() {
+		return salStrucName;
+	}
+
+	public void setSalStrucName(String salStrucName) {
+		this.salStrucName = salStrucName;
+	}
+
+	public String getSalStructId() {
+		return salStructId;
+	}
+
+	public void setSalStructId(String salStructId) {
+		this.salStructId = salStructId;
+	}
+
+	public String getCurretDate() {
+		return curretDate;
+	}
+
+	public void setCurretDate(String curretDate) {
+		this.curretDate = curretDate;
+	}
+
+	public String getSpouseName() {
+		return spouseName;
+	}
+
+	public void setSpouseName(String spouseName) {
+		this.spouseName = spouseName;
+	}
+
+	public String getSpouseBirthday() {
+		return spouseBirthday;
+	}
+
+	public void setSpouseBirthday(String spouseBirthday) {
+		this.spouseBirthday = spouseBirthday;
+	}
+
+	public String getAnniversaryDate() {
+		return anniversaryDate;
+	}
+
+	public void setAnniversaryDate(String anniversaryDate) {
+		this.anniversaryDate = anniversaryDate;
+	}
+
+	public String getEmpCategoryId() {
+		return empCategoryId;
+	}
+
+	public void setEmpCategoryId(String empCategoryId) {
+		this.empCategoryId = empCategoryId;
+	}
+	
+	
+}

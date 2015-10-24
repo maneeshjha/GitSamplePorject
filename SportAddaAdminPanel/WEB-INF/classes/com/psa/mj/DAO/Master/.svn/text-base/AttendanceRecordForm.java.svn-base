@@ -1,0 +1,98 @@
+package com.inf.dvo.mbm.DAO.Master;
+
+import javax.servlet.http.HttpServletRequest;
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionMapping;
+import org.apache.struts.upload.FormFile;
+
+
+public class AttendanceRecordForm extends ActionForm
+{
+
+	private static final long serialVersionUID = 1L;
+	private String		month;
+	private String		year;
+	private String		workingDay;
+	private FormFile	uploadFile;
+	private	String		currentMonth;
+	private	String		currentYear;
+	private	String		empId ;
+	private	String		empName;
+	
+	public void reset(ActionMapping mapping,HttpServletRequest request)
+	{
+		month			=	null;
+		year			=	null;
+		workingDay		=	null;
+		currentMonth	=	null;
+		currentYear		=	null;
+		empId			=	null;
+		empName			=	null;
+	}
+
+	public String getMonth() {
+		return month;
+	}
+
+	public void setMonth(String month) {
+		this.month = month;
+	}
+
+	public String getYear() {
+		return year;
+	}
+
+	public void setYear(String year) {
+		this.year = year;
+	}
+
+	public String getWorkingDay() {
+		return workingDay;
+	}
+
+	public void setWorkingDay(String workingDay) {
+		this.workingDay = workingDay;
+	}
+	
+	public FormFile getUploadFile() {
+		return uploadFile;
+	}
+
+	public void setUploadFile(FormFile uploadFile) {
+		this.uploadFile = uploadFile;
+	}
+
+	public String getCurrentMonth() {
+		return currentMonth;
+	}
+
+	public void setCurrentMonth(String currentMonth) {
+		this.currentMonth = currentMonth;
+	}
+
+	public String getCurrentYear() {
+		return currentYear;
+	}
+
+	public void setCurrentYear(String currentYear) {
+		this.currentYear = currentYear;
+	}
+
+	public String getEmpId() {
+		return empId;
+	}
+
+	public void setEmpId(String empId) {
+		this.empId = empId;
+	}
+
+	public String getEmpName() {
+		return empName;
+	}
+
+	public void setEmpName(String empName) {
+		this.empName = empName;
+	}
+	
+	
+}

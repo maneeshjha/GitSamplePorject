@@ -1,0 +1,279 @@
+package com.inf.dvo.mbm.actions.Master;
+
+import java.io.IOException;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionForward;
+import org.apache.struts.action.ActionMapping;
+
+import com.inf.dvo.mbm.Bean.CommonMethodBean;
+import com.inf.dvo.mbm.Bean.Master.CityBean;
+import com.inf.dvo.mbm.Bean.Master.CompanyBean;
+import com.inf.dvo.mbm.DAO.CommonForm;
+import com.inf.dvo.mbm.DAO.Master.CityForm;
+import com.inf.dvo.mbm.DAO.Master.CompanyForm;
+import com.inf.dvo.mbm.actions.CMGMTDispatchAction;
+
+
+public class CompanyAction extends  CMGMTDispatchAction
+{
+	
+	/**
+	 * Action Name 	: showCompanyMasterListPage
+	 * Purpose		: To showCompanyMasterListPage
+	 * @author		: Prashant
+	 * Date			: 20/04/2012
+	 */
+	public ActionForward showCompanyMasterListPage(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		CompanyForm		companyForm		=	(CompanyForm)form;
+		companyForm.reset(mapping, request);
+		HttpSession				session				=	request.getSession();
+		CommonMethodBean		commonMethodBean	=	new CommonMethodBean();
+		String rarId		=	"18";
+		String userProcess	=	(String)session.getAttribute("userProcess");		
+		String validLink	=	commonMethodBean.getValidOrNot(userProcess, ","+rarId+",");
+		if(validLink!=null && validLink.equalsIgnoreCase("NOTVALID"))
+		{
+			return mapping.findForward("invalid");
+		}
+		return mapping.findForward("showCompanyMasterListPage");
+	}
+	
+	/**
+	 * Action Name 	: showSearchCompanyMasterList
+	 * Purpose		: To showSearchCompanyMasterList 
+	 * @author		: Prashant
+	 * Date			: 20/03/2012
+	 */
+	
+	public ActionForward showSearchCompanyMasterList(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		CompanyForm		companyForm		=	(CompanyForm)form;
+		CompanyBean		companyBean		=	new CompanyBean();
+		ArrayList<CommonForm> dataList		=	companyBean.getSearchCompanyList(companyForm);
+		if(dataList!= null && dataList.size() > 0)
+		{
+			request.setAttribute("reqCompanyMasterList",dataList);
+		}
+		else
+		{
+			request.setAttribute("msgType", "FAIL");
+			request.setAttribute("saveResult", "NO DATA FOUND.");
+		}
+		return mapping.findForward("showCompanyMasterListPage");
+	}
+	
+	/**
+	 * Action Name 	: showCompanyMasterPage
+	 * Purpose		: To showCompanyMasterPage
+	 * @author		: Prashant
+	 * Date			: 20/04/2012
+	 */
+	
+	public ActionForward showCompanyMasterPage(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		CompanyForm		companyForm		=	(CompanyForm)form;
+		companyForm.reset(mapping, request);
+		companyForm.setStatus("ACTIVE");		
+		request.setAttribute("actions","add");
+		
+		return mapping.findForward("showCompanyMasterPage");
+	}
+	
+	/**
+	 * Action Name 	: saveCompanyMaster
+	 * Purpose		: To saveCompanyMaster
+	 * @author		: Prashant
+	 * Date			: 20/04/2012
+	 */
+	
+	public ActionForward saveCompanyMaster(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		HttpSession	session			=	request.getSession();
+		
+		CompanyForm		companyForm		=	(CompanyForm)form;
+		CompanyBean		companyBean		=	new CompanyBean();
+		
+		String		mappingString	=	"ERROR";
+		String		mode			=	request.getParameter("mode");
+		String		userName		=	(String)session.getAttribute("username");
+		
+		String		saveResult		=	companyBean.saveCompanyMaster(companyForm,userName);
+		
+		if(saveResult!= null && saveResult.length() > 0 && !saveResult.equalsIgnoreCase("ERROR"))
+		{
+				String	msgType		=	saveResult.substring(0,4);
+				saveResult			=	saveResult.substring(5,saveResult.length());
+				
+				request.setAttribute("msgType",msgType);
+				request.setAttribute("saveResult",saveResult);
+				
+				if(msgType!= null && msgType.length() > 0 && msgType.equals("PASS"))
+				{
+					if(mode!= null && mode.length() > 0 && mode.equalsIgnoreCase("SAVE"))
+					{
+						mappingString	=	"showCompanyMasterPage";
+						companyForm.reset(mapping, request);
+						
+						companyForm.setStatus("ACTIVE");
+						request.setAttribute("actions","add");
+					}
+					else if(mode!= null && mode.length() > 0 && mode.equalsIgnoreCase("SAVEEXIT"))
+					{
+						mappingString	=	"showCompanyMasterListPage";
+						companyForm.reset(mapping, request);
+						request.setAttribute("actions","add");
+					}
+						
+				}
+				else if(msgType!= null && msgType.length() > 0 && msgType.equals("FAIL"))
+				{
+					mappingString	=	"showCompanyMasterPage";
+					request.setAttribute("actions","add");
+				}
+		}
+		return mapping.findForward(mappingString);
+	}
+	
+	
+	/**
+	 * Action Name 	: showModifyCompanyMaster
+	 * Purpose		: To showModifyCompanyMaster
+	 * @author		: Prashant
+	 * Date			: 21/03/2012
+	 */
+	
+	public ActionForward showModifyCompanyMaster(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		
+		CompanyForm		companyForm		=	(CompanyForm)form;
+		CompanyBean		companyBean		=	new CompanyBean();
+		
+		String		companyId	=	request.getParameter("compId")!= null && request.getParameter("compId").length() > 0 ? request.getParameter("compId") : "";
+		
+		ArrayList<CommonForm> modifyData	=	companyBean.getDataForModify(companyId);
+		if(modifyData!= null && modifyData.size() > 0)
+		{
+			//com.companyid, com.companyname, com.address1, com.address2, com.address3, com.countryid,cm.country_name, " +
+			//com.stateid,sm.state_name,com.cityid,cmst.city_name,com.pincode, com.contactno, com.status 
+			CommonForm	cForm	=	modifyData.get(0);
+			companyForm.setCompanyId(cForm.getField1());
+			companyForm.setCompanyName(cForm.getField2());
+			companyForm.setAddr1(cForm.getField3());
+			companyForm.setAddr2(cForm.getField4());
+			companyForm.setAddr3(cForm.getField5());
+			companyForm.setCountryId(cForm.getField6());
+			companyForm.setCountryName(cForm.getField7());
+			companyForm.setStateId(cForm.getField8());
+			companyForm.setStateName(cForm.getField9());
+			companyForm.setCityId(cForm.getField10());
+			companyForm.setCityName(cForm.getField11());
+			companyForm.setPincode(cForm.getField12());
+			companyForm.setContactNo(cForm.getField13());
+			companyForm.setStatus(cForm.getField14());
+		}
+		
+		request.setAttribute("actions","edit");
+		
+		return mapping.findForward("showCompanyMasterPage");
+	}
+	
+	/**
+	 * Action Name 	: modifyCompanyMaster
+	 * Purpose		: To modifyCompanyMaster
+	 * @author		: Prashant
+	 * Date			: 21/04/2012
+	 */
+	
+	public ActionForward modifyCompanyMaster(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		HttpSession	session		=	request.getSession();
+		
+		CompanyForm		companyForm		=	(CompanyForm)form;
+		CompanyBean		companyBean		=	new CompanyBean();
+		
+		String		mappingString	=	"ERROR";
+		String		userName		=	(String)session.getAttribute("username");
+		
+		String		saveResult		=	companyBean.modifyCompanyMaster(companyForm,userName);
+		
+		if(saveResult!= null && saveResult.length() > 0 && !saveResult.equalsIgnoreCase("ERROR"))
+		{
+				String	msgType		=	saveResult.substring(0,4);
+				saveResult			=	saveResult.substring(5,saveResult.length());
+				request.setAttribute("msgType",msgType);
+				request.setAttribute("saveResult",saveResult);
+				
+				if(msgType!= null && msgType.length() > 0 && msgType.equals("PASS"))
+				{
+					companyForm.reset(mapping, request);
+					mappingString	=	"showCompanyMasterListPage";
+				}
+				else if(msgType!= null && msgType.length() > 0 && msgType.equals("FAIL"))
+				{
+					mappingString	=	"showCompanyMasterPage";
+					request.setAttribute("actions","edit");
+				}
+		}
+		return mapping.findForward(mappingString);
+	}
+	
+	/**
+	 * Action Name 	: deleteCity
+	 * Purpose		: To deleteCity
+	 * @author		: Prashant
+	 * Date			: 09/03/2012
+	 */
+	
+	public ActionForward deleteCity(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		CityForm	cityForm	=	(CityForm)form;
+		CityBean	cityBean	=	new CityBean();
+		
+		String		mappingString	=	"ERROR";
+		
+		String		cityId			=	request.getParameter("city_id");
+		String		cityName		=	request.getParameter("city_name");
+		
+		String		saveResult		=	cityBean.deleteCity(cityId,cityName);
+		
+		if(saveResult != null && saveResult.length() > 0 && !saveResult.equalsIgnoreCase("ERROR"))
+		{
+			String	msgType		=	saveResult.substring(0,4);
+			saveResult			=	saveResult.substring(5,saveResult.length());
+			request.setAttribute("msgType",msgType);
+			request.setAttribute("saveResult",saveResult);
+			
+			if(msgType!= null && msgType.length() > 0 && msgType.equals("PASS"))
+			{
+				//cityForm.reset(mapping, request);
+				mappingString	=	"showCityListPage";
+				
+				ArrayList<CommonForm> dataList		=	cityBean.getSearchCityList(cityForm);
+				if(dataList!= null && dataList.size() > 0)
+				{
+					request.setAttribute("reqCityMasterList",dataList);
+				}
+			}
+			else if(msgType!= null && msgType.length() > 0 && msgType.equals("FAIL"))
+			{
+				mappingString	=	"showCityListPage";
+				
+				ArrayList<CommonForm> dataList		=	cityBean.getSearchCityList(cityForm);
+				if(dataList!= null && dataList.size() > 0)
+				{
+					request.setAttribute("reqCityMasterList",dataList);
+				}
+				
+			}
+			
+		}
+		return mapping.findForward(mappingString);
+	}
+	
+}

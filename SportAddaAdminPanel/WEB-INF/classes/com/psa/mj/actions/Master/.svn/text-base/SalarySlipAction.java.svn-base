@@ -1,0 +1,809 @@
+package com.inf.dvo.mbm.actions.Master;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.sql.SQLException;
+import java.util.ArrayList;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionForward;
+import org.apache.struts.action.ActionMapping;
+import org.json.JSONException;
+import org.json.JSONStringer;
+
+import com.inf.dvo.mbm.Bean.CommonMethodBean;
+import com.inf.dvo.mbm.Bean.SendMailBean;
+import com.inf.dvo.mbm.Bean.Master.AttendanceRecordBean;
+import com.inf.dvo.mbm.Bean.Master.NonSalaryPaymentBean;
+import com.inf.dvo.mbm.Bean.Master.SalarySlipBean;
+import com.inf.dvo.mbm.DAO.CommonForm;
+import com.inf.dvo.mbm.DAO.Master.SalarySlipForm;
+import com.inf.dvo.mbm.actions.CMGMTDispatchAction;
+
+
+public class SalarySlipAction extends  CMGMTDispatchAction
+{
+	
+	/**
+	 * Action Name 	: showSalarySlipPage
+	 * Purpose		: To showSalarySlipPage
+	 * @author		: Prashant
+	 * Date			: 16/04/2012
+	 */
+	
+	public ActionForward showSalarySlipPage(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		CommonMethodBean		commonMethodBean	=	new CommonMethodBean();
+		AttendanceRecordBean	arBean				=	new AttendanceRecordBean();
+		String					sysdate				=	commonMethodBean.getDate();
+		HttpSession				session				=	request.getSession();
+		
+		String[]			date				=	sysdate.split("/");
+		int					year				=	Integer.parseInt(date[2]);
+		int	[]				yearArray			=	new int[5];
+		
+		yearArray[0]		=	year-4;
+		yearArray[1]		=	year-3;
+		yearArray[2]		=	year-2;
+		yearArray[3]		=	year-1;
+		yearArray[4]		=	year;
+		
+		ArrayList<CommonForm>	yearList	=	arBean.getYearList(yearArray);
+		if(yearList!= null && yearList.size() > 0)
+		{
+			request.setAttribute("reqYearList", yearList);
+		}
+		String rarId		=	"23";
+		String userProcess	=	(String)session.getAttribute("userProcess");
+		
+		String validLink	=	commonMethodBean.getValidOrNot(userProcess, ","+rarId+",");
+		if(validLink!=null && validLink.equalsIgnoreCase("NOTVALID"))
+		{
+			return mapping.findForward("invalid");
+		}
+		
+		return	mapping.findForward("showSalarySlipPage");
+	}
+	
+	/**
+	 * Action Name 	: getfileUploadCount
+	 * Purpose		: To getfileUploadCount
+	 * @author		: Prashant
+	 * Date			: 16/04/2012
+	 */
+	
+	public ActionForward getfileUploadCount(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		PrintWriter				writer				=	response.getWriter();
+		AttendanceRecordBean	arBean				=	new AttendanceRecordBean();
+		String					outputString		=	"";
+		String					month				=	request.getParameter("month");
+		String					year				=	request.getParameter("year");
+		int						fileUploadCount		=	arBean.getCountOfMonthWiseYear(month, year);
+		if(fileUploadCount > 0)
+		{
+			outputString	=	"PASS";
+		}
+		else
+		{
+			outputString	=	"FAIL";
+		}
+		writer.print(outputString);
+		return	mapping.findForward(null);
+	}
+	
+	/**
+	 * Action Name 	: generateSalarySlip
+	 * Purpose		: To generateSalarySlip
+	 * @author		: Prashant
+	 * Date			: 16/04/2012
+	 */
+	
+	public ActionForward generateSalarySlip(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		HttpSession				session				=	request.getSession();
+		String					mappingString		=	"ERROR";
+		CommonMethodBean		commonMethodBean	=	new CommonMethodBean();
+		AttendanceRecordBean	arBean				=	new AttendanceRecordBean();
+		String					sysdate				=	commonMethodBean.getDate();
+		SalarySlipForm			salarySlipForm		=	(SalarySlipForm)form;
+		SalarySlipBean			salarySlipBean		=	new SalarySlipBean();
+		
+		String				userName			=	(String)session.getAttribute("username");
+		String				mode				=	request.getParameter("mode");
+		String				month				=	salarySlipForm.getMonth();
+		String				year				=	salarySlipForm.getYear();
+		ArrayList<CommonForm>  dataList			=	salarySlipBean.getdataForInsertion(month,year);
+		if(dataList!= null && dataList.size() > 0)
+		{
+			String			saveResult			=	salarySlipBean.generateSalarySlip(dataList,userName,mode);
+			if(saveResult!= null && saveResult.length() > 0 && !saveResult.equalsIgnoreCase("ERROR"))
+			{
+				String		msgType				=	saveResult.substring(0, 4);
+				saveResult						=	saveResult.substring(5, saveResult.length());
+				
+				request.setAttribute("msgType",msgType);
+				request.setAttribute("saveResult",saveResult);
+				
+				if(msgType!= null && msgType.length() > 0 && msgType.equals("PASS"))
+				{
+					String				empId				=	"";//salarySlipForm.getEmpId();//request.getParameter("empId");
+					ArrayList<CommonForm> headerList		=	salarySlipBean.getHeaderDetailsForSalarySlip(empId,month,year);
+					if(headerList!=null && headerList.size() > 0)
+					{
+							
+						request.setAttribute("reqHeaderList", headerList);
+					}	
+					mappingString	=	"showSalarySlipPage";
+				
+				}
+			}
+		}
+		else
+		{
+			mappingString	=	"showSalarySlipPage";
+			
+			request.setAttribute("msgType","FAIL");
+			request.setAttribute("saveResult","THERE IS NO EMPLOYEE AVAILABLE TO GENERATE SALARY SLIP.");
+		}
+		
+		String[]			date				=	sysdate.split("/");
+		int					yearVal				=	Integer.parseInt(date[2]);
+		int	[]				yearArray			=	new int[5];
+		
+		yearArray[0]		=	yearVal-4;
+		yearArray[1]		=	yearVal-3;
+		yearArray[2]		=	yearVal-2;
+		yearArray[3]		=	yearVal-1;
+		yearArray[4]		=	yearVal;
+		
+		ArrayList<CommonForm>	yearList	=	arBean.getYearList(yearArray);
+		if(yearList!= null && yearList.size() > 0)
+		{
+			request.setAttribute("reqYearList", yearList);
+		}
+		
+		return	mapping.findForward(mappingString);
+	}
+	
+	/**
+	 * Action Name 	: getMonth_YearWiseUploadCount
+	 * Purpose		: To getMonth_YearWiseUploadCount
+	 * @author		: Prashant
+	 * Date			: 17/04/2012
+	 */
+	public ActionForward getMonth_YearWiseUploadCount(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		PrintWriter				writer				=	response.getWriter();
+		SalarySlipBean			salarySlipBean		=	new SalarySlipBean();
+		String					outputString		=	"";
+		String					month				=	request.getParameter("month");
+		String					year				=	request.getParameter("year");
+		
+		int						count				=	salarySlipBean.getMonth_YearWiseUploadCount(month,year);
+		if(count > 0)
+		{
+			outputString	=	"YES";
+		}
+		else
+		{
+			outputString	=	"NO";
+		}
+		
+		writer.print(outputString);
+		return mapping.findForward(null);
+	}	
+	
+	/**
+	 * Action Name 	: showPrintSalarySlipPage
+	 * Purpose		: To showPrintSalarySlipPage
+	 * @author		: Prashant
+	 * Date			: 19/04/2012
+	 */
+	public ActionForward showPrintSalarySlipPage(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		HttpSession				session				=	request.getSession();
+		CommonMethodBean		commonMentBean		=	new CommonMethodBean();
+		SalarySlipForm			salarySlipFrom		=	(SalarySlipForm)form;
+		AttendanceRecordBean	arBean				=	new AttendanceRecordBean();
+		CommonMethodBean		commonMethodBean	=	new CommonMethodBean();
+		salarySlipFrom.reset(mapping, request);
+		
+		String		sysdate		=		commonMethodBean.getDate();
+		String[]	date		=		sysdate.split("/");
+		
+		int			monthId		=		Integer.parseInt(date[1])-1;
+		int			year		=		Integer.parseInt(date[2]);
+		
+		String[]	monthArray	=		new String[12];	
+		
+		String	monthName		=	arBean.getMonthForInt((monthId));
+		
+		if(monthName != null && monthName.length() > 0 && !monthName.equals("invalid"))
+		{
+			int dispMonth   =   0;
+			int arrayCnt    =   0;
+			for(int i=dispMonth;i <= 11;i++)
+			{
+			    //monthId		=		Integer.parseInt(date[1]);
+			    monthId		=		i;
+			    if(monthId < 0)
+			    {
+			        monthId		=		12  +   monthId;
+			    }
+			    monthName               =	arBean.getMonthForInt(monthId);
+			    monthArray[arrayCnt]	=	monthName;
+			    arrayCnt++;
+			}
+			
+			/*for(int i=1;i< 3;i++)
+			{
+				boolean		flag	=	true;
+				monthId		=		Integer.parseInt(date[1])-1;
+				if(monthId	== 0)
+				{
+					flag	=	false;
+					if(i == 1)
+					{
+						monthId			=	10;
+						monthName		=	arBean.getMonthForInt(monthId);
+						monthArray[i-1]	=	monthName;
+					}
+					else
+					{
+						monthId			=	11;
+						monthName		=	arBean.getMonthForInt(monthId);
+						monthArray[i-1]	=	monthName;
+					}
+				}	
+				if(monthId	== 1)
+				{
+					if(i==1)
+					{
+						flag			=	false;
+						monthId			=	11;
+						monthName		=	arBean.getMonthForInt(monthId);
+						monthArray[i-1]	=	monthName;
+					}
+				}
+				if(flag	==	true)
+				{	
+					monthId			=	Integer.parseInt(date[1])-1;
+					if(i==1)
+					{	
+						monthId			=	monthId	-(i+1);//monthId - 2
+					}
+					else
+					{
+						monthId			=	monthId -(i-1);//monthId - 1
+					}
+					monthName		=	arBean.getMonthForInt(monthId);
+					monthArray[i-1]	=	monthName;
+					monthId			=	0;
+				}
+			}
+			monthId					=	Integer.parseInt(date[1])-1;
+			monthName				=	arBean.getMonthForInt(monthId);
+			monthArray[2]			=	monthName;*/
+			
+			
+			ArrayList<CommonForm> monthList		=	arBean.getMonthList(monthArray);
+			if(monthList!= null && monthList.size() > 0)
+			{
+				request.setAttribute("reqMonthList", monthList);
+				monthId					=	Integer.parseInt(date[1])-1;
+				if(monthId == 0)
+				{
+					monthId					=	11;
+					monthName				=	arBean.getMonthForInt(monthId);
+				}
+				else
+				{	
+					monthId					=	Integer.parseInt(date[1])-2;
+					monthName				=	arBean.getMonthForInt(monthId);
+				}
+				salarySlipFrom.setMonth(monthName);
+			}
+		}
+		
+		int	[]	yearArray	=	new int[3];
+		yearArray[0]		=	year-2;
+		yearArray[1]		=	year-1;
+		yearArray[2]		=	year;
+		
+		
+		ArrayList<CommonForm> yearList	=	arBean.getYearList(yearArray);
+		if(yearList!= null && yearList.size() > 0)
+		{
+			request.setAttribute("reqYearList", yearList);
+			String month	=	salarySlipFrom.getMonth();
+			if(month!= null && month.length() > 0 && month.equalsIgnoreCase("December"))
+			{
+				salarySlipFrom.setYear(""+(year-1));
+			}
+			else
+			{
+				salarySlipFrom.setYear(""+year);
+			}	
+		}
+		
+		String	userName	=	(String)session.getAttribute("username");
+		String	userType	=	commonMethodBean.getDataOnOneCondition("usermst", "usertype", "user_name", userName);
+		if(userType!=null && userType.length() > 0 && userType.equals("EMPLOYEE"))
+		{
+			String	employeeId		=	commonMethodBean.getDataOnOneCondition("usermst", "employeeid", "user_name", userName);
+			salarySlipFrom.setEmpId(employeeId);
+			String	employeeName	=	commonMethodBean.getDataOnOneCondition("usermst", "display_name", "user_name", userName);
+			salarySlipFrom.setEmpName(employeeName);
+			request.setAttribute("reqDisabled", "true");
+		}
+		
+		String rarId		=	"24";
+		String userProcess	=	(String)session.getAttribute("userProcess");
+		
+		String validLink	=	commonMethodBean.getValidOrNot(userProcess, ","+rarId+",");
+		if(validLink!=null && validLink.equalsIgnoreCase("NOTVALID"))
+		{
+			return mapping.findForward("invalid");
+		}
+		
+		return mapping.findForward("showPrintSalarySlipPage");
+	}
+	
+	/**
+	 * Action Name 	: proceedForPrintSalarySlipPage
+	 * Purpose		: To proceedForPrintSalarySlipPage
+	 * @author		: Prashant
+	 * Date			: 19/04/2012
+	 */
+	public ActionForward proceedForPrintSalarySlipPage(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		SalarySlipForm		salarySlipForm		=	(SalarySlipForm)form;
+		SalarySlipBean		salarySlipBean		=	new SalarySlipBean();
+		HttpSession			session				=	request.getSession();
+		/*CommonMethodBean	commonMethodBean	=	new	CommonMethodBean();*/
+		/*salarySlipForm.setYear(salarySlipForm.getYear());
+		salarySlipForm.setMonth(salarySlipForm.getMonth());
+		salarySlipForm.setEmpId(salarySlipForm.getEmpId());*/
+		String				empType				=	(String)session.getAttribute("userType");
+		String				empId				=	"";//salarySlipForm.getEmpId();//request.getParameter("empId");
+		String				month				=	salarySlipForm.getMonth();//request.getParameter("month");
+		String				year				=	salarySlipForm.getYear();//request.getParameter("year");
+		if(empType!=null && empType.equalsIgnoreCase("EMPLOYEE"))
+		{
+			empId			=	(String)session.getAttribute("empID");
+			if(empId==null)
+			{
+				empId	=	"0";
+			}
+		}else
+		{
+			empId				=	salarySlipForm.getEmpId();//request.getParameter("empId");
+		}
+		ArrayList<CommonForm> headerList		=	salarySlipBean.getHeaderDetailsForSalarySlip(empId,month,year);
+		if(headerList!=null && headerList.size() > 0)
+		{
+				
+			request.setAttribute("reqHeaderList", headerList);
+		}
+		/*String rarId		=	"23";
+		String userProcess	=	(String)session.getAttribute("userProcess");
+		
+		String validLink	=	commonMethodBean.getValidOrNot(userProcess, ","+rarId+",");
+		if(validLink!=null && validLink.equalsIgnoreCase("NOTVALID"))
+		{
+			return mapping.findForward("invalid");
+		}*/
+		return mapping.findForward("proceedForPrintSalarySlipPage");
+	}
+	
+	/**
+	 * Action Name 	: printSalarySlip
+	 * Purpose		: To printSalarySlip
+	 * @author		: Prashant
+	 * Date			: 19/04/2012
+	 */
+	public ActionForward printSalarySlip(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		/*CommonMethodBean	commonMethodBean	=	new CommonMethodBean();*/
+		HttpSession			session				=	request.getSession();
+		SalarySlipForm		salarySlipForm		=	(SalarySlipForm)form;
+		SalarySlipBean		salarySlipBean		=	new SalarySlipBean();		
+		String				empId				=	"";
+		String				month				=	salarySlipForm.getMonth();//request.getParameter("month");
+		String				year				=	salarySlipForm.getYear();//request.getParameter("year");
+		String 				empType				=	(String)session.getAttribute("userType");
+		if(empType!=null && empType.equalsIgnoreCase("EMPLOYEE"))
+		{
+			empId			=	(String)session.getAttribute("empID");
+			if(empId==null)
+			{
+				empId	=	"0";
+			}
+		}else
+		{
+			empId				=	salarySlipForm.getEmpId();//request.getParameter("empId");
+		}
+		
+		
+		ArrayList<CommonForm> headerList		=	salarySlipBean.getHeaderDetailsForSalarySlip(empId,month,year);
+		if(headerList!=null && headerList.size() > 0)
+		{
+				
+			request.setAttribute("reqHeaderList", headerList);
+			request.setAttribute("reqMonth", month);
+			request.setAttribute("reqYear", year);
+		}
+		
+			
+		return mapping.findForward("SalarySlipPrintPopUp");
+	}
+	
+	/**
+	 * Action Name 	: getActiveCompanyCount
+	 * Purpose		: To getActiveCompanyCount
+	 * @author		: Prashant
+	 * Date			: 20/04/2012
+	 */
+	public ActionForward getActiveCompanyCount(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		PrintWriter			writer				=	response.getWriter();
+		SalarySlipBean		salarySlipBean		=	new SalarySlipBean();	
+		String				outputString		=	"";
+		int					activeCompanyCount	=	salarySlipBean.getActiveCompanyCount();
+		if(activeCompanyCount > 0)
+		{
+			outputString	=	"YES";
+		}
+		else
+		{
+			outputString	=	"NO";
+		}
+		writer.print(outputString);
+		return null;
+	}
+	
+	/**
+	 * Action Name 	: getSalarySlipCountAgainstEmployee
+	 * Purpose		: To getSalarySlipCountAgainstEmployee
+	 * @author		: Prashant
+	 * Date			: 25/04/2012
+	 */
+	public ActionForward getSalarySlipCountAgainstEmployee(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		SalarySlipForm		salarySlipForm		=	(SalarySlipForm)form;
+		PrintWriter			writer				=	response.getWriter();
+		SalarySlipBean		salarySlipBean		=	new SalarySlipBean();	
+		String				outputString		=	"";
+		String				empId				=	salarySlipForm.getEmpId();
+		String				month				=	salarySlipForm.getMonth();
+		String				year				=	salarySlipForm.getYear();
+		int					employeeCount		=	salarySlipBean.getCountAgainstParticularEmployee(month,year,empId);
+		
+		if(employeeCount > 0)
+		{
+			outputString	=	"YES";
+		}
+		else
+		{
+			outputString	=	"NO";
+		}	
+		writer.print(outputString);
+		return null;
+	}
+	
+	/**
+	 * Action Name 	: showSalaryProcessingListPage
+	 * Purpose		: To showSalaryProcessingListPage
+	 * @author		: Prashant
+	 * Date			: 04/07/2012
+	 */
+	public ActionForward showSalaryProcessingListPage(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		HttpSession				session				=	request.getSession();
+		CommonMethodBean		commonMethodBean	=	new CommonMethodBean();
+		AttendanceRecordBean	arBean				=	new AttendanceRecordBean();
+		String					sysdate				=	commonMethodBean.getDate();
+		
+		String[]			date				=	sysdate.split("/");
+		int					year				=	Integer.parseInt(date[2]);
+		int	[]				yearArray			=	new int[5];
+		
+		yearArray[0]		=	year-4;
+		yearArray[1]		=	year-3;
+		yearArray[2]		=	year-2;
+		yearArray[3]		=	year-1;
+		yearArray[4]		=	year;
+		
+		ArrayList<CommonForm>	yearList	=	arBean.getYearList(yearArray);
+		if(yearList!= null && yearList.size() > 0)
+		{
+			request.setAttribute("reqYearList", yearList);
+		}
+		String rarId		=	"30";
+		String userProcess	=	(String)session.getAttribute("userProcess");
+		
+		String validLink	=	commonMethodBean.getValidOrNot(userProcess, ","+rarId+",");
+		if(validLink!=null && validLink.equalsIgnoreCase("NOTVALID"))
+		{
+			return mapping.findForward("invalid");
+		}
+		return	mapping.findForward("showSalaryProcessingListPage");
+	}
+	
+
+	/**
+	 * Action Name 	: showSalaryProcessingList
+	 * Purpose		: To showSalaryProcessingList
+	 * @author		: Prashant
+	 * Date			: 04/07/2012
+	 */
+	public ActionForward showSalaryProcessingList(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		CommonMethodBean		commonMethodBean	=	new CommonMethodBean();
+		AttendanceRecordBean	arBean				=	new AttendanceRecordBean();
+		String					sysdate				=	commonMethodBean.getDate();
+		SalarySlipForm			salarySlipForm		=	(SalarySlipForm)form;
+		SalarySlipBean			salarySlipBean		=	new SalarySlipBean();
+		
+		salarySlipForm.setChkArray(null);
+		ArrayList<CommonForm>	dataList		=	salarySlipBean.getSalaryProcessingList(salarySlipForm);
+		if(dataList!=null && dataList.size() > 0)
+		{
+			request.setAttribute("reqSalarySlipProcessingList", dataList);
+		}
+		else
+		{
+			request.setAttribute("msgType", "FAIL");
+			request.setAttribute("saveResult", "NO DATA FOUND.");
+		}
+		
+		String[]			date				=	sysdate.split("/");
+		int					year				=	Integer.parseInt(date[2]);
+		int	[]				yearArray			=	new int[5];
+		
+		yearArray[0]		=	year-4;
+		yearArray[1]		=	year-3;
+		yearArray[2]		=	year-2;
+		yearArray[3]		=	year-1;
+		yearArray[4]		=	year;
+		
+		ArrayList<CommonForm>	yearList	=	arBean.getYearList(yearArray);
+		if(yearList!= null && yearList.size() > 0)
+		{
+			request.setAttribute("reqYearList", yearList);
+		}
+		
+		return	mapping.findForward("showSalaryProcessingListPage");
+	}
+	
+	
+	/**
+	 * Action Name 	: addBankDetails
+	 * Purpose		: To addBankDetails
+	 * @author		: Prashant
+	 * Date			: 01/01/2013
+	 */
+	
+	public ActionForward addBankDetails(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		HttpSession	session				=	request.getSession();
+	
+		SalarySlipBean	salarySlipBean	=	new SalarySlipBean();
+		PrintWriter		writer			=	response.getWriter();
+		
+		String		userName		=	(String)session.getAttribute("username");
+		String 		bankId			=	request.getParameter("bankId")!=null && request.getParameter("bankId").length() > 0 ? request.getParameter("bankId"):null;
+		String 		refNo			=	request.getParameter("refNo").trim().toUpperCase();
+		String 		remark			=	request.getParameter("remark")!=null && request.getParameter("remark").length() > 0 ? request.getParameter("remark").trim() : null;
+		String 		salarySId		=	request.getParameter("salarySId");
+		String 		empName			=	request.getParameter("empName");
+		String		msgType			=	"FAIL";
+		String		saveResult		=	salarySlipBean.updateBankDetails(userName,bankId,refNo,remark,salarySId,empName);
+		
+		if(saveResult!= null && saveResult.length() > 0 && !saveResult.equalsIgnoreCase("ERROR"))
+		{
+				msgType		=	saveResult.substring(0,4);
+				saveResult	=	saveResult.substring(5,saveResult.length());	
+		}
+		
+		try{
+			JSONStringer	object			=	new JSONStringer();
+			
+			object.object();
+				object.key("msgType").value(msgType);
+				object.key("saveResult").value(saveResult);
+			object.endObject();	
+			
+			object.toString();
+			
+			writer.print(object);
+		}catch(JSONException e){
+			System.out.println("Error In SalarySlipAction.getAddedBankDetails: "+e);
+		}
+		
+		
+		return mapping.findForward(null);
+	}
+	
+	
+	/**
+	 * Action Name 	: getAddedBankDetails
+	 * Purpose		: To getAddedBankDetails
+	 * @author		: Prashant
+	 * Date			: 01/01/2013
+	 */
+	public ActionForward getAddedBankDetails(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		
+		PrintWriter			writer				=	response.getWriter();
+		SalarySlipBean		salarySlipBean		=	new SalarySlipBean();
+		JSONStringer		bankArray			=	new JSONStringer();
+		
+		String				salSlipId			=	request.getParameter("salarySId");
+		
+		ArrayList<CommonForm> dataList			=	salarySlipBean.getAddedBankDetails(salSlipId);
+		
+		try
+		{
+			bankArray.array();
+			
+			if(dataList != null && dataList.size() > 0)
+			{
+				CommonForm	cForm	=	dataList.get(0);	
+					bankArray.object();
+					bankArray.key("bankId").value(cForm.getField1()!=null ? cForm.getField1() : "" );
+					bankArray.key("refNo").value(cForm.getField2()!=null ?cForm.getField2() : "");
+					bankArray.key("remark").value(cForm.getField3()!=null ?cForm.getField3():"");
+					bankArray.key("bankName").value(cForm.getField4()!=null ?cForm.getField4():"");
+					bankArray.endObject();
+				
+			}
+			bankArray.endArray();
+			
+			JSONStringer	object	=	new 	JSONStringer();
+			object.object();
+			object.key("DataList").value(bankArray);
+			object.endObject();
+			
+			String  	result	=	object.toString();
+			writer.println(result);
+		}
+		catch (JSONException e) 
+		{
+			System.out.println("Error In SalarySlipAction.getAddedBankDetails: "+e);
+		}	
+		
+		return mapping.findForward(null);
+	}
+	
+	/**
+	 * Action Name 	: sendSalaryProcessingMail
+	 * Purpose		: To send Salary Processing Mail
+	 * @author		: Sourabh
+	 * Date			: 08/08/2013
+	 */
+	
+	public ActionForward sendSalaryProcessingMail(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		CommonMethodBean		commonMethodBean	=	new CommonMethodBean();
+		SalarySlipBean			salarySlipBean		=	new SalarySlipBean();
+		SalarySlipForm			salarySlipForm		=	(SalarySlipForm)form;
+		String 					empId				=	salarySlipForm.getEmpId();
+		HttpSession				session				=	request.getSession();
+		String					userName			=	(String)session.getAttribute("username");
+		AttendanceRecordBean	arBean				=	new AttendanceRecordBean();
+		String					sysdate				=	commonMethodBean.getDate();
+		String 					netSalary			=	"850";
+		String					saveResult			=	salarySlipBean.sendSalaryProcessingMailToEmp(salarySlipForm, userName,netSalary);
+		String[]				date				=	sysdate.split("/");
+		int						year				=	Integer.parseInt(date[2]);
+		int	[]					yearArray			=	new int[5];
+								yearArray[0]		=	year-4;
+								yearArray[1]		=	year-3;
+								yearArray[2]		=	year-2;
+								yearArray[3]		=	year-1;
+								yearArray[4]		=	year  ;
+	   String				   mappingString		=	"ERROR";
+		
+		
+		if(saveResult!= null && saveResult.length() > 0 && !saveResult.equalsIgnoreCase("ERROR"))
+		{		
+			String	msgType		=	saveResult.substring(0,4);
+			saveResult			=	saveResult.substring(5,saveResult.length());
+			
+			
+			
+			if(msgType!= null && msgType.length() > 0 && msgType.equals("PASS"))
+			{	
+					request.setAttribute("msgType",msgType);
+					request.setAttribute("saveResult",saveResult);				
+					mappingString	=	"showSalaryProcessingListPage";
+					
+					
+					
+					
+					ArrayList<CommonForm>	yearList	=	arBean.getYearList(yearArray);
+					if(yearList!= null && yearList.size() > 0)
+					{
+						request.setAttribute("reqYearList", yearList);
+					}
+					salarySlipForm.reset(mapping, request);					
+					
+			}
+			else if(msgType!= null && msgType.length() > 0 && msgType.equals("FAIL"))
+			{
+				mappingString	=	"showSalaryProcessingListPage";
+			}
+			
+		}
+		
+		return mapping.findForward(mappingString);
+
+	}
+
+	/**
+	 * Action Name 	: processSalary
+	 * Purpose		: To process Salary For Ajax Call
+	 * @author		: Sourabh	
+	 * Date			: 09/09/2013
+	 */
+	
+	public ActionForward processSalary(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{	
+		
+		HttpSession				session				=	request.getSession();
+		PrintWriter				writer				=	response.getWriter();
+		SalarySlipBean			salarySlipBean		=	new SalarySlipBean();
+		CommonMethodBean		commonMethodBean	=	new CommonMethodBean();
+		String					month				=	request.getParameter("month");
+		String					year				=	request.getParameter("year");
+		String 					salSlipId			=	request.getParameter("Id");
+		String					empId				=	request.getParameter("empId");
+		String					empName				=	request.getParameter("empName");
+		String					netSal				=	request.getParameter("netSal");
+		String					totNetSal			=	request.getParameter("divNetSal");
+		String					userName			=	(String)session.getAttribute("username");
+		String 					salProcessed		=	salarySlipBean.sendProcessSalary(month,year,empId,salSlipId,userName,empName,netSal);
+		String					result				= 	salProcessed!="ERROR"?"PASS":salProcessed;
+		Double 					pendingSalary		=	Double.parseDouble(totNetSal)-	Double.parseDouble(salProcessed);
+		String					finalPendingSal		=	commonMethodBean.applyFormater(Double.toString(pendingSalary));
+		String					subjectLine			=	" HR INFINITI";
+		boolean 				debug				=	true;
+		SendMailBean			sendMailBean		=	new SendMailBean();
+		NonSalaryPaymentBean 	nfb					=	new NonSalaryPaymentBean();
+		String[] 				to					=	{nfb.getMailIdForEmpolyee(empId)};
+		String[] 				cc					=	{};
+		String[] 				bcc					=	{};
+		String 					subject				=	subjectLine;
+		String 					text				=	salarySlipBean.generateMailBodyForSalaryProcessingList(empId, month, year, netSal, empName);
+		String 					attachFile			=	"";
+		boolean					mailresult			=	sendMailBean.sendMailAttach("", "", "", "", "", debug, to, cc, bcc, subject, text, attachFile);
+		
+		
+		try{
+				JSONStringer	object			=	new JSONStringer();
+				
+				object.object();
+					object.key("result").value(result);
+					object.key("salSlipId").value(salSlipId);
+					object.key("salProcessed").value(commonMethodBean.applyFormater(salProcessed));
+					object.key("netSal").value(netSal.toString());
+					object.key("pendingSalary").value(finalPendingSal);
+					object.key("totNetSal").value(totNetSal.toString());
+				object.endObject();	
+				
+				object.toString();			
+				writer.print(object);
+			}catch(JSONException e){
+				System.out.println("Error In SalarySlipAction.getAddedBankDetails: "+e);
+			}
+				
+		return	mapping.findForward(null);
+	}
+	
+}

@@ -1,0 +1,343 @@
+package com.inf.dvo.mbm.Bean.Master;
+
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.util.ArrayList;
+
+import org.apache.struts.upload.FormFile;
+
+import com.inf.dvo.mbm.Bean.CommonMethodBean;
+import com.inf.dvo.mbm.DAO.CommonForm;
+import com.inf.dvo.mbm.DAO.Master.UploadDocumentForm;
+import com.inf.dvo.mbm.DBConnection.DBConnection;
+
+
+public class UploadDocumentBean 
+{
+	
+	DBConnection	dbConn	=	new DBConnection();
+	
+	/**
+	 * Method Name  : saveUploadedDocument
+	 * Purpose		: To saveUploadedDocument
+	 * @author		: Prashant
+	 * Date			: 02/05/2012
+	 * @param 
+	 * @param  
+	 */
+	public String saveUploadedDocumentFile(UploadDocumentForm uploadDocumentForm, String userName,String mainFolder) 
+	{
+		CommonMethodBean	commonMethodBean		=	new CommonMethodBean();
+		String				outputString			=	"ERROR";
+		UploadDocumentBean	uploadDocumentBean		=	new UploadDocumentBean();
+		Connection			con						=	null;
+		PreparedStatement	pst						=	null;
+		String				query					=	"";
+		String				empId					=	uploadDocumentForm.getEmpId();
+		String				empCode					=	commonMethodBean.getDataOnOneCondition("employee_master", "employee_code", "employeeid", empId);
+		String				docTypeId				=	uploadDocumentForm.getDocumentTypeId();
+		String				docTitle				=	uploadDocumentForm.getDocumentTitle().trim().toUpperCase();
+		FormFile			uploadFile				=	uploadDocumentForm.getUploadFile();
+		String				fileName				=	uploadFile.getFileName();
+		String				employeeName			=	uploadDocumentForm.getEmpName().trim().toUpperCase();	
+		String				remark					=	uploadDocumentForm.getRemark()!=null && uploadDocumentForm.getRemark().length() > 0 ? uploadDocumentForm.getRemark().trim().toUpperCase() : null;		
+		String				fileExtentation			=	"";
+		fileExtentation								=	fileName.substring(fileName.indexOf("."), fileName.length());
+		boolean				isFileUploaded			=	false;
+		boolean				flag					=	true;
+		String				newFileName				=	"";
+		try
+		{
+			con		=	dbConn.connect();
+			if(uploadDocumentBean.checkDuplicateAgainstEmployeeWiseDocTitle(empId,docTitle) > 0)
+			{
+				flag			=	false;
+				outputString	=	"FAIL.DOCUMENT TITLE : "+docTitle+" IS ALREADY PRESENT AGAINST EMPLOYEE : "+employeeName+" ("+empCode+") .";
+			}
+			if(flag == true)
+			{	
+				query	=	" 	insert into employee_document ( employeeid, empcode, document_type_id, document_title,  file_name, createdby, createdon, updatedby, updatedon,remark	)" +
+							"	values	(?, ?, ?, ?, ?, ?, sysdate(),?, sysdate(),?)";
+				pst		=	con.prepareStatement(query);
+				pst.setString(1, empId);
+				pst.setString(2, empCode);
+				pst.setString(3, docTypeId);
+				pst.setString(4, docTitle);
+				pst.setString(5, fileName);
+				pst.setString(6, userName);
+				pst.setString(7, userName);
+				pst.setString(8, remark);
+				
+				int	count	=	pst.executeUpdate();
+				
+				if(count > 0)
+				{
+					pst.close();
+					String	documentId	=	commonMethodBean.getDataOnOneCondition("employee_document", "documentid", "document_title", docTitle);
+					if(fileName!=null && fileName.length() > 0)
+					{
+						newFileName	=	docTitle+"["+documentId+"]"+fileExtentation;
+						//File newFile	=	new File(mainFolder+"/"+empCode+"/"+newFileName);
+						/*if(!newFile.exists())
+						{*/
+							if(commonMethodBean.uploadFile(uploadFile, mainFolder+"/"+empCode+"/"+newFileName))
+							{
+								isFileUploaded	=	true;
+							}
+							else
+							{
+								isFileUploaded	=	false;
+							}
+						//}
+					}
+					
+					if(isFileUploaded == true)
+					{
+						String	path	=	"/"+empCode+"/"+newFileName;
+						
+						query	=	" 	update	employee_document " +
+									"	set		path		=	?," +
+									"			updatedby	=	?, " +
+									"			updatedon	=	sysdate() " +
+									"	where	documentid	=	? " ;
+						pst		=	con.prepareStatement(query);
+						pst.setString(1, path);
+						pst.setString(2, userName);
+						pst.setString(3, documentId);
+						int cnt	=	pst.executeUpdate();
+						if(cnt > 0)
+						{	
+							outputString	=	"PASS.DOCUMENT UPLOADED AGAINST EMPLOYEE : "+employeeName+" ("+empCode+") SAVED SUCCESSFULLY.";
+						}	
+					}
+					if(isFileUploaded == false)
+					{
+						outputString	=	"FAIL.INVALID PATH.";
+						
+					}
+				}
+				else
+				{
+					
+				}
+				pst.close();
+			}	
+		}
+		catch(Exception e)
+		{
+			outputString = "ERROR";
+			System.out.println("ERROR In UploadDocumentBean.saveUploadedDocumentFile :"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				outputString = "ERROR";
+				System.out.println("Exception While Closing The Connection in UploadDocumentBean.saveUploadedDocumentFile :"+e);
+			}
+		}
+		
+		return outputString;
+		
+	}
+	
+	/**
+	 * Method Name  : checkDuplicateAgainstEmployeeWiseDocTitle
+	 * Purpose		: To checkDuplicateAgainstEmployeeWiseDocTitle
+	 * @author		: Prashant
+	 * Date			: 02/05/2012 
+	 */
+	public int checkDuplicateAgainstEmployeeWiseDocTitle(String empId,String docTitle) 
+	{
+		int				count	=	0;
+		Connection		con		=	null;
+		Statement		st		=	null;
+		ResultSet		rs		=	null;
+		String			query	=	"";
+		try
+		{
+			query		=	" 	select 	count(documentid)" +
+							"	from	employee_document" +
+							"	where			document_title	=	'"+docTitle+"'" +
+							"				and	employeeid		=	'"+empId+"'";
+			
+			con			=	dbConn.connect();
+			st			=	con.createStatement();
+			rs			=	st.executeQuery(query);
+			if(rs.next())
+			{
+				count	=	rs.getInt(1);
+			}
+		}
+		catch(Exception e)
+		{
+			System.out.println("ERROR In UploadDocumentBean.checkDuplicateAgainstEmployeeWiseDocTitle :"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				System.out.println("Exception While Closing The Connection in UploadDocumentBean.checkDuplicateAgainstEmployeeWiseDocTitle :"+e);
+			}
+		}
+		return count;
+	}
+	
+	/**
+	 * Method Name  : getUploadedDocumentList
+	 * Purpose		: To getUploadedDocumentList
+	 * @author		: Prashant
+	 * Date			: 03/05/2012 
+	 */
+	public ArrayList<CommonForm> getUploadedDocumentList(UploadDocumentForm uploadDocumentForm) 
+	{
+		ArrayList<CommonForm>	dataList	=	new ArrayList<CommonForm>();
+		Connection				con			=	null;
+		Statement				st			=	null;
+		ResultSet				rs			=	null;
+		String					query		=	"";
+		int						srNo		=	1;
+		String					documentId	=	uploadDocumentForm.getDocumentId();
+		String					empId		=	uploadDocumentForm.getEmpId();
+		String					docTypeId	=	uploadDocumentForm.getDocumentTypeId();
+		try
+		{
+			query	+=	" 	select 	ed.documentid,ed.document_title,ed.employeeid, ed.empcode,em.employee_name,ed.document_type_id,gv.groupvalue_name,ed.path," +
+						"			ed.file_name,ed.remark " +
+						"	from	employee_document	ed " +
+						"	inner	join	employee_master	em	on	ed.employeeid		=	em.employeeid " ;
+			if(documentId!=null && documentId.length() > 0)
+			{
+			query	+=	"										and	ed.documentid		=	'"+documentId+"' " ; 
+			}
+			if(empId!=null && empId.length() > 0)
+			{
+			query	+=	"										and	ed.employeeid		=	'"+empId+"' " ;
+			}
+			if(docTypeId!=null && docTypeId.length() > 0)
+			{
+			query	+=	"										and	ed.document_type_id	=	'"+docTypeId+"' " ;
+			}
+			query	+=	"	inner	join	groupvalue	gv	on	ed.document_type_id	=	gv.groupvalueid " +
+						"	order by ed.document_title,em.employee_name ";
+						//"	order by em.employee_name,ed.document_title ";
+			con		=	dbConn.connect();
+			st		=	con.createStatement();
+			rs		=	st.executeQuery(query);
+			while(rs.next())
+			{
+				CommonForm	cForm	=	new CommonForm();
+				cForm.setField1(""+(srNo++));//SRNO
+				cForm.setField2(rs.getString(1));//documentid
+				cForm.setField3(rs.getString(2));//document_title
+				cForm.setField4(rs.getString(3));//employeeid
+				cForm.setField5(rs.getString(4));//empcode
+				cForm.setField6(rs.getString(5));//employee_name
+				cForm.setField7(rs.getString(6));//document_type_id
+				cForm.setField8(rs.getString(7));//groupvalue_name(document_type_Name)
+				cForm.setField9(rs.getString(8));//path
+				cForm.setField10(rs.getString(9));//file_name
+				cForm.setField11(rs.getString(10)!=null && rs.getString(10).length() > 0 ? rs.getString(10) : "-");//remark
+				dataList.add(cForm);
+			}
+		}
+		catch(Exception e)
+		{
+			System.out.println("ERROR In UploadDocumentBean.getUploadedDocumentList :"+e); 
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				System.out.println("Exception While Closing The Connection in UploadDocumentBean.getUploadedDocumentList :"+e);
+			}
+		}
+		return dataList;
+	}
+
+	/**
+	 * Method Name  : deleteDocument
+	 * Purpose		: To deleteDocument
+	 * @author		: Prashant
+	 * Date			: 04/05/2012 
+	 */
+	public String deleteDocument(String docId, String docTitle) 
+	{
+		String			outputString			=	"";
+		Connection		con						=	null;
+		Statement		st						=	null;
+		String			query					=	"";
+		int 			count					=	0;
+		try
+		{
+				query			+=	" 	delete " +
+									"	from	employee_document " +
+									"	where	documentid	=	'"+docId+"'";	
+				con				=	dbConn.connect();
+				st				=	con.createStatement();
+				
+				count			=	st.executeUpdate(query);
+				if( count > 0)
+				{
+					outputString	=	"PASS.DOCUMENT "+docTitle+" DELETED SUCCESSFULLY.";
+				}
+				else
+				{
+					outputString	=	"FAIL.DOCUMENT : "+docTitle+" NOT DELETE.";
+				}
+				
+		}
+		catch(Exception e)
+		{
+			outputString = "ERROR";
+			System.out.println("ERROR In CountryBean.deleteCountry:"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				outputString = "ERROR";
+				System.out.println("Exception While Closing The Connection in CountryBean.deleteCountry:"+e);
+			}
+		}
+		return outputString;
+	}
+
+	
+
+}

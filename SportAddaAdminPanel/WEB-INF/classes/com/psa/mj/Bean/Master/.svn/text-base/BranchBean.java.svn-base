@@ -1,0 +1,400 @@
+package com.inf.dvo.mbm.Bean.Master;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.util.ArrayList;
+import com.inf.dvo.mbm.Bean.CommonMethodBean;
+import com.inf.dvo.mbm.DAO.CommonForm;
+import com.inf.dvo.mbm.DAO.Master.BranchForm;
+import com.inf.dvo.mbm.DBConnection.DBConnection;
+
+
+public class BranchBean 
+{
+	DBConnection	dbConn	=	new DBConnection();
+
+	
+	/**
+	 * Method Name  : saveStateMaster
+	 * Purpose		: To saveStateMaster
+	 * @author		: Prashant
+	 * Date			: 23/03/2012 
+	 */
+	public String saveBranchMaster(BranchForm branchForm, String userName) 
+	{
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		String				outputString		=	"";
+		Connection			con					=	null;
+		PreparedStatement	pst					=	null;
+		String				query				=	"";
+		
+		String				bankId				=	branchForm.getBankId();
+		String				bankName			=	branchForm.getBankName();
+		String				branchName			=	branchForm.getBranchName().trim().toUpperCase();
+		String				branchAddr			=	branchForm.getBranchAddr()!= null && branchForm.getBranchAddr().length() > 0 ? branchForm.getBranchAddr().trim().toUpperCase() : "";
+		String				cityId				=	branchForm.getCityId();
+		String				ifscCode			=	branchForm.getIfscCode()!= null && branchForm.getIfscCode().length() > 0 ? branchForm.getIfscCode().trim().toUpperCase() : "";
+		
+		try
+		{
+			if(commonMethodBean.checkDuplicationAgainstGroup("bankid", "bank_branch_master", "branch_name",branchName,bankId) == false)
+			{
+				outputString	=	"FAIL.BRANCH NAME : "+branchName+" IS ALREADY PRESENT AGAINST BANK NAME : "+bankName+" .";
+			}	
+			else
+			{	
+				con		=	dbConn.connect();
+				query	=	"	insert into bank_branch_master ( bankid, branch_name, branch_address, cityid, branch_ifsc_code, createdby, createdon, updatedby, updatedon )" +
+							"	values (?, ?, ?, ?, ?, ?, sysdate(), ?, sysdate() )";
+				pst		=	con.prepareStatement(query);
+				pst.setString(1,bankId);
+				pst.setString(2,branchName);
+				pst.setString(3,branchAddr);
+				pst.setString(4,cityId);
+				pst.setString(5,ifscCode);
+				pst.setString(6,userName);
+				pst.setString(7, userName);
+				
+				int	count	=	pst.executeUpdate();
+				if(count > 0)
+				{
+					outputString	=	"PASS.BRANCH NAME : "+branchName+" AGAINST BANK NAME : "+bankName+" SAVED SUCCESSFULLY.";
+				}
+				pst.close();
+			}
+		}
+		catch(Exception e)
+		{
+			outputString = "ERROR";
+			System.out.println("ERROR In BranchBean.saveBranchMaster :"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				outputString = "ERROR";
+				System.out.println("Exception While Closing The Connection in BranchBean.saveBranchMaster :"+e);
+			}
+		}
+		return outputString;
+	}
+
+	/**
+	 * Method Name  : getSearchBranchList
+	 * Purpose		: To getSearchBranchList
+	 * @author		: Prashant
+	 * Date			: 23/03/2012 
+	 */
+	public ArrayList<CommonForm> getSearchBranchList(BranchForm branchForm)
+	{
+		ArrayList<CommonForm>	dataList			=	new ArrayList<CommonForm>();
+		Connection				con					=	null;
+		Statement				st					=	null;
+		ResultSet				rs					=	null;
+		int						srNo				=	1;
+		String					query				=	"";
+		String					branchId			=	branchForm.getBranchId();
+		String					bankId				=	branchForm.getBankId();
+		String					cityId				=	branchForm.getCityId();
+		
+		try
+		{
+			query	+=	"	select 	bbmst.branchid, bbmst.bankid, bm.bank_name, bbmst.branch_name, bbmst.branch_address, bbmst.cityid,cm.city_name," +
+						"			bbmst.branch_ifsc_code " +
+						"	from	bank_branch_master bbmst " +
+						"	inner join bank_master bm	on	bbmst.bankid	=	bm.bankid ";
+			if(branchId!= null && branchId.length() > 0)
+			{
+			query	+=	"								and	bbmst.branchid	=	'"+branchId+"'";
+			}
+			if(bankId!= null && bankId.length() > 0)
+			{
+			query	+=	"								and	bbmst.bankid	=	'"+bankId+"'";
+			}
+			if(cityId!= null && cityId.length() > 0)
+			{
+			query	+=	"								and	bbmst.cityid	=	'"+cityId+"'";
+			}
+			query	+=	"	inner join city_master cm	on	bbmst.cityid	=	cm.cityid "+
+						"	order by bm.bank_name,bbmst.branch_name ";
+			
+			con		=	dbConn.connect();
+			st		=	con.createStatement();
+			rs		=	st.executeQuery(query);
+			while(rs.next())
+			{
+				CommonForm	cForm	=	new CommonForm();
+				cForm.setField1(""+(srNo++));//SRNO
+				cForm.setField2(rs.getString(1));//branchid
+				cForm.setField3(rs.getString(2));//bankid
+				cForm.setField4(rs.getString(3));//bank_name
+				cForm.setField5(rs.getString(4));//branch_name
+				cForm.setField6(rs.getString(5)!= null && rs.getString(5).length() > 0 ? rs.getString(5) : "-");//branch_address
+				cForm.setField7(rs.getString(6));//cityid
+				cForm.setField8(rs.getString(7));//city_name
+				cForm.setField9(rs.getString(8)!= null && rs.getString(8).length() > 0 ? rs.getString(8) : "-");//branch_ifsc_code
+				
+				
+				dataList.add(cForm);
+			}
+			
+		}
+		catch(Exception e)
+		{
+			System.out.println("ERROR In BranchBean.getSearchBranchList :"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				System.out.println("Exception While Closing The Connection in BranchBean.getSearchBranchList :"+e);
+			}
+		}
+		return	dataList;
+	}
+	
+	/**
+	 * Method Name  : getDataForModify
+	 * Purpose		: To getDataForModify
+	 * @author		: Prashant
+	 * Date			: 23/03/2012 
+	 */
+	public ArrayList<CommonForm> getDataForModify(String branchId) 
+	{
+		ArrayList<CommonForm> dataList		=	new ArrayList<CommonForm>();
+		Connection		con			=	null;
+		Statement		st			=	null;
+		ResultSet		rs			=	null;
+		String			query		=	"";
+		try
+		{
+		
+			query	+=	"	select 	bbmst.branchid, bbmst.bankid, bm.bank_name, bbmst.branch_name, bbmst.branch_address, " +
+						"			bbmst.cityid,cm.city_name,bbmst.branch_ifsc_code " +
+						"	from	bank_branch_master bbmst" +
+						"	inner join bank_master bm	on	bbmst.bankid	=	bm.bankid" +
+						"								and	bbmst.branchid	=	'"+branchId+"'" +
+						"	inner join city_master cm	on	bbmst.cityid	=	cm.cityid ";
+					
+			con		=	dbConn.connect();
+			st		=	con.createStatement();
+			rs		=	st.executeQuery(query);
+			
+			while(rs.next())
+			{
+				CommonForm	cForm	=	new CommonForm();
+				
+				cForm.setField1(rs.getString(1));//branchid
+				cForm.setField2(rs.getString(2));//bankid
+				cForm.setField3(rs.getString(3));//bank_name
+				cForm.setField4(rs.getString(4));//branch_name
+				cForm.setField5(rs.getString(5));//branch_address
+				cForm.setField6(rs.getString(6));//cityid
+				cForm.setField7(rs.getString(7));//city_name
+				cForm.setField8(rs.getString(8));//branch_ifsc_code
+				
+				dataList.add(cForm);
+			}
+		
+		}
+		catch(Exception e)
+		{
+			System.out.println("ERROR In BranchBean.getDataForModify:"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				System.out.println("Exception While Closing The Connection in BranchBean.getDataForModify:"+e);
+			}
+		}
+		return dataList;
+	}
+	
+	/**
+	 * Method Name  : getModifyBranchMaster
+	 * Purpose		: To getModifyBranchMaster
+	 * @author		: Prashant
+	 * Date			: 23/03/2012 
+	 */
+	public String getModifyBranchMaster(BranchForm branchForm, String userName) 
+	{
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		String				outputString		=	"";
+		Connection			con					=	null;
+		PreparedStatement	pst					=	null;
+		String				query				=	"";
+		String				branchId			=	branchForm.getBranchId();
+		String				bankName			=	branchForm.getBankName().trim().toUpperCase();
+		String				bankId				=	branchForm.getBankId();	
+		String				branchName			=	branchForm.getBranchName()!=null && branchForm.getBranchName().length() > 0 ? branchForm.getBranchName().trim().toUpperCase() : "";
+		String				branchAddr			=	branchForm.getBranchAddr()!= null && branchForm.getBranchAddr().length() > 0 ? branchForm.getBranchAddr().trim().toUpperCase() : "";
+		String				cityId				=	branchForm.getCityId();
+		String				ifscCode			=	branchForm.getIfscCode()!= null && branchForm.getIfscCode().length() > 0 ? branchForm.getIfscCode().trim().toUpperCase() : "";
+		int					count				=	0;
+		boolean				flag				=	true;
+		try
+		{
+				
+			if(commonMethodBean.checkDuplicationAgainstGroupForModification("branch_name", "bank_branch_master","bankid", "branchid", branchName, bankId, branchId) > 0)
+			{
+				flag			=	false;
+				outputString	=	"FAIL.BRANCH NAME : "+branchName+" IS ALREADY PRESENT AGAINST BANK NAME : "+bankName+".";
+			}
+			
+			count	=	commonMethodBean.checkForIsProperDelete("employee_master", "employeeid", "branchid",branchId);
+			if(count > 0)
+			{
+				flag			=	false;
+				outputString	=	"FAIL.CANNOT MODIFY : EMPLOYEES ARE PRESENT AGAINST BRANCH NAME : "+branchName;
+			}
+			if(flag ==	true)
+			{	
+					query		+=	"	update	bank_branch_master " +
+									"	set		" +
+									"			bankid				=	?, " +
+									"			branch_name			=	?, " +
+									"			branch_address		=	?, " +
+									"			cityid				=	?, " +
+									"			branch_ifsc_code	=	?, " +
+									"			updatedby			=	?, " +
+									"			updatedon			=	sysdate() " +
+									"	where	branchid			=	? ";
+					
+					
+					con			=	dbConn.connect();
+					pst			=	con.prepareStatement(query);
+					pst.setString(1,bankId);
+					pst.setString(2,branchName);
+					pst.setString(3,branchAddr);
+					pst.setString(4,cityId);
+					pst.setString(5,ifscCode);
+					pst.setString(6,userName);
+					pst.setString(7,branchId);
+									
+					int	cnt		=	pst.executeUpdate();
+					if(cnt > 0)
+					{
+						outputString	=	"PASS.BRANCH NAME : "+branchName+" AGAINST BANK NAME : "+bankName+" MODIFIED SUCCESSFULLY.";
+					}
+			}
+		}
+		catch(Exception e)
+		{
+			outputString = "ERROR";
+			System.out.println("ERROR In BranchBean.getModifyBranchMaster :"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				outputString = "ERROR";
+				System.out.println("Exception While Closing The Connection in BranchBean.getModifyBranchMaster :"+e);
+			}
+		}
+		return outputString;
+	}
+	
+	/**
+	 * Method Name  : deleteBranch
+	 * Purpose		: To deleteBranch
+	 * @author		: Prashant
+	 * Date			: 23/03/2012 
+	 */
+	public String deleteBranch(String branchId, String branchName,String bankName) 
+	{
+		CommonMethodBean	commonMethodBean		=	new CommonMethodBean();
+		String				outputString			=	"";
+		Connection			con						=	null;
+		Statement			st						=	null;
+		String				query					=	"";	
+		int 				count					=	0;
+		int					forDeleteCount			=	0;
+		
+		try
+		{
+			forDeleteCount	=	commonMethodBean.checkForIsProperDelete("employee_master", "employeeid", "branchid",branchId);
+			if(forDeleteCount > 0)
+			{
+				outputString	=	"FAIL.CANNOT DELETE : EMPLOYEES ARE PRESENT AGAINST BRANCH : "+branchName;
+			}
+			
+			else
+			{	
+					query	+=	"	delete " +
+								"	from	bank_branch_master" +
+								"	where	branchid	=	'"+branchId+"'";
+					
+					con				=	dbConn.connect();
+					st				=	con.createStatement();
+					count			=	st.executeUpdate(query);
+					if( count > 0)
+					{
+						outputString	=	"PASS.BRANCH NAME : "+branchName+" AGAINST BANK NAME : "+bankName+" DELETED SUCCESSFULLY.";
+					}
+					else
+					{
+						outputString	=	"FAIL.BRANCH NAME : "+branchName+" AGAINST BANK NAME : "+bankName+" NOT DELETE.";
+					}
+			}
+		}
+		catch(Exception e)
+		{
+			outputString = "ERROR";
+			System.out.println("ERROR In BranchBean.deleteBranch :"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				outputString = "ERROR";
+				System.out.println("Exception While Closing The Connection in BranchBean.deleteBranch :"+e);
+			}
+		}
+		return	outputString;
+	}
+	
+}
+

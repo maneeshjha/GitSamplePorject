@@ -1,0 +1,278 @@
+package com.inf.dvo.mbm.actions.Master;
+
+import java.io.IOException;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionForward;
+import org.apache.struts.action.ActionMapping;
+
+import com.inf.dvo.mbm.Bean.CommonMethodBean;
+import com.inf.dvo.mbm.Bean.Master.BankBean;
+import com.inf.dvo.mbm.DAO.CommonForm;
+import com.inf.dvo.mbm.DAO.Master.BankForm;
+import com.inf.dvo.mbm.actions.CMGMTDispatchAction;
+
+
+public class BankAction extends  CMGMTDispatchAction
+{
+	
+	/**
+	 * Action Name 	: showBankMasterList
+	 * Purpose		: To showBankMasterList
+	 * @author		: Prashant
+	 * Date			: 21/03/2012
+	 */
+	public ActionForward showBankMasterList(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		BankForm	bankForm	=	(BankForm)form;
+		bankForm.reset(mapping, request);
+		HttpSession				session				=	request.getSession();
+		CommonMethodBean		commonMethodBean	=	new CommonMethodBean();
+		String rarId		=	"11";
+		String userProcess	=	(String)session.getAttribute("userProcess");		
+		String validLink	=	commonMethodBean.getValidOrNot(userProcess, ","+rarId+",");
+		if(validLink!=null && validLink.equalsIgnoreCase("NOTVALID"))
+		{
+			return mapping.findForward("invalid");
+		}
+		return mapping.findForward("showBankListPage");
+	}
+	
+	/**
+	 * Action Name 	: showSearchBankMasterList
+	 * Purpose		: To showSearchBankMasterList 
+	 * @author		: Prashant
+	 * Date			: 21/03/2012
+	 */
+	
+	public ActionForward showSearchBankMasterList(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		BankForm	bankForm		=	(BankForm)form;
+		BankBean	bankBean		=	new BankBean();
+		
+		ArrayList<CommonForm> dataList		=	bankBean.getSearchBankList(bankForm);
+		if(dataList!= null && dataList.size() > 0)
+		{
+			request.setAttribute("reqBankMasterList",dataList);
+		}
+		else
+		{
+			request.setAttribute("msgType", "FAIL");
+			request.setAttribute("saveResult", "NO DATA FOUND.");
+		}
+		return mapping.findForward("showBankListPage");
+	}
+	
+	/**
+	 * Action Name 	: showBankMasterPage
+	 * Purpose		: To showBankMasterPage
+	 * @author		: Prashant
+	 * Date			: 21/03/2012
+	 */
+	
+	public ActionForward showBankMasterPage(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		BankForm	bankForm	=	(BankForm)form;
+		bankForm.reset(mapping, request);
+		
+		bankForm.setStatus("ACTIVE");		
+		request.setAttribute("actions","add");
+		
+		return mapping.findForward("showBankMasterPage");
+	}
+	
+	/**
+	 * Action Name 	: saveBankMaster
+	 * Purpose		: To saveBankMaster
+	 * @author		: Prashant
+	 * Date			: 21/03/2012
+	 */
+	
+	public ActionForward saveBankMaster(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		HttpSession	session		=	request.getSession();
+		
+		BankForm	bankForm	=	(BankForm)form;
+		BankBean	bankBean	=	new BankBean();	
+		
+		String		mappingString	=	"ERROR";
+		String		mode			=	request.getParameter("mode");
+		String		userName		=	(String)session.getAttribute("username");
+		
+		String		saveResult		=	bankBean.saveBankMaster(bankForm,userName);
+		
+		if(saveResult!= null && saveResult.length() > 0 && !saveResult.equalsIgnoreCase("ERROR"))
+		{
+				String	msgType		=	saveResult.substring(0,4);
+				saveResult			=	saveResult.substring(5,saveResult.length());
+				
+				request.setAttribute("msgType",msgType);
+				request.setAttribute("saveResult",saveResult);
+				
+				if(msgType!= null && msgType.length() > 0 && msgType.equals("PASS"))
+				{
+					if(mode!= null && mode.length() > 0 && mode.equalsIgnoreCase("SAVE"))
+					{
+						mappingString	=	"showBankMasterPage";
+						
+						bankForm.reset(mapping, request);
+						bankForm.setStatus("ACTIVE");
+						
+						request.setAttribute("actions","add");
+					}
+					else if(mode!= null && mode.length() > 0 && mode.equalsIgnoreCase("SAVEEXIT"))
+					{
+						mappingString	=	"showBankListPage";
+						
+						bankForm.reset(mapping, request);
+						request.setAttribute("actions","add");
+					}
+						
+				}
+				else if(msgType!= null && msgType.length() > 0 && msgType.equals("FAIL"))
+				{
+					mappingString	=	"showBankMasterPage";
+					
+					request.setAttribute("actions","add");
+				}
+		}
+		return mapping.findForward(mappingString);
+	}
+	
+	
+	/**
+	 * Action Name 	: showBankModifyMaster
+	 * Purpose		: To showBankModifyMaster
+	 * @author		: Prashant
+	 * Date			: 21/03/2012
+	 */
+	
+	public ActionForward showBankModifyMaster(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		BankForm	bankForm		=	(BankForm)form;
+		BankBean	bankBean		=	new BankBean();
+		
+		String		bankId			=	request.getParameter("bank_id")!= null && request.getParameter("bank_id").length() > 0 ? request.getParameter("bank_id") : "";
+		
+		ArrayList<CommonForm> modifyData	=	bankBean.getDataForModify(bankId);
+		if(modifyData!= null && modifyData.size() > 0)
+		{
+			//bankid, bank_name, bank_shortname, bank_address, status
+			CommonForm	cForm	=	modifyData.get(0);
+			bankForm.setBankId(cForm.getField1());
+			bankForm.setBankName(cForm.getField2());
+			bankForm.setBankAddr(cForm.getField4());
+			bankForm.setBankShortName(cForm.getField3());
+			bankForm.setStatus(cForm.getField5());
+		}
+		
+		request.setAttribute("actions","edit");
+		
+		return mapping.findForward("showBankMasterPage");
+	}
+	
+	/**
+	 * Action Name 	: modifyBankMaster
+	 * Purpose		: To modifyBankMaster
+	 * @author		: Prashant
+	 * Date			: 23/03/2012
+	 */
+	
+	public ActionForward modifyBankMaster(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		HttpSession	session		=	request.getSession();
+		
+		BankForm	bankForm	=	(BankForm)form;
+		BankBean	bankBean	=	new BankBean();
+		
+		String		mappingString	=	"ERROR";
+		String		userName		=	(String)session.getAttribute("username");
+		
+		String		saveResult		=	bankBean.getModifyBankMaster(bankForm,userName);
+		
+		if(saveResult!= null && saveResult.length() > 0 && !saveResult.equalsIgnoreCase("ERROR"))
+		{
+				String	msgType		=	saveResult.substring(0,4);
+				saveResult			=	saveResult.substring(5,saveResult.length());
+				
+				request.setAttribute("msgType",msgType);
+				request.setAttribute("saveResult",saveResult);
+				
+				if(msgType!= null && msgType.length() > 0 && msgType.equals("PASS"))
+				{
+					bankForm.reset(mapping, request);
+					
+					mappingString	=	"showBankListPage";
+				}
+				else if(msgType!= null && msgType.length() > 0 && msgType.equals("FAIL"))
+				{
+					mappingString	=	"showBankMasterPage";
+					
+					request.setAttribute("actions","edit");
+				}
+		}
+		return mapping.findForward(mappingString);
+	}
+	
+	/**
+	 * Action Name 	: deleteBank
+	 * Purpose		: To deleteBank
+	 * @author		: Prashant
+	 * Date			: 23/03/2012
+	 */
+	
+	public ActionForward deleteBank(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		
+		BankForm	bankForm		=	(BankForm)form;
+		BankBean	bankBean		=	new BankBean();
+		
+		String		mappingString	=	"ERROR";
+		
+		String		bankId			=	request.getParameter("bank_id");
+		String		bankName		=	request.getParameter("bank_name");
+		
+		String		saveResult		=	bankBean.deleteBank(bankId,bankName);
+		
+		if(saveResult != null && saveResult.length() > 0 && !saveResult.equalsIgnoreCase("ERROR"))
+		{
+			String	msgType		=	saveResult.substring(0,4);
+			saveResult			=	saveResult.substring(5,saveResult.length());
+			
+			request.setAttribute("msgType",msgType);
+			request.setAttribute("saveResult",saveResult);
+			
+			if(msgType!= null && msgType.length() > 0 && msgType.equals("PASS"))
+			{
+				//bankForm.reset(mapping, request);
+				mappingString	=	"showBankListPage";
+				
+				ArrayList<CommonForm> dataList		=	bankBean.getSearchBankList(bankForm);
+				if(dataList!= null && dataList.size() > 0)
+				{
+					request.setAttribute("reqBankMasterList",dataList);
+				}
+				
+			}
+			else if(msgType!= null && msgType.length() > 0 && msgType.equals("FAIL"))
+			{
+				mappingString	=	"showBankListPage";
+				
+				ArrayList<CommonForm> dataList		=	bankBean.getSearchBankList(bankForm);
+				if(dataList!= null && dataList.size() > 0)
+				{
+					request.setAttribute("reqBankMasterList",dataList);
+				}
+				
+				
+			}
+			
+		}
+		return mapping.findForward(mappingString);
+	}
+	
+}

@@ -1,0 +1,237 @@
+package com.inf.dvo.mbm.Bean.Master;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.util.ArrayList;
+
+import com.inf.dvo.mbm.Bean.CommonMethodBean;
+import com.inf.dvo.mbm.Bean.SendMailBean;
+import com.inf.dvo.mbm.DAO.CommonForm;
+import com.inf.dvo.mbm.DAO.Master.NonSalaryPaymentForm;
+import com.inf.dvo.mbm.DBConnection.DBConnection;
+
+public class NonSalaryPaymentBean {
+	DBConnection	dbConn	=	new DBConnection();
+	
+	
+	
+	public String saveNonSalaryPayment(NonSalaryPaymentForm nonSalaryPaymentForm, String userName){
+		String				outputString		=	"";
+		Connection			con					=	null;
+		PreparedStatement	pst					=	null;
+		String				query				=	"";		
+		String 				empName				=  nonSalaryPaymentForm.getEmpName().trim().toUpperCase();
+		String 				empId				=  nonSalaryPaymentForm.getEmpId().trim().toUpperCase();			
+		String 				desc				=  nonSalaryPaymentForm.getDesc();	
+		String 				paymentType			=  nonSalaryPaymentForm.getPaymentType().trim();
+		String 				amount				=  nonSalaryPaymentForm.getAmount();
+		String 				currentDate			=  nonSalaryPaymentForm.getCurrentDate();
+		
+		
+		query="insert 		into 		nonsalary_payment	(	employeeid,	salarydate,	description,	payment_type,"+
+			  "													amount,createdby,createdon,updatedby,updatedon)"+
+			  "values										(	?,	str_to_date(?,'%d/%m/%Y'),	?,	?,	?,	?,	sysdate(),"+
+			  "													?,	sysdate())";
+		
+		try{
+		con					=	dbConn.connect();
+		pst					=	con.prepareStatement(query);
+				
+		pst.setString(1,empId);
+		pst.setString(2,currentDate);
+		pst.setString(3,desc);
+		pst.setString(4,paymentType);
+		pst.setString(5,amount);
+		pst.setString(6,userName);
+		pst.setString(7,userName);
+		int result=pst.executeUpdate();
+		if(result>0){
+			outputString	=	"PASS.SALARY "+paymentType.toUpperCase()+" AGAINST EMPLOYEE: "+empName+" . ";
+			outputString   +=    new NonSalaryPaymentBean().sendMailForNonSalaryPayment(empId, empName, desc, paymentType, amount);
+			}		
+		}
+		catch(Exception e)
+		{
+			outputString = "ERROR.SALARY AGAINST EMPLOYEE: "+empName+" NOT "+paymentType.toUpperCase()+".";
+			System.out.println("ERROR In NonSalaryPaymentBean.saveNonSalaryPayment :"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				outputString = "ERROR";
+				System.out.println("Exception While Closing The Connection in NonSalaryPaymentBean.saveNonSalaryPayment :"+e);
+			}
+		}
+		return outputString;
+	}
+	
+	/**
+	 * Method Name  : getNonSalaryPaymentList
+	 * Purpose		: To getNonSalaryPaymentList
+	 * @author		: Sourabh
+	 * Date			: 08/08/2012
+	 * @param  
+	 */	
+	public ArrayList<CommonForm> getNonSalaryPaymentList(NonSalaryPaymentForm nonSalaryPaymentForm) 
+	{
+		ArrayList<CommonForm> dataList		=	new ArrayList<CommonForm>();
+		CommonMethodBean  commonMethodBean		=	new CommonMethodBean();
+		Connection		con					=	null;
+		Statement		st					=	null;
+		ResultSet		rs					=	null;
+		int				srNo				=	1;
+		String			query				=	"";
+		String			empId				=	nonSalaryPaymentForm.getEmpId();
+		String			fromDate			=	nonSalaryPaymentForm.getFromDate();
+		String			toDate				=	nonSalaryPaymentForm.getToDate();
+		String 			paymentType			=	nonSalaryPaymentForm.getPaymentType();
+		try
+		{
+			query	+=	" select nsp.nonsalary_paymentid,nsp.employeeid,em.employee_name,date_format(nsp.salarydate,'%d/%m/%Y'),nsp.description,nsp.payment_type,nsp.amount" +
+						" from 	 nonsalary_payment 	nsp"+
+						" inner join	employee_master		em	on	em.employeeid	=	nsp.employeeid";
+						
+			if(empId!=null && empId.length() > 0)
+			{
+			query	+=	"									and	nsp.employeeid	=	'"+empId+"'";
+			}
+			if(paymentType!=null && paymentType.length() > 0)
+			{
+			query	+=	"									and  	nsp.payment_type=	'"+paymentType+"'";
+			}
+			if(fromDate!=null && fromDate.length() > 0)
+			{
+			query	+=	"									and		nsp.salarydate 		>=	str_to_date('"+fromDate+"','%d/%m/%Y')";
+			}
+			if(toDate!=null && toDate.length() > 0)
+			{
+			query	+=	"									and		nsp.salarydate		<=	str_to_date('"+toDate+"','%d/%m/%Y')";
+			}
+			query	+=	"	order by 	em.employee_name,nsp.description";
+			
+			con		=	dbConn.connect();
+			st		=	con.createStatement();
+			rs		=	st.executeQuery(query);
+			while(rs.next())
+			{
+				CommonForm cForm	=	new CommonForm();
+				cForm.setField1(""+(srNo++));//srNo
+				cForm.setField2(rs.getString(1));//nonsalary_paymentid		
+				cForm.setField3(rs.getString(2));//.employeeid
+				cForm.setField4(rs.getString(3));//employee_name
+				cForm.setField5(rs.getString(4));//salarydate
+				cForm.setField6(rs.getString(5));//description
+				cForm.setField7(rs.getString(6));//payment_type
+				cForm.setField8(commonMethodBean.applyFormater(rs.getString(7)));//amount 				
+				dataList.add(cForm);
+			}
+		}
+		catch(Exception e)
+		{
+			System.out.println("ERROR In NonSalaryPaymentBean.getNonSalaryPaymentList :"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				System.out.println("Exception While Closing The Connection in NonSalaryPaymentBean.getNonSalaryPaymentList :"+e);
+			}
+		}
+		return dataList;
+	}
+	
+	public String getMailIdForEmpolyee(String empID) 
+	{
+		String					outputString	=	"";
+		Connection				con			=	null;
+		Statement				st			=	null;
+		ResultSet				rs			=	null;
+		String					query		=	"";
+		try
+		{
+			query			=	" 	select	email_id from	employee_master" +
+								"	where	employeeid	=	'"+empID+"'";
+			con				=	dbConn.connect();
+			st				=	con.createStatement();
+			rs				=	st.executeQuery(query);
+			rs.next();
+			outputString	=	rs.getString(1);			
+		}
+		catch(Exception e)
+		{
+			System.out.println("Exception In NonSalaryPaymentBean.getMailIdForEmpolyee : "+e); 
+		}
+		return outputString;
+	}
+	
+	public String sendMailForNonSalaryPayment(String empId, String empName, String desc, String paymentType, String amount) 
+	{
+		String				outputString	=	"";
+		Connection				con			=	null;
+		Statement				st			=	null;
+		ResultSet				rs			=	null;
+		String					query		=	"";
+		try
+		{
+						
+			NonSalaryPaymentBean 	nonSalaryPaymentBean	=	new NonSalaryPaymentBean();
+			SendMailBean					sendMailBean	=	new SendMailBean();
+			String 								mailBody	=	"<table width='90%' cellpadding='2' cellspacing='2'>	" +
+					"	<tr> " +
+					"	<td width='80%' style='font-family:Arial, Helvetica, sans-serif;font-weight: bold;;font-size:12px;color:#000000;padding:6px;'>Dear "+empName+",</td>	" +
+					"	</tr>	" +
+					"	<tr>	" +
+					"	<td width='80%'>	" +
+					"	<table width='100%'>		" +
+					"	<tr>			" +
+					"	<td width='3%'>&nbsp;</td>			" +
+					"	<td width='97%' style='font-family: Arial, Helvetica, sans-serif;font-size:12px;color:#161616;height:17px;'>Your "+desc+" has been processed. Rs."+amount+" has been "+paymentType+" to your account. </td> 		" +
+					"	</tr>	" +
+					"	</table>	" +
+					"	</td>	" +
+					"   </tr>	" +						
+					"	<tr>	" +
+					"	<td width='80%' style='font-family:Arial, Helvetica, sans-serif;font-weight: bold;;font-size:12px;color:#000000;padding:6px;'>Regards ,</td>	" +
+					"	</tr>	" +
+					"	<tr>	" +
+					"	<td width='80%' style='font-family:Arial, Helvetica, sans-serif;font-weight: bold;;font-size:12px;color:#000000;padding:6px;'>INFINITI INFOSYSTEMS</td>	" +
+					"	</tr>	" +
+					"	</table>";
+			String		subjectLine				=	" HR INFINITI";
+			boolean 	debug					=	true;
+			String[] 	to						=	{nonSalaryPaymentBean.getMailIdForEmpolyee(empId)};
+			String[] 	cc						=	{};
+			String[] 	bcc						=	{};
+			String 		subject					=	subjectLine;
+			String 		text					=	mailBody;
+			String 		attachFile				=	"";
+			boolean		mailresult				=	sendMailBean.sendMailAttach("", "", "", "", "", debug, to, cc, bcc, subject, text, attachFile);
+					outputString			   +=   mailresult==true?" MAIL SENT SUCCESSFULLY.":" MAIL SENDING FAILED.";
+						
+		}
+		catch(Exception e)
+		{
+			System.out.println("Exception In NonSalaryPaymentBean.getMailIdForEmpolyee : "+e); 
+		}
+		return outputString;
+	}
+}

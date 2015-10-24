@@ -1,0 +1,417 @@
+package com.inf.dvo.mbm.Bean.Master;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.util.ArrayList;
+import com.inf.dvo.mbm.Bean.CommonMethodBean;
+import com.inf.dvo.mbm.DAO.CommonForm;
+import com.inf.dvo.mbm.DAO.Master.BankForm;
+import com.inf.dvo.mbm.DBConnection.DBConnection;
+
+public class BankBean 
+{
+	DBConnection	dbConn	=	new DBConnection();
+
+	
+	/**
+	 * Method Name  : saveStateMaster
+	 * Purpose		: To saveStateMaster
+	 * @author		: Prashant
+	 * Date			: 21/03/2012 
+	 */
+	public String saveBankMaster(BankForm bankForm, String userName) 
+	{
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		String				outputString		=	"";
+		Connection			con					=	null;
+		PreparedStatement	pst					=	null;
+		String				query				=	"";
+		String				bankName			=	bankForm.getBankName().trim().toUpperCase();
+		String				bankShtName			=	bankForm.getBankShortName().trim().toUpperCase();
+		String				bankAddr			=	bankForm.getBankAddr()!=null && bankForm.getBankAddr().length() > 0 ? bankForm.getBankAddr().trim().toUpperCase() : "";
+		String				status				=	bankForm.getStatus();
+		boolean				flag				=	true;
+		int					duplicateCount		=	0;
+		try
+		{
+			
+			if(commonMethodBean.checkDuplicate("bank_master","bank_name",bankName) == false)
+			{
+				flag			=	false;
+				duplicateCount	=	1;	
+				outputString	=	"FAIL.BANK NAME : "+bankName+" IS ALREADY PRESENT.";
+			}
+			if(commonMethodBean.checkDuplicate("bank_master","bank_shortname",bankShtName) == false)
+			{
+				flag			=	false;
+				if(duplicateCount > 0)
+				{
+					outputString	=	"FAIL.BANK NAME : "+bankName+" AND BANK SHORT NAME : "+bankShtName+" IS ALREADY PRESENT.";
+				}
+				else
+				{	
+					outputString	=	"FAIL.BANK SHORT NAME : "+bankShtName+" IS ALREADY PRESENT.";
+				}	
+			}
+			if(flag	==	true)
+			{	
+				con		=	dbConn.connect();
+				query	=	"	insert into bank_master ( bank_name, bank_shortname, bank_address, status, createdby, createdon, updatedby, updatedon )" +
+							"	values (?, ?, ?, ?, ?, sysdate(), ?, sysdate() ) ";
+				pst		=	con.prepareStatement(query);
+				pst.setString(1,bankName);
+				pst.setString(2,bankShtName);
+				pst.setString(3,bankAddr);
+				pst.setString(4,status);
+				pst.setString(5,userName);
+				pst.setString(6,userName);
+				
+				int	count	=	pst.executeUpdate();
+				if(count > 0)
+				{
+					outputString	=	"PASS.BANK NAME : "+bankName+" SAVED SUCCESSFULLY.";
+				}
+				pst.close();
+			}
+		}
+		catch(Exception e)
+		{
+			outputString = "ERROR";
+			System.out.println("ERROR In BankBean.saveBankMaster :"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				outputString = "ERROR";
+				System.out.println("Exception While Closing The Connection in BankBean.saveBankMaster :"+e);
+			}
+		}
+		return outputString;
+	}
+
+	/**
+	 * Method Name  : getSearchBankList
+	 * Purpose		: To getSearchBankList
+	 * @author		: Prashant
+	 * Date			: 21/03/2012 
+	 */
+	public ArrayList<CommonForm> getSearchBankList(BankForm bankForm)
+	{
+		ArrayList<CommonForm> dataList		=	new ArrayList<CommonForm>();
+		Connection		con			=	null;
+		Statement		st			=	null;
+		ResultSet		rs			=	null;
+		String			query		=	"";
+		int				srNo		=	1;
+		String			bankId		=	bankForm.getBankId();
+		String			bankShtNamne =	bankForm.getBankShortName()!= null && bankForm.getBankShortName().length() > 0 ? bankForm.getBankShortName().trim().toUpperCase() : "";
+		String			status		=	bankForm.getStatus();
+		try
+		{
+			
+			query	+=	"	select 	bankid, bank_name, bank_shortname, bank_address, status " +
+						"	from	bank_master " +
+						"	where	0=0	";
+			if(bankId!=null && bankId.length() > 0)
+			{
+			query	+=	"			and	bankid			=	'"+bankId+"'";
+			}
+			if(bankShtNamne!= null && bankShtNamne.length() > 0)
+			{
+			query	+=	"			and	bank_shortname	=	'"+bankShtNamne+"'";
+			}
+			if(status!= null && status.length() > 0)
+			{
+			query	+=	"			and	status			=	'"+status+"'";
+			}
+			query	+=	"	order by bank_name ";
+			
+			con		=	dbConn.connect();
+			st		=	con.createStatement();
+			rs		=	st.executeQuery(query);
+			while(rs.next())
+			{
+				
+				CommonForm	cForm	=	new CommonForm();
+				cForm.setField1(""+(srNo++));//SRNO
+				cForm.setField2(rs.getString(1));//bankid
+				cForm.setField3(rs.getString(2));//bank_name
+				cForm.setField4(rs.getString(3));//bank_shortname
+				cForm.setField5(rs.getString(4)!= null && rs.getString(4).length() > 0 ? rs.getString(4) : "-");//bank_address
+				cForm.setField6(rs.getString(5));//status
+				
+				dataList.add(cForm);
+			}
+		}
+		catch(Exception e)
+		{
+			System.out.println("ERROR In BankBean.getSearchBankList :"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				System.out.println("Exception While Closing The Connection in BankBean.getSearchBankList :"+e);
+			}
+		}
+		return dataList;
+	}
+
+	/**
+	 * Method Name  : getDataForModify
+	 * Purpose		: To getDataForModify
+	 * @author		: Prashant
+	 * Date			: 21/03/2012 
+	 */
+	public ArrayList<CommonForm> getDataForModify(String bankId)
+	{
+		ArrayList<CommonForm>dataList	=	new ArrayList<CommonForm>();
+		Connection			con			=	null;
+		Statement			st			=	null;
+		ResultSet			rs			=	null;
+		String				query		=	"";
+		try
+		{
+			query	+=	"	select 	bankid, bank_name, bank_shortname, bank_address, status " +
+						"	from	bank_master " +
+						"	where	bankid	=	'"+bankId+"'";
+			
+			con		=	dbConn.connect();
+			st		=	con.createStatement();
+			rs		=	st.executeQuery(query);
+			while(rs.next())
+			{
+				CommonForm	cForm	=	new CommonForm();
+				
+				cForm.setField1(rs.getString(1));//bankid
+				cForm.setField2(rs.getString(2));//bank_name
+				cForm.setField3(rs.getString(3));//bank_shortname
+				cForm.setField4(rs.getString(4));//bank_address
+				cForm.setField5(rs.getString(5));//status
+				
+				dataList.add(cForm);
+			}
+		}
+		catch(Exception e)
+		{
+			System.out.println("ERROR In BankBean.getDataForModify :"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				System.out.println("Exception While Closing The Connection in BankBean.getDataForModify :"+e);
+			}
+		}
+		return	dataList;
+	}
+	
+	/**
+	 * Method Name  : getModifyBankMaster
+	 * Purpose		: To getModifyBankMaster
+	 * @author		: Prashant
+	 * Date			: 23/03/2012 
+	 */
+	public String getModifyBankMaster(BankForm bankForm, String userName) 
+	{
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		String				outputString		=	"";
+		Connection			con					=	null;
+		PreparedStatement	pst					=	null;
+		String				query				=	"";
+		
+		String				bankId				=	bankForm.getBankId();
+		String				bankName			=	bankForm.getBankName()!= null && bankForm.getBankName().length() > 0 ? bankForm.getBankName().trim().toUpperCase() : "";
+		String				bankShtName			=	bankForm.getBankShortName()!= null && bankForm.getBankShortName().length() > 0 ? bankForm.getBankShortName().trim().toUpperCase() : "";
+		String				bankAddr			=	bankForm.getBankAddr()!= null && bankForm.getBankAddr().length() > 0 ? bankForm.getBankAddr().trim().toUpperCase()  : "";
+		String				status				=	bankForm.getStatus();
+		
+		boolean				flag				=	true;
+		int					duplicateCount		=	0;
+		int					count				=	0;
+		int					totalCount			=	0;
+		try
+		{
+			if(commonMethodBean.checkDuplicateForModification("bank_master", "bank_name", bankName, "bankid", bankId) == false)
+			{
+				flag			=	false;
+				duplicateCount	=	1;
+				outputString	=	"FAIL.BANK NAME : "+bankName+" IS ALREADY PRESENT.";
+			}	
+			if(commonMethodBean.checkDuplicateForModification("bank_master", "bank_shortname", bankShtName, "bankid", bankId) == false)
+			{
+				flag			=	false;
+				if(duplicateCount > 0)
+				{	
+					outputString	=	"FAIL.BANK NAME : "+bankName+" AND BANK SHORT NAME : "+bankShtName+" IS ALREADY PRESENT.";
+				}
+				else
+				{
+					outputString	=	"FAIL.BANK SHORT NAME : "+bankShtName+" IS ALREADY PRESENT.";
+				}	
+			}
+			
+			count		=	commonMethodBean.checkForActive("bank_branch_master","bankid", "bankid", bankId);
+			if(count > 0)
+			{
+				if(status.equalsIgnoreCase("INACTIVE"))
+				{	
+					flag			=	false;
+					totalCount		=	1;
+					outputString	=	"FAIL.CANNOT MODIFY  : BRANCHES ARE PRESENT AGAINST BANK NAME : "+bankName;
+				}	
+			}
+			
+			if(totalCount == 0)
+			{
+				count	=	commonMethodBean.checkForIsProperDelete("bank_branch_master", "branchid", "bankid",bankId);
+				if(count > 0)
+				{
+					flag			=	false;
+					outputString	=	"FAIL.CANNOT MODIFY : BRANCHES ARE PRESENT AGAINST BANK NAME : "+bankName;
+				}
+			}	
+			if(flag	==	true)
+			{	
+					query		+=	"	update	bank_master " +
+									"	set		bank_name		=	?, " +
+									"			bank_shortname	=	?, " +
+									"			bank_address	=	?, " +
+									"			status			=	?, " +
+									"			updatedby		=	?, " +
+									"			updatedon		=	sysdate()" +
+									"	where	bankid			=	? ";	
+					
+					con			=	dbConn.connect();
+					pst			=	con.prepareStatement(query);
+					pst.setString(1, bankName);
+					pst.setString(2, bankShtName);
+					pst.setString(3, bankAddr);
+					pst.setString(4, status);
+					pst.setString(5, userName);
+					pst.setString(6, bankId);
+					int	cnt		=	pst.executeUpdate();
+					if(cnt > 0)
+					{
+						outputString	=	"PASS.BANK NAME : "+bankName+" MODIFIED SUCCESSFULLY.";
+					}
+			}
+		}
+		catch(Exception e)
+		{
+			outputString = "ERROR";
+			System.out.println("ERROR In BankBean.getModifyStateMaster :"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				outputString = "ERROR";
+				System.out.println("Exception While Closing The Connection in BankBean.getModifyStateMaster :"+e);
+			}
+		}
+		return outputString;
+	}
+	/**
+	 * Method Name  : deleteBank
+	 * Purpose		: To deleteBank
+	 * @author		: Prashant
+	 * Date			: 23/03/2012 
+	 */
+	public String deleteBank(String bankId, String bankName) 
+	{
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		String			outputString			=	"";
+		Connection		con						=	null;
+		Statement		st						=	null;
+		String			query					=	"";
+		int 			count					=	0;
+		int				forDeleteCount			=	0;
+		try
+		{
+			forDeleteCount	=	commonMethodBean.checkForIsProperDelete("bank_branch_master", "branchid", "bankid",bankId);
+			if(forDeleteCount > 0)
+			{
+				outputString	=	"FAIL.CANNOT DELETE : BRANCHES ARE PRESENT AGAINST BANK : "+bankName;
+			}	
+			else
+			{	
+				query			+=		"	delete" +
+										"	from	bank_master" +
+										"	where	bankid		=	'"+bankId+"'";	
+				con				=	dbConn.connect();
+				st				=	con.createStatement();
+				
+				count			=	st.executeUpdate(query);
+				if( count > 0)
+				{
+					outputString	=	"PASS.BANK NAME : "+bankName+" DELETED SUCCESSFULLY.";
+				}
+				else
+				{
+					outputString	=	"FAIL.BANK NAME : "+bankName+" NOT DELETE.";
+				}
+			}	
+				
+		}
+		catch(Exception e)
+		{
+			outputString = "ERROR";
+			System.out.println("ERROR In CountryBean.deleteCountry:"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				outputString = "ERROR";
+				System.out.println("Exception While Closing The Connection in CountryBean.deleteCountry:"+e);
+			}
+		}
+		return outputString;
+	}
+	
+}
+

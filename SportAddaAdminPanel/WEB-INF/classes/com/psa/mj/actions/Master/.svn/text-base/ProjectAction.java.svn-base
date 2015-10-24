@@ -1,0 +1,387 @@
+package com.inf.dvo.mbm.actions.Master;
+
+import java.io.IOException;
+import java.sql.SQLException;
+import java.util.ArrayList;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionForward;
+import org.apache.struts.action.ActionMapping;
+
+import com.inf.dvo.mbm.Bean.CommonMethodBean;
+import com.inf.dvo.mbm.Bean.Master.ProjectBean;
+import com.inf.dvo.mbm.DAO.CommonForm;
+import com.inf.dvo.mbm.DAO.Master.ClientForm;
+import com.inf.dvo.mbm.DAO.Master.ProjectForm;
+import com.inf.dvo.mbm.actions.CMGMTDispatchAction;
+
+
+public class ProjectAction extends  CMGMTDispatchAction
+{
+	
+	/**
+	 * Action Name 	: showProjectMasterList
+	 * Purpose		: To showProjectMasterList
+	 * @author		: Prashant
+	 * Date			: 07/09/2012
+	 */
+	public ActionForward showProjectMasterList(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		ProjectForm					projectForm		=	(ProjectForm)form;
+		projectForm.reset(mapping, request);
+		HttpSession				session				=	request.getSession();
+		CommonMethodBean		commonMethodBean	=	new CommonMethodBean();
+		String rarId		=	"33";
+		String userProcess	=	(String)session.getAttribute("userProcess");		
+		String validLink	=	commonMethodBean.getValidOrNot(userProcess, ","+rarId+",");
+		if(validLink!=null && validLink.equalsIgnoreCase("NOTVALID"))
+		{
+			return mapping.findForward("invalid");
+		}
+		return mapping.findForward("showProjectListPage");
+	}
+	
+	/**
+	 * Action Name 	: getProjectSearchList
+	 * Purpose		: To getProjectSearchList 
+	 * @author		: Prashant
+	 * Date			: 07/09/2012
+	 */
+	
+	public ActionForward getProjectSearchList(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		ProjectForm		projectForm		=	(ProjectForm)form;
+		ProjectBean		projectBean		=	new ProjectBean();
+		
+		ArrayList<CommonForm> dataList	=	projectBean.getProjectSearchList(projectForm);
+		if(dataList!= null && dataList.size() > 0)
+		{
+			request.setAttribute("reqProjectList",dataList);
+		}
+		else
+		{
+			request.setAttribute("msgType", "FAIL");
+			request.setAttribute("saveResult", "NO DATA FOUND.");
+		}
+		return mapping.findForward("showProjectListPage");
+	}
+	
+	/**
+	 * Action Name 	: showProductMasterPage
+	 * Purpose		: To showProductMasterPage
+	 * @author		: Prashant
+	 * Date			: 07/09/2012
+	 */
+	
+	public ActionForward showProductMasterPage(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		ProjectForm		projectForm		=	(ProjectForm)form;
+		ProjectBean		projectBean		=	new ProjectBean();
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		projectForm.reset(mapping, request);
+		
+		ArrayList<CommonForm> employeeList	=	projectBean.getEmployeeList("","ADD","ACTIVE");
+		if(employeeList!=null && employeeList.size() > 0)
+		{
+			request.setAttribute("reqEmployeeList",employeeList);
+		}
+		ArrayList<CommonForm> reqClientList	=	commonMethodBean.getStatusWiseClientName("");
+		if(reqClientList!=null && reqClientList.size() > 0)
+		{
+			request.setAttribute("reqClientList",reqClientList);
+		}
+		
+		
+		projectForm.setStatus("ACTIVE");
+		request.setAttribute("actions","add");
+		
+		return mapping.findForward("showProjectMasterPage");
+	}
+	
+	/**
+	 * Action Name 	: saveProjectMaster
+	 * Purpose		: To saveProjectMaster
+	 * @author		: Prashant
+	 * Date			: 07/09/2012
+	 */
+	
+	public ActionForward saveProjectMaster(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		HttpSession		session			=	request.getSession();
+		
+		ProjectForm		projectForm		=	(ProjectForm)form;
+		ProjectBean		projectBean		=	new ProjectBean();
+		String			clientId		=	projectForm.getClientId();
+		CommonMethodBean	commonMethodBean	=	 new CommonMethodBean();
+		String		mappingString	=	"ERROR";
+		String		mode			=	request.getParameter("mode");
+		String		userName		=	(String)session.getAttribute("username");
+		String		saveResult		=	projectBean.saveProjectMaster(projectForm,userName);
+		if(saveResult!= null && saveResult.length() > 0 && !saveResult.equalsIgnoreCase("ERROR"))
+		{
+				String	msgType		=	saveResult.substring(0,4);
+				saveResult			=	saveResult.substring(5,saveResult.length());
+				
+				request.setAttribute("msgType",msgType);
+				request.setAttribute("saveResult",saveResult);
+				
+				if(msgType!= null && msgType.length() > 0 && msgType.equals("PASS"))
+				{
+					if(mode!= null && mode.length() > 0 && mode.equalsIgnoreCase("SAVE"))
+					{
+						mappingString	=	"showProjectMasterPage";
+						projectForm.reset(mapping, request);
+						projectForm.setStatus("ACTIVE");
+						request.setAttribute("actions","add");
+						
+						ArrayList<CommonForm> employeeList	=	projectBean.getEmployeeList("","ADD","ACTIVE");
+						if(employeeList!=null && employeeList.size() > 0)
+						{
+							request.setAttribute("reqEmployeeList",employeeList);
+						}
+					}
+					else if(mode!= null && mode.length() > 0 && mode.equalsIgnoreCase("SAVEEXIT"))
+					{
+						mappingString	=	"showProjectListPage";
+						projectForm.reset(mapping, request);
+						request.setAttribute("actions","add");
+					}
+						
+				}
+				else if(msgType!= null && msgType.length() > 0 && msgType.equals("FAIL"))
+				{
+					mappingString	=	"showProjectMasterPage";
+					request.setAttribute("actions","add");
+					
+					ArrayList<CommonForm> employeeList	=	projectBean.getEmployeeList("","ADD","ACTIVE");
+					if(employeeList!=null && employeeList.size() > 0)
+					{
+						request.setAttribute("reqEmployeeList",employeeList);
+					}
+				}
+				ArrayList<CommonForm> reqClientList	=	commonMethodBean.getStatusWiseClientName("");
+				if(reqClientList!=null && reqClientList.size() > 0)
+				{
+					request.setAttribute("reqClientList",reqClientList);
+				}
+				ArrayList<CommonForm> reqPersonList	=	commonMethodBean.getPersonNameList(clientId);
+				if(reqPersonList!=null && reqPersonList.size() > 0)
+				{
+					request.setAttribute("reqPersonList",reqPersonList);
+				}
+		}
+		return mapping.findForward(mappingString);
+	}
+	
+	
+	/**
+	 * Action Name 	: showModifyProductMasterPage
+	 * Purpose		: To showModifyProductMasterPage
+	 * @author		: Prashant
+	 * Date			: 07/09/2012
+	 */
+	
+	public ActionForward showModifyProductMasterPage(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		
+		ProjectForm		projectForm		=	(ProjectForm)form;
+		ProjectBean		projectBean		=	new ProjectBean();
+		CommonMethodBean	commonMethodBean	= new CommonMethodBean();
+		projectBean.getDataForModify(projectForm);
+		String	clientId		=  projectForm.getClientId();
+		String	projectId					=	projectForm.getProjectId();
+		ArrayList<CommonForm> employeeList	=	projectBean.getEmployeeList(projectId,"EDIT","ACTIVE");
+		if(employeeList!=null && employeeList.size() > 0)
+		{
+			request.setAttribute("reqEmployeeList",employeeList);
+		}
+		
+		ArrayList<CommonForm> assignEmployeeList	=	projectBean.getProjectIdWiseEmployeeList(projectId);
+		if(assignEmployeeList!=null && assignEmployeeList.size() > 0)
+		{
+			request.setAttribute("reqAssignEmployeeList", assignEmployeeList);
+		}
+		ArrayList<CommonForm> reqClientList	=	commonMethodBean.getStatusWiseClientName("");
+		if(reqClientList!=null && reqClientList.size() > 0)
+		{
+			request.setAttribute("reqClientList",reqClientList);
+		}
+		ArrayList<CommonForm> reqPersonList	=	commonMethodBean.getPersonNameList(clientId);
+		if(reqPersonList!=null && reqPersonList.size() > 0)
+		{
+			request.setAttribute("reqPersonList",reqPersonList);
+		}
+		request.setAttribute("actions","edit");
+		
+		return mapping.findForward("showProjectMasterPage");
+	}
+	
+	/**
+	 * Action Name 	: modifyCountryMaster
+	 * Purpose		: To modifyCountryMaster
+	 * @author		: Prashant
+	 * Date			: 07/09/2012
+	 */
+	
+	public ActionForward modifyProjectMaster(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		HttpSession		session			=	request.getSession();
+		
+		ProjectForm		projectForm		=	(ProjectForm)form;
+		ProjectBean		projectBean		=	new ProjectBean();
+		
+		String		mappingString	=	"ERROR";
+		CommonMethodBean	commonMethodBean	= new CommonMethodBean();
+		String		clientId		=	projectForm.getClientId();
+		String		userName		=	(String)session.getAttribute("username");
+		
+		String		saveResult		=	projectBean.getModifyProjectMaster(projectForm,userName);
+		
+		if(saveResult!= null && saveResult.length() > 0 && !saveResult.equalsIgnoreCase("ERROR"))
+		{
+				String	msgType		=	saveResult.substring(0,4);
+				saveResult			=	saveResult.substring(5,saveResult.length());
+				request.setAttribute("msgType",msgType);
+				request.setAttribute("saveResult",saveResult);
+				
+				if(msgType!= null && msgType.length() > 0 && msgType.equals("PASS"))
+				{
+					projectForm.reset(mapping, request);
+					mappingString	=	"showProjectListPage";
+				}
+				else if(msgType!= null && msgType.length() > 0 && msgType.equals("FAIL"))
+				{
+					mappingString	=	"showProjectMasterPage";
+					request.setAttribute("actions","edit");
+					
+					String	projectId					=	projectForm.getProjectId();
+					
+					ArrayList<CommonForm> employeeList	=	projectBean.getEmployeeList(projectId,"EDIT","ACTIVE");
+					if(employeeList!=null && employeeList.size() > 0)
+					{
+						request.setAttribute("reqEmployeeList",employeeList);
+					}
+					
+					ArrayList<CommonForm> assignEmployeeList	=	projectBean.getProjectIdWiseEmployeeList(projectId);
+					if(assignEmployeeList!=null && assignEmployeeList.size() > 0)
+					{
+						request.setAttribute("reqAssignEmployeeList", assignEmployeeList);
+					}
+					
+				}
+				ArrayList<CommonForm> reqClientList	=	commonMethodBean.getStatusWiseClientName("");
+				if(reqClientList!=null && reqClientList.size() > 0)
+				{
+					request.setAttribute("reqClientList",reqClientList);
+				}
+				ArrayList<CommonForm> reqPersonList	=	commonMethodBean.getPersonNameList(clientId);
+				if(reqPersonList!=null && reqPersonList.size() > 0)
+				{
+					request.setAttribute("reqPersonList",reqPersonList);
+				}
+		}
+		return mapping.findForward(mappingString);
+	}
+	
+	/**
+	 * Action Name 	: deleteProject
+	 * Purpose		: To deleteProject
+	 * @author		: Prashant
+	 * Date			: 07/09/2012
+	 */
+	
+	public ActionForward deleteProject(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		ProjectForm		projectForm		=	(ProjectForm)form;
+		ProjectBean		projectBean		=	new ProjectBean();
+		
+		String		mappingString	=	"ERROR";
+		String		projectId		=	request.getParameter("project_id");	
+		String		projectName		=	request.getParameter("project_name");
+		
+		String		saveResult		=	projectBean.deleteProject(projectId,projectName);
+		
+		if(saveResult != null && saveResult.length() > 0 && !saveResult.equalsIgnoreCase("ERROR"))
+		{
+			String	msgType		=	saveResult.substring(0,4);
+			saveResult			=	saveResult.substring(5,saveResult.length());
+			
+			request.setAttribute("msgType",msgType);
+			request.setAttribute("saveResult",saveResult);
+				
+			ArrayList<CommonForm> dataList		=	projectBean.getProjectSearchList(projectForm); 
+			if(dataList!= null && dataList.size() > 0)
+			{
+				request.setAttribute("reqProjectList",dataList);
+			}
+			/*else
+				projectForm.reset(mapping, request);	*/
+			
+			mappingString	=	"showProjectListPage";
+			
+		}
+		return mapping.findForward(mappingString);
+	}
+	
+	/**
+	 * Action Name 	: projectWiseEmployeeDelete
+	 * Purpose		: To projectWiseEmployeeDelete
+	 * @author		: Prashant
+	 * Date			: 07/09/2012
+	 */
+	
+	public ActionForward projectWiseEmployeeDelete(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		ProjectForm			projectForm			=	(ProjectForm)form;
+		ProjectBean			projectBean			=	new ProjectBean();
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		String				mappingString		=	"ERROR";
+		String				projectDtlsId		=	request.getParameter("dtlsId");	
+		String				empName				=	request.getParameter("empName");
+		String				clientId			= 	projectForm.getClientId();
+		String				saveResult			=	projectBean.projectWiseEmployeeDelete(projectDtlsId,empName);
+		
+		if(saveResult != null && saveResult.length() > 0 && !saveResult.equalsIgnoreCase("ERROR"))
+		{
+			String	msgType		=	saveResult.substring(0,4);
+			saveResult			=	saveResult.substring(5,saveResult.length());
+			
+			request.setAttribute("reqDeleteType",msgType);
+			request.setAttribute("reqDeleteMsg",saveResult);
+				
+			mappingString	=	"showProjectMasterPage";
+			request.setAttribute("actions","edit");
+			
+			String	projectId					=	projectForm.getProjectId();
+			
+			ArrayList<CommonForm> employeeList	=	projectBean.getEmployeeList(projectId,"EDIT","ACTIVE");
+			if(employeeList!=null && employeeList.size() > 0)
+			{
+				request.setAttribute("reqEmployeeList",employeeList);
+			}
+			
+			ArrayList<CommonForm> assignEmployeeList	=	projectBean.getProjectIdWiseEmployeeList(projectId);
+			if(assignEmployeeList!=null && assignEmployeeList.size() > 0)
+			{
+				request.setAttribute("reqAssignEmployeeList", assignEmployeeList);
+			}
+			ArrayList<CommonForm> reqClientList	=	commonMethodBean.getStatusWiseClientName("");
+			if(reqClientList!=null && reqClientList.size() > 0)
+			{
+				request.setAttribute("reqClientList",reqClientList);
+			}
+			ArrayList<CommonForm> reqPersonList	=	commonMethodBean.getPersonNameList(clientId);
+			if(reqPersonList!=null && reqPersonList.size() > 0)
+			{
+				request.setAttribute("reqPersonList",reqPersonList);
+			}
+		
+		}
+		return mapping.findForward(mappingString);
+	}
+	
+}

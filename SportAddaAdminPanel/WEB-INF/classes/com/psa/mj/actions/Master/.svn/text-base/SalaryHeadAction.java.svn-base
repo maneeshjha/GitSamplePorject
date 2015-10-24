@@ -1,0 +1,322 @@
+package com.inf.dvo.mbm.actions.Master;
+
+import java.io.IOException;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionForward;
+import org.apache.struts.action.ActionMapping;
+import com.inf.dvo.mbm.Bean.CommonMethodBean;
+import com.inf.dvo.mbm.Bean.Master.SalaryHeadBean;
+import com.inf.dvo.mbm.DAO.CommonForm;
+import com.inf.dvo.mbm.DAO.Master.SalaryHeadForm;
+import com.inf.dvo.mbm.actions.CMGMTDispatchAction;
+
+
+public class SalaryHeadAction extends  CMGMTDispatchAction
+{
+	
+	/**
+	 * Action Name 	: showSalaryHeadListPage
+	 * Purpose		: To showSalaryHeadListPage
+	 * @author		: Prashant
+	 * Date			: 29/03/2012
+	 */
+	public ActionForward showSalaryHeadListPage(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		SalaryHeadForm	salaryForm		=	(SalaryHeadForm)form;
+		salaryForm.reset(mapping, request);
+		HttpSession				session				=	request.getSession();
+		CommonMethodBean		commonMethodBean	=	new CommonMethodBean();
+		String rarId		=	"13";
+		String userProcess	=	(String)session.getAttribute("userProcess");		
+		String validLink	=	commonMethodBean.getValidOrNot(userProcess, ","+rarId+",");
+		if(validLink!=null && validLink.equalsIgnoreCase("NOTVALID"))
+		{
+			return mapping.findForward("invalid");
+		}
+		return mapping.findForward("showSalaryHeadListPage");
+	}
+	
+	/**
+	 * Action Name 	: showSearchSalaryHeadMasterList
+	 * Purpose		: To showSearchSalaryHeadMasterList 
+	 * @author		: Prashant
+	 * Date			: 29/03/2012
+	 */
+	
+	public ActionForward showSearchSalaryHeadMasterList(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		SalaryHeadForm			salaryForm		=	(SalaryHeadForm)form;
+		SalaryHeadBean			salaryBean		=	new SalaryHeadBean();
+		
+		ArrayList<CommonForm>	dataList		=	salaryBean.getSearchSalaryHeadList(salaryForm);
+		if(dataList!= null && dataList.size() > 0)
+		{
+			request.setAttribute("reqSalaryHeadMasterList",dataList);
+		}
+		else
+		{
+			request.setAttribute("msgType", "FAIL");
+			request.setAttribute("saveResult", "NO DATA FOUND.");
+		}
+		return mapping.findForward("showSalaryHeadListPage");
+	}
+	
+	/**
+	 * Action Name 	: showSalaryHeadMasterPage
+	 * Purpose		: To showSalaryHeadMasterPage
+	 * @author		: Prashant
+	 * Date			: 29/03/2012
+	 */
+	
+	public ActionForward showSalaryHeadMasterPage(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		SalaryHeadForm	salaryHeadForm			=	(SalaryHeadForm)form;
+		SalaryHeadBean	salaryBean				=	new SalaryHeadBean();
+		
+		salaryHeadForm.reset(mapping, request);
+		
+		ArrayList<CommonForm> mainHeadName		=	salaryBean.getMainHeadName(salaryHeadForm);
+		if(mainHeadName!= null && mainHeadName.size() > 0)
+		{
+			request.setAttribute("reqMainHeadName", mainHeadName);
+		}	
+		
+		request.setAttribute("actions","add");
+		return mapping.findForward("showSalaryHeadMasterPage");
+	}
+	
+	/**
+	 * Action Name 	: saveSalaryHeadMaster
+	 * Purpose		: To saveSalaryHeadMaster
+	 * @author		: Prashant
+	 * Date			: 29/03/2012
+	 */
+	
+	public ActionForward saveSalaryHeadMaster(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		HttpSession		session			=	request.getSession();
+		
+		SalaryHeadForm	salaryForm		=	(SalaryHeadForm)form;
+		SalaryHeadBean	salaryBean		=	new SalaryHeadBean();
+		
+		String			mappingString	=	"ERROR";
+		String			mode			=	request.getParameter("mode");
+		String			userName		=	(String)session.getAttribute("username");
+		
+		String		saveResult			=	salaryBean.saveSalaryHeadMaster(salaryForm,userName);
+		
+		if(saveResult!= null && saveResult.length() > 0 && !saveResult.equalsIgnoreCase("ERROR"))
+		{
+				String	msgType		=	saveResult.substring(0,4);
+				saveResult			=	saveResult.substring(5,saveResult.length());
+				
+				request.setAttribute("msgType",msgType);
+				request.setAttribute("saveResult",saveResult);
+				
+				if(msgType!= null && msgType.length() > 0 && msgType.equals("PASS"))
+				{
+					if(mode!= null && mode.length() > 0 && mode.equalsIgnoreCase("SAVE"))
+					{
+						mappingString	=	"showSalaryHeadMasterPage";
+						salaryForm.reset(mapping, request);
+						
+						ArrayList<CommonForm> mainHeadName		=	salaryBean.getMainHeadName(salaryForm);
+						if(mainHeadName!= null && mainHeadName.size() > 0)
+						{
+							request.setAttribute("reqMainHeadName", mainHeadName);
+						}
+						
+						request.setAttribute("actions","add");
+					}
+					else if(mode!= null && mode.length() > 0 && mode.equalsIgnoreCase("SAVEEXIT"))
+					{
+						mappingString	=	"showSalaryHeadListPage";
+						salaryForm.reset(mapping, request);
+						
+					}
+						
+				}
+				else if(msgType!= null && msgType.length() > 0 && msgType.equals("FAIL"))
+				{
+					mappingString	=	"showSalaryHeadMasterPage";
+					
+					ArrayList<CommonForm> mainHeadName		=	salaryBean.getMainHeadName(salaryForm);
+					if(mainHeadName!= null && mainHeadName.size() > 0)
+					{
+						request.setAttribute("reqMainHeadName", mainHeadName);
+					}
+					
+					request.setAttribute("actions","add");
+				}
+		}
+		return mapping.findForward(mappingString);
+	}
+	
+	
+	/**
+	 * Action Name 	: showSalaryHeadModifyMaster
+	 * Purpose		: To showSalaryHeadModifyMaster
+	 * @author		: Prashant
+	 * Date			: 29/03/2012
+	 */
+	
+	public ActionForward showSalaryHeadModifyMaster(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		SalaryHeadForm		salaryForm		=	(SalaryHeadForm)form; 	
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		String				headType		=	"";
+		SalaryHeadBean		salaryBean		=	new SalaryHeadBean();
+		String				headId			=	request.getParameter("head_id")!= null && request.getParameter("head_id").length() > 0 ? request.getParameter("head_id") : "";
+		
+		ArrayList<CommonForm> modifyData	=	salaryBean.getDataForModify(headId);
+		if(modifyData!= null && modifyData.size() > 0)
+		{
+			CommonForm	cForm	=	modifyData.get(0);
+			salaryForm.setHeadId(cForm.getField1());//salaryheadid
+			salaryForm.setHeadName(cForm.getField2());//salaryheadname
+			salaryForm.setHeadType(cForm.getField3());//salaryheadtype
+			salaryForm.setMainheadNameId(cForm.getField4());//maintype
+			salaryForm.setPercentage(cForm.getField5());//percent
+			salaryForm.setAdd_deducate(cForm.getField6());//add/dedcut
+			
+			headType	=	cForm.getField3();
+		}
+		
+		int forDeleteCount	=	commonMethodBean.checkForIsProperDelete("salary_head_master", "salaryheadname", "maintype",headId);
+		if(forDeleteCount > 0)
+		{
+			request.setAttribute("reqHeadName", headType);
+		}
+		
+		ArrayList<CommonForm> mainHeadName		=	salaryBean.getMainHeadName(salaryForm);
+		if(mainHeadName!= null && mainHeadName.size() > 0)
+		{
+			request.setAttribute("reqMainHeadName", mainHeadName);
+		}
+		request.setAttribute("actions","edit");
+		
+		return mapping.findForward("showSalaryHeadMasterPage");
+	}
+	
+	/**
+	 * Action Name 	: modifySalaryHeadMaster
+	 * Purpose		: To modifySalaryHeadMaster
+	 * @author		: Prashant
+	 * Date			: 29/03/2012
+	 */
+	
+	public ActionForward modifySalaryHeadMaster(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		HttpSession		session		=	request.getSession();
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		SalaryHeadForm	salaryForm	=	(SalaryHeadForm)form;
+		SalaryHeadBean	salaryBean	=	new SalaryHeadBean();
+		
+		String		headType		=	salaryForm.getHeadType();
+		String		mappingString	=	"ERROR";
+		String		userName		=	(String)session.getAttribute("username");
+		String		headId				=	salaryForm.getHeadId();
+		String		saveResult		=	salaryBean.getModifySalaryHeadeMaster(salaryForm,userName);
+		
+		if(saveResult!= null && saveResult.length() > 0 && !saveResult.equalsIgnoreCase("ERROR"))
+		{
+				String	msgType		=	saveResult.substring(0,4);
+				saveResult			=	saveResult.substring(5,saveResult.length());
+				
+				request.setAttribute("msgType",msgType);
+				request.setAttribute("saveResult",saveResult);
+				
+				if(msgType!= null && msgType.length() > 0 && msgType.equals("PASS"))
+				{
+					salaryForm.reset(mapping, request);
+					mappingString	=	"showSalaryHeadListPage";
+					
+				}
+				else if(msgType!= null && msgType.length() > 0 && msgType.equals("FAIL"))
+				{
+					mappingString	=	"showSalaryHeadMasterPage";
+					
+					ArrayList<CommonForm> mainHeadName		=	salaryBean.getMainHeadName(salaryForm);
+					if(mainHeadName!= null && mainHeadName.size() > 0)
+					{
+						request.setAttribute("reqMainHeadName", mainHeadName);
+					}
+					
+					if(headType!= null && headType.length() > 0)
+					{	
+						int forDeleteCount	=	commonMethodBean.checkForIsProperDelete("salary_head_master", "salaryheadname", "maintype",headId);
+						if(forDeleteCount > 0)
+						{	
+							request.setAttribute("reqHeadName", headType);
+						}	
+					}	
+					request.setAttribute("actions","edit");
+				}
+		}
+		return mapping.findForward(mappingString);
+	}
+	
+	/**
+	 * Action Name 	: deleteSalaryHead
+	 * Purpose		: To deleteSalaryHead
+	 * @author		: Prashant
+	 * Date			: 29/03/2012
+	 */
+	
+	public ActionForward deleteSalaryHead(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		
+		SalaryHeadForm	salaryForm	=	(SalaryHeadForm)form;
+		SalaryHeadBean	salaryBean	=	new SalaryHeadBean();
+		
+		String		mappingString	=	"ERROR";
+		
+		String		headId			=	request.getParameter("head_id");
+		String		headName		=	request.getParameter("head_name");
+		String		maintype		=	request.getParameter("main_type");
+		
+		String		saveResult		=	salaryBean.deleteSalaryHead(headId,headName,maintype);
+		
+		if(saveResult != null && saveResult.length() > 0 && !saveResult.equalsIgnoreCase("ERROR"))
+		{
+			String	msgType		=	saveResult.substring(0,4);
+			saveResult			=	saveResult.substring(5,saveResult.length());
+			
+			request.setAttribute("msgType",msgType);
+			request.setAttribute("saveResult",saveResult);
+			
+			if(msgType!= null && msgType.length() > 0 && msgType.equals("PASS"))
+			{
+				
+				mappingString	=	"showSalaryHeadListPage";
+				
+				ArrayList<CommonForm>	dataList		=	salaryBean.getSearchSalaryHeadList(salaryForm);
+				if(dataList!= null && dataList.size() > 0)
+				{
+					request.setAttribute("reqSalaryHeadMasterList",dataList);
+				}
+				
+			}
+			else if(msgType!= null && msgType.length() > 0 && msgType.equals("FAIL"))
+			{
+				mappingString	=	"showSalaryHeadListPage";
+				
+				ArrayList<CommonForm>	dataList		=	salaryBean.getSearchSalaryHeadList(salaryForm);
+				if(dataList!= null && dataList.size() > 0)
+				{
+					request.setAttribute("reqSalaryHeadMasterList",dataList);
+				}
+				
+				
+			}
+			
+		}
+		return mapping.findForward(mappingString);
+	}
+	
+}

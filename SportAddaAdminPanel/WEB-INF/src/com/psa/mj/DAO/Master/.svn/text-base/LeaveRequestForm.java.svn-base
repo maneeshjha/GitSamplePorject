@@ -1,0 +1,174 @@
+package com.inf.dvo.mbm.DAO.Master;
+
+import javax.servlet.http.HttpServletRequest;
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionMapping;
+import org.apache.struts.upload.FormFile;
+
+
+public class LeaveRequestForm extends ActionForm
+{
+
+	private static final long serialVersionUID = 1L;
+	
+	private String		leaveType;
+	private String		leaveCategory;
+	private String 		fromDate;
+	private String 		toDate;
+	private String		desc;
+	private String[]	to;
+	private String 		cc;
+	private String 		bcc;
+	private String 		concernedPerson;
+	private	String		empId ;
+	private	String		empName;
+	private FormFile	uploadFile;
+	private String		remark;
+	private String		leaveId;
+	private String		leaveStatus;
+	
+
+	public void reset(ActionMapping mapping,HttpServletRequest request)
+	{
+		leaveType			=	null;
+		leaveCategory		=	null;
+		fromDate			=	null;
+		toDate				=	null;
+		desc				=	null;
+		to					=	null;
+		cc					=	null;
+		bcc					=	null;
+		concernedPerson		=	null;
+		empId				=	null;
+		empName				=	null;
+		remark				=	null;
+		leaveId				=	null;
+		leaveStatus			=	null;
+	}
+		
+
+	public String getLeaveType() {
+		return leaveType;
+	}
+
+	public void setLeaveType(String leaveType) {
+		this.leaveType = leaveType;
+	}
+
+	public String getLeaveCategory() {
+		return leaveCategory;
+	}
+
+	public void setLeaveCategory(String leaveCategory) {
+		this.leaveCategory = leaveCategory;
+	}
+
+	public String getFromDate() {
+		return fromDate;
+	}
+
+	public void setFromDate(String fromDate) {
+		this.fromDate = fromDate;
+	}
+
+	public String getToDate() {
+		return toDate;
+	}
+
+	public void setToDate(String toDate) {
+		this.toDate = toDate;
+	}
+
+	public String getDesc() {
+		return desc;
+	}
+
+	public void setDesc(String desc) {
+		this.desc = desc;
+	}
+
+	public String[] getTo() {
+		return to;
+	}
+
+	public void setTo(String to[]) {
+		this.to = to;
+	}
+
+	public String getCc() {
+		return cc;
+	}
+
+	public void setCc(String cc) {
+		this.cc = cc;
+	}
+
+	public String getBcc() {
+		return bcc;
+	}
+
+	public void setBcc(String bcc) {
+		this.bcc = bcc;
+	}
+
+	public String getConcernedPerson() {
+		return concernedPerson;
+	}
+
+	public void setConcernedPerson(String concernedPerson) {
+		this.concernedPerson = concernedPerson;
+	}
+
+	public String getEmpId() {
+		return empId;
+	}
+
+	public void setEmpId(String empId) {
+		this.empId = empId;
+	}
+
+	public String getEmpName() {
+		return empName;
+	}
+
+	public void setEmpName(String empName) {
+		this.empName = empName;
+	}
+
+	public FormFile getUploadFile() {
+		return uploadFile;
+	}
+
+	public void setUploadFile(FormFile uploadFile) {
+		this.uploadFile = uploadFile;
+	}
+
+	public static long getSerialversionuid() {
+		return serialVersionUID;
+	}
+	
+	public String getRemark() {
+		return remark;
+	}
+
+	public void setRemark(String remark) {
+		this.remark = remark;
+	}
+
+	public String getLeaveId() {
+		return leaveId;
+	}
+
+	public void setLeaveId(String leaveId) {
+		this.leaveId = leaveId;
+	}
+	
+	public String getLeaveStatus() {
+		return leaveStatus;
+	}
+
+
+	public void setLeaveStatus(String leaveStatus) {
+		this.leaveStatus = leaveStatus;
+	}
+}

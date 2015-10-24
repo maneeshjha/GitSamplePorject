@@ -1,0 +1,733 @@
+package com.inf.dvo.mbm.actions.utility;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.sql.SQLException;
+import java.util.ArrayList;
+
+import javax.servlet.ServletConfig;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionForward;
+import org.apache.struts.action.ActionMapping;
+import org.apache.struts.upload.FormFile;
+import org.apache.struts.util.MessageResources;
+
+import com.inf.dvo.mbm.Bean.CommonMethodBean;
+import com.inf.dvo.mbm.Bean.SendMailBean;
+import com.inf.dvo.mbm.Bean.Master.EmployeeBean;
+import com.inf.dvo.mbm.Bean.Master.LeaveRequestBean;
+import com.inf.dvo.mbm.Bean.Master.NonSalaryPaymentBean;
+import com.inf.dvo.mbm.DAO.CommonForm;
+import com.inf.dvo.mbm.DAO.Master.LeaveRequestForm;
+import com.inf.dvo.mbm.actions.CMGMTDispatchAction;
+
+public class LeaveRequestAction extends  CMGMTDispatchAction{
+
+	/**
+	 * Action Name 	: showLeaveRequestPage
+	 * Purpose		: To showLeaveRequestPage
+	 * @author		: Sourabh
+	 * Date			: 10/08/2013
+	 */
+	
+	public ActionForward showLeaveRequestPage(ActionMapping mapping,ActionForm form, HttpServletRequest request, HttpServletResponse response){
+		HttpSession					 session	=	request.getSession();
+		LeaveRequestForm 	leaveRequestForm	= 	(LeaveRequestForm)form;
+		CommonMethodBean	commonMethodBean	= 	 new CommonMethodBean();
+		EmployeeBean			employeeBean	= 	 new EmployeeBean(); 
+		ArrayList<CommonForm>   	dataList	=	employeeBean.getEmployeeToSendMailId();
+		
+		leaveRequestForm.setLeaveType("New");
+		leaveRequestForm.setFromDate(commonMethodBean.getDate());
+		leaveRequestForm.setToDate(commonMethodBean.getDate());
+		
+		String	userName	=	(String)session.getAttribute("username");
+		String	userType	=	commonMethodBean.getDataOnOneCondition("usermst", "usertype", "user_name", userName);
+		if(userType!=null && userType.length() > 0 && userType.equals("EMPLOYEE"))
+		{
+			String	employeeId		=	commonMethodBean.getDataOnOneCondition("usermst", "employeeid", "user_name", userName);
+			leaveRequestForm.setEmpId(employeeId);
+			String	employeeName	=	commonMethodBean.getDataOnOneCondition("usermst", "display_name", "user_name", userName);
+			leaveRequestForm.setEmpName(employeeName);
+			
+			request.setAttribute("reqDisabled", "true");
+		}
+		
+		//pass date to use for comparision
+		request.setAttribute("todaysDate",commonMethodBean.getDate());
+		request.setAttribute("yesterdaysDate",commonMethodBean.getYesterdaysDate());
+		
+		request.setAttribute("reqToSendEmployeeMailIdList", dataList);
+		
+		String rarId		=	"39";
+		String userProcess	=	(String)session.getAttribute("userProcess");
+		
+		String validLink	=	commonMethodBean.getValidOrNot(userProcess, ","+rarId+",");
+		if(validLink!=null && validLink.equalsIgnoreCase("NOTVALID"))
+		{
+			return mapping.findForward("invalid");
+		}
+		return mapping.findForward("showLeaveRequestPage");
+	}
+	
+	
+
+	/**
+	 * Action Name 	: generateLeaveRequestPage
+	 * Purpose		: To generate Leave Request
+	 * @author		: Sourabh
+	 * Date			: 10/08/2013
+	 */
+	
+	public ActionForward generateLeaveRequestPage(ActionMapping mapping,ActionForm form, HttpServletRequest request, HttpServletResponse response){
+		
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		HttpSession 				session		= 	request.getSession();
+		String 						username	= 	(String)session.getAttribute("username");
+		LeaveRequestForm 	leaveRequestForm	= 	(LeaveRequestForm)form;
+		String 						   empId	= 	leaveRequestForm.getEmpId();
+		LeaveRequestBean    leaveRequestBean	=	new LeaveRequestBean();
+		CommonMethodBean	commonmethodbean	= 	new CommonMethodBean();
+		EmployeeBean			employeeBean	= 	new EmployeeBean(); 
+		ArrayList<CommonForm>   	dataList	=	employeeBean.getEmployeeToSendMailId();
+		String 					  saveResult	=	leaveRequestBean.saveGenerateRequest(leaveRequestForm, username);
+		String					mappingString	=	"ERROR";
+		
+		if(saveResult!= null && saveResult.length() > 0 && !saveResult.equalsIgnoreCase("ERROR"))
+		{
+				String			msgType			=	saveResult.substring(0,4);
+								saveResult		=	saveResult.substring(5,saveResult.length());
+				FormFile		uploadFile		=	leaveRequestForm.getUploadFile();
+				String 			fileName		=	uploadFile.getFileName()==null?"":uploadFile.getFileName();
+				String 			attachFile		=	"";
+				
+				if(fileName!=null && fileName.length() >0){
+				//Upload the file on file system
+				
+				String 		fromDate				=	leaveRequestForm.getFromDate();
+				String		fileExtension			=	fileName.substring(fileName.lastIndexOf("."), fileName.length());
+				String		newFileName				=	fromDate.replaceAll("/", "")+fileExtension;
+				
+				
+				String					drivePath					=	"";		
+				String					mainFolder					=	"";
+				
+				//get path and folder from ApplicatinResorce.property
+				
+				try
+				{
+					MessageResources	msg	=	getResources(request);
+					drivePath				=	msg.getMessage("path.origin");
+					mainFolder				=	msg.getMessage("dir.leaverequest");
+				}
+				catch(Exception e)
+				{
+					System.out.println("Exception While Reading Application.Resource File In LeaveRequestAction.generateLeaveRequestPage : "+e); 
+				}
+				
+				mainFolder					=	drivePath+mainFolder;
+				boolean structure			=	commonMethodBean.createFolderStructureFirstTime(mainFolder, empId);
+				
+				if(structure)
+				commonMethodBean.uploadFile(uploadFile,mainFolder+"/"+empId+"/"+newFileName);
+
+				//	Setting attach file name if attachment in provided.
+				
+				attachFile			=		mainFolder+"/"+empId+"/"+newFileName;
+				
+				}
+				String 					emailId				=		commonMethodBean.getDataOnOneCondition("employee_master", "email_id ", "employeeid", empId);
+				String 					text				=		leaveRequestBean.generateMailBodyForLeaveRequest(leaveRequestForm , username);
+				SendMailBean			sendMailBean		=		new SendMailBean();
+				String					subject				=		" HR INFINITI ";
+				boolean 				debug				=		true;
+				String[] 				to					=		leaveRequestForm.getTo();
+				String 					stringcc			=		leaveRequestForm.getCc()== null?"":leaveRequestForm.getCc();
+				
+				//Adding Users email ID
+				if(emailId!=null && emailId.length()>0){
+										stringcc			+=		stringcc+","+emailId;
+				}
+				
+				String[] 				cc					=		{};
+				String 					stringbcc			=		leaveRequestForm.getBcc();
+				String[] 				bcc					=		{};
+							
+				if(stringcc!=null && stringcc.length()>0){
+										cc		=	stringcc.split(",");	
+				}
+				
+				if(stringcc!=null && stringcc.length()>0){
+										bcc		=	stringbcc.split(",");	
+				}
+							
+				
+				boolean 		mailStatus		=	sendMailBean.sendMailAttach("", "", "", "", "", debug, to, cc, bcc, subject, text, attachFile);
+
+				request.setAttribute("msgType",msgType);
+				request.setAttribute("saveResult",saveResult);
+				mappingString	=	"showLeaveRequestPage";
+				leaveRequestForm.reset(mapping, request);
+		}
+		
+		String	userName	=	(String)session.getAttribute("username");
+		String	userType	=	commonMethodBean.getDataOnOneCondition("usermst", "usertype", "user_name", userName);
+		if(userType!=null && userType.length() > 0 && userType.equals("EMPLOYEE"))
+		{
+			String	employeeId		=	commonMethodBean.getDataOnOneCondition("usermst", "employeeid", "user_name", userName);
+			leaveRequestForm.setEmpId(employeeId);
+			String	employeeName	=	commonMethodBean.getDataOnOneCondition("usermst", "display_name", "user_name", userName);
+			leaveRequestForm.setEmpName(employeeName);
+			
+			request.setAttribute("reqDisabled", "true");
+		}
+		
+		leaveRequestForm.setLeaveType("New");
+		leaveRequestForm.setFromDate(commonmethodbean.getDate());
+		leaveRequestForm.setToDate(commonmethodbean.getDate());
+		
+		//pass date to use for comparision
+		request.setAttribute("todaysDate",commonmethodbean.getDate());
+		request.setAttribute("yesterdaysDate",commonmethodbean.getYesterdaysDate());
+		request.setAttribute("reqToSendEmployeeMailIdList", dataList);
+		
+		return mapping.findForward(mappingString);
+	}
+	
+
+	/**
+	 * Action Name 	: showCancelRequestPage
+	 * Purpose		: To show Cancel Request Page
+	 * @author		: Sourabh
+	 * Date			: 16/08/2013
+	 */
+	
+	public ActionForward showCancelRequestPage(ActionMapping mapping,ActionForm form, HttpServletRequest request, HttpServletResponse response){
+		HttpSession 				session		= 	request.getSession();
+		String 						   empId	= 	(String)session.getAttribute("empID");
+		LeaveRequestBean    leaveRequestBean	=	new LeaveRequestBean();
+		ArrayList<CommonForm>	    dataList	=	leaveRequestBean.getCancelRequestList(empId);
+		CommonMethodBean	commonMethodBean	= 	 new CommonMethodBean();
+		
+		if(dataList!=null && dataList.size()>0){
+			request.setAttribute("reqCancelRequestList", dataList);
+		}
+		else{
+			request.setAttribute("msgType","FAIL");
+			request.setAttribute("saveResult","NO DATA FOUND.");
+		}
+		
+		String rarId		=	"40";
+		String userProcess	=	(String)session.getAttribute("userProcess");
+		
+		String validLink	=	commonMethodBean.getValidOrNot(userProcess, ","+rarId+",");
+		if(validLink!=null && validLink.equalsIgnoreCase("NOTVALID"))
+		{
+			return mapping.findForward("invalid");
+		}
+			
+		return mapping.findForward("showCancelRequestPage");
+	}
+	
+	/**
+	 * Action Name 	: openAttachment
+	 * Purpose		: To open Attachment
+	 * @author		: Sourabh	
+	 * Date			: 17/08/2013
+	 */
+	
+	public ActionForward openAttachment(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		CommonMethodBean	commonMethodBean		=	new CommonMethodBean();
+		HttpSession 		session					= 	request.getSession();
+		String 				empId					= 	(String)session.getAttribute("empID");
+		PrintWriter			writer					=	response.getWriter();
+		String				outputString			=	"";
+		String				fileName				=	request.getParameter("fileName");
+		String				drivePath				=	"";		
+		String				mainFolder				=	"";
+		String				projectTempFolder		=	"";
+		ServletConfig		servletConfig			=	getServlet().getServletConfig();
+		String				contexPath				=	servletConfig.getServletContext().getRealPath("/");	
+		try
+		{
+						MessageResources	msg		=	getResources(request);
+						drivePath					=	msg.getMessage("path.origin");
+						mainFolder					=	msg.getMessage("dir.leaverequest");
+						projectTempFolder			=	msg.getMessage("project.dir.temp");
+		}
+		catch(Exception e)
+		{
+			System.out.println("Exception While Reading Application.Resource File In LeaveRequestAction.openAttachment: "+e); 
+		}
+		
+					mainFolder	=	drivePath+mainFolder;
+		String	sourceFolder	=	mainFolder+"/"+empId+"/"+fileName;
+		
+		
+		String			destinationFolder			=	contexPath+projectTempFolder;
+		File			destFolder					=	new File(destinationFolder);	
+		
+		if (!destFolder.exists())
+		{
+			destFolder.mkdir();			
+		}
+		
+		String			destinationFile				=	destinationFolder+"/"+fileName;
+		
+		if(commonMethodBean.copyfile(sourceFolder, destinationFile))
+		{
+			outputString	=	destinationFile;
+			writer.println("/"+projectTempFolder+"/"+fileName);
+		}
+		else
+		{
+			writer.print("ERROR");
+		}	
+		/*if(outputString.equalsIgnoreCase("ERROR"))
+		{
+			if(commonMethodBean.copyfile(destinationFile, destinationFile))
+			{
+				outputString	=	destinationFile;
+				writer.println("/"+projectTempFolder+fileName);
+			}
+		}*/
+		return mapping.findForward(null);
+	}
+	
+	/**
+	 * Action Name 	: showCancelRequestPage
+	 * Purpose		: To show Cancel Request Page
+	 * @author		: Sourabh
+	 * Date			: 16/08/2013
+	 */
+	
+	public ActionForward showLeaveRequestDetails(ActionMapping mapping,ActionForm form, HttpServletRequest request, HttpServletResponse response){
+		HttpSession 				session		= 	request.getSession();
+		String 						   empId	= 	(String)session.getAttribute("empID");
+		LeaveRequestBean    leaveRequestBean	=	new LeaveRequestBean();
+		LeaveRequestForm 	leaveRequestForm	= 	(LeaveRequestForm)form;
+		String				leaveRequestId		=	leaveRequestForm.getLeaveId();
+		ArrayList<CommonForm>	dataList		=	leaveRequestBean.getCancelRequestDetails(leaveRequestId);
+		
+		if(dataList!=null && dataList.size()>0){
+			request.setAttribute("reqCancelRequestList", dataList);
+			request.setAttribute("id", leaveRequestId);
+		}
+		else{
+			request.setAttribute("msgType","FAIL");
+			request.setAttribute("saveResult","NO DATA FOUND.");
+		}
+			
+		return mapping.findForward("showCancelRequestDetailsPage");
+	}
+	
+	/**
+	 * Action Name 	: cancelRequest
+	 * Purpose		: To Cancel Request
+	 * @author		: Sourabh
+	 * Date			: 16/08/2013
+	 */
+	
+	public ActionForward cancelRequest(ActionMapping mapping,ActionForm form, HttpServletRequest request, HttpServletResponse response){
+		HttpSession 		session				= 	request.getSession();
+		String 				empId				= 	(String)session.getAttribute("empID");
+		LeaveRequestBean    leaveRequestBean	=	new LeaveRequestBean();
+		LeaveRequestForm 	leaveRequestForm	= 	(LeaveRequestForm)form;
+		String				saveResult			=	leaveRequestBean.cancelRequestMade(leaveRequestForm);
+		String				leaveRequestId		=	leaveRequestForm.getLeaveId();
+		String				mappingString		=	"ERROR";
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		if(saveResult!= null && saveResult.length() > 0 && !saveResult.equalsIgnoreCase("ERROR"))
+		{
+				String			msgType			=	saveResult.substring(0,4);
+								saveResult		=	saveResult.substring(5,saveResult.length());
+				if(msgType.equalsIgnoreCase("PASS")){
+					String 					username			= 		(String)session.getAttribute("username");
+					String 					userEmailId			=		commonMethodBean.getDataOnOneCondition("employee_master", "email_id ", "employeeid", empId);
+					String					to[]				=		(String[])leaveRequestBean.sendToApprovalList(leaveRequestId,userEmailId);
+					String					cc[]				=		leaveRequestBean.sendToApprovalListCc(leaveRequestId);
+					String					bcc[]				=		leaveRequestBean.sendToApprovalListBcc(leaveRequestId);
+					String 					text				=		leaveRequestBean.generateMailBodyToCancelLeaveRequest(leaveRequestForm , username);
+					SendMailBean			sendMailBean		=		new SendMailBean();
+					String					subject				=		" HR INFINITI ";
+					boolean 				debug				=		true;
+					boolean 				mailStatus			=		sendMailBean.sendMailAttach("", "", "", "", "", debug, to, cc, bcc, subject, text, "");
+					
+					ArrayList<CommonForm>	dataList			=		leaveRequestBean.getCancelRequestList(empId);
+					
+					if(dataList!=null && dataList.size()>0){
+					request.setAttribute("reqCancelRequestList", dataList);
+					}
+					mappingString	=	"showCancelRequestPage";	
+				}
+				if(msgType.equalsIgnoreCase("FAIL")){
+					mappingString	=	"showCancelRequestDetailsPage";	
+				}
+				request.setAttribute("msgType",msgType);
+				request.setAttribute("saveResult",saveResult);
+		}
+		return mapping.findForward(mappingString);
+	}
+	
+	
+	/**
+	 * Action Name 	: showApproveRejectPage
+	 * Purpose		: To show Approve Reject Page
+	 * @author		: Sourabh
+	 * Date			: 19/08/2013
+	 */
+	
+	public ActionForward showApproveRejectPage(ActionMapping mapping,ActionForm form, HttpServletRequest request, HttpServletResponse response){
+		HttpSession 				session		= 	request.getSession();
+		String 						   empId	= 	(String)session.getAttribute("empID");
+		LeaveRequestBean    leaveRequestBean	=	new LeaveRequestBean();
+		ArrayList<CommonForm>	dataList		=	leaveRequestBean.getAppoveRejectList(empId);
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		if(dataList!=null && dataList.size()>0){
+		request.setAttribute("reqApproveCancelRequestList", dataList);
+		}
+		else{
+			request.setAttribute("msgType","FAIL");
+			request.setAttribute("saveResult","NO DATA FOUND.");
+		}
+		
+		String rarId		=	"41";
+		String userProcess	=	(String)session.getAttribute("userProcess");
+		
+		String validLink	=	commonMethodBean.getValidOrNot(userProcess, ","+rarId+",");
+		if(validLink!=null && validLink.equalsIgnoreCase("NOTVALID"))
+		{
+			return mapping.findForward("invalid");
+		}
+			
+		return mapping.findForward("showApproveRejectRequestPage");
+	}
+	
+	/**
+	 * Action Name 	: showApproveRejectRequestPage
+	 * Purpose		: To show Approve Reject Request Page
+	 * @author		: Sourabh
+	 * Date			: 19/08/2013
+	 */
+	
+	public ActionForward showApproveRejectRequestPage(ActionMapping mapping,ActionForm form, HttpServletRequest request, HttpServletResponse response){
+		LeaveRequestBean    leaveRequestBean	=	new LeaveRequestBean();
+		LeaveRequestForm 	leaveRequestForm	= 	(LeaveRequestForm)form;
+		String				leaveRequestId		=	leaveRequestForm.getLeaveId();
+		String				empName				=	leaveRequestForm.getEmpName();
+		String				empId				=	leaveRequestForm.getEmpName();
+		ArrayList<CommonForm>	dataList		=	leaveRequestBean.getCancelRequestDetails(leaveRequestId);
+		
+		if(dataList!=null && dataList.size()>0){
+		request.setAttribute("reqApproveRejectRequestList", dataList);
+		request.setAttribute("empName", empName);
+		request.setAttribute("empId", empId);
+		request.setAttribute("id", leaveRequestId);
+		}
+		else{
+			request.setAttribute("msgType","FAIL");
+			request.setAttribute("saveResult","NO DATA FOUND.");
+		}
+			
+		return mapping.findForward("showApproveRejectRequestDetailsPage");
+	}
+	
+	
+	/**
+	 * Action Name 	: approveRequest
+	 * Purpose		: To approve Request
+	 * @author		: Sourabh
+	 * Date			: 19/08/2013
+	 */
+	
+	public ActionForward approveRequest(ActionMapping mapping,ActionForm form, HttpServletRequest request, HttpServletResponse response){
+		HttpSession 		session				= 	request.getSession();
+		String 				empId				= 	(String)session.getAttribute("empID");
+		LeaveRequestBean    leaveRequestBean	=	new LeaveRequestBean();
+		LeaveRequestForm 	leaveRequestForm	= 	(LeaveRequestForm)form;
+		String				saveResult			=	leaveRequestBean.approveRejectRequest(leaveRequestForm,"APPROVE",empId);
+		String				leaveRequestId		=	leaveRequestForm.getLeaveId();
+		String				mappingString		=	"ERROR";
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		if(saveResult!= null && saveResult.length() > 0 && !saveResult.equalsIgnoreCase("ERROR"))
+		{
+				String			msgType			=	saveResult.substring(0,4);
+								saveResult		=	saveResult.substring(5,saveResult.length());
+				if(msgType!= null && msgType.length() > 0 && msgType.equals("PASS")){
+					String 					username			= 		(String)session.getAttribute("username");
+					String 					userEmailId			=		leaveRequestBean.getEmailId(leaveRequestId);
+					String					to[]				=		(String[])leaveRequestBean.sendToApprovalList(leaveRequestId,userEmailId);
+					String					cc[]				=		leaveRequestBean.sendToApprovalListCc(leaveRequestId);
+					String					bcc[]				=		leaveRequestBean.sendToApprovalListBcc(leaveRequestId);
+					String 					text				=		leaveRequestBean.generateMailBodyToApproveRejectLeaveRequest(leaveRequestForm , username);
+					SendMailBean			sendMailBean		=		new SendMailBean();
+					String					subject				=		" HR INFINITI ";
+					boolean 				debug				=		true;
+					boolean 				mailStatus			=		sendMailBean.sendMailAttach("", "", "", "", "", debug, to, cc, bcc, subject, text, "");
+					
+					ArrayList<CommonForm>	dataList			=		leaveRequestBean.getAppoveRejectList(empId);
+					
+					if(dataList!=null && dataList.size()>0){
+					request.setAttribute("reqApproveCancelRequestList", dataList);
+					}
+					mappingString	=	"showApproveRejectRequestPage";	
+				}
+				else if(msgType!= null && msgType.length() > 0 && msgType.equals("FAIL"))
+				{
+					ArrayList<CommonForm>	dataList			=		leaveRequestBean.getAppoveRejectList(empId);
+					
+					if(dataList!=null && dataList.size()>0){
+					request.setAttribute("reqApproveCancelRequestList", dataList);
+					}
+					
+					mappingString	=	"showApproveRejectRequestPage";
+				}
+				request.setAttribute("msgType",msgType);
+				request.setAttribute("saveResult",saveResult);
+
+		}
+		return mapping.findForward(mappingString);
+	}
+	
+	/**
+	 * Action Name 	: rejectRequest
+	 * Purpose		: To reject Request
+	 * @author		: Sourabh
+	 * Date			: 16/08/2013
+	 */
+	
+	public ActionForward rejectRequest(ActionMapping mapping,ActionForm form, HttpServletRequest request, HttpServletResponse response){
+		HttpSession 		session				= 	request.getSession();
+		String 				empId				= 	(String)session.getAttribute("empID");
+		LeaveRequestBean    leaveRequestBean	=	new LeaveRequestBean();
+		LeaveRequestForm 	leaveRequestForm	= 	(LeaveRequestForm)form;
+		String				saveResult			=	leaveRequestBean.approveRejectRequest(leaveRequestForm,"REJECT",empId);
+		String				leaveRequestId		=	leaveRequestForm.getLeaveId();
+		String				mappingString		=	"ERROR";
+		if(saveResult!= null && saveResult.length() > 0 && !saveResult.equalsIgnoreCase("ERROR"))
+		{
+				String			msgType			=	saveResult.substring(0,4);
+								saveResult		=	saveResult.substring(5,saveResult.length());
+				if(msgType!= null && msgType.length() > 0 && msgType.equals("PASS")){
+					String 					username			= 		(String)session.getAttribute("username");
+					String 					userEmailId			=		leaveRequestBean.getEmailId(leaveRequestId);
+					String					to[]				=		(String[])leaveRequestBean.sendToApprovalList(leaveRequestId,userEmailId);
+					String					cc[]				=		leaveRequestBean.sendToApprovalListCc(leaveRequestId);
+					String					bcc[]				=		leaveRequestBean.sendToApprovalListBcc(leaveRequestId);
+					String 					text				=		leaveRequestBean.generateMailBodyToApproveRejectLeaveRequest(leaveRequestForm , username);
+					SendMailBean			sendMailBean		=		new SendMailBean();
+					String					subject				=		" HR INFINITI ";
+					boolean 				debug				=		true;
+					boolean 				mailStatus			=		sendMailBean.sendMailAttach("", "", "", "", "", debug, to, cc, bcc, subject, text, "");
+					
+					ArrayList<CommonForm>	dataList			=		leaveRequestBean.getAppoveRejectList(empId);
+					
+					if(dataList!=null && dataList.size()>0){
+					request.setAttribute("reqApproveCancelRequestList", dataList);
+					}
+					mappingString	=	"showApproveRejectRequestPage";	
+				}
+				else if(msgType!= null && msgType.length() > 0 && msgType.equals("FAIL"))
+				{
+					ArrayList<CommonForm>	dataList			=		leaveRequestBean.getAppoveRejectList(empId);
+					
+					if(dataList!=null && dataList.size()>0){
+					request.setAttribute("reqApproveCancelRequestList", dataList);
+					}
+					
+					mappingString	=	"showApproveRejectRequestPage";
+				}
+				request.setAttribute("msgType",msgType);
+				request.setAttribute("saveResult",saveResult);
+
+		}
+		return mapping.findForward(mappingString);
+	}
+	
+	/**
+	 * Action Name 	: openAttachmentForApproveReject
+	 * Purpose		: To open Attachment For Approve Reject
+	 * @author		: Sourabh	
+	 * Date			: 19/08/2013
+	 */
+	
+	public ActionForward openAttachmentForApproveReject(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		CommonMethodBean	commonMethodBean		=	new CommonMethodBean();
+		String 				empId					= 	request.getParameter("empId");
+		PrintWriter			writer					=	response.getWriter();
+		String				outputString			=	"";
+		String				fileName				=	request.getParameter("fileName");
+		String				drivePath				=	"";		
+		String				mainFolder				=	"";
+		String				projectTempFolder		=	"";
+		ServletConfig		servletConfig			=	getServlet().getServletConfig();
+		String				contexPath				=	servletConfig.getServletContext().getRealPath("/");	
+		try
+		{
+						MessageResources	msg		=	getResources(request);
+						drivePath					=	msg.getMessage("path.origin");
+						mainFolder					=	msg.getMessage("dir.leaverequest");
+						projectTempFolder			=	msg.getMessage("project.dir.temp");
+		}
+		catch(Exception e)
+		{
+			System.out.println("Exception While Reading Application.Resource File In LeaveRequestAction.openAttachment: "+e); 
+		}
+		
+					mainFolder	=	drivePath+mainFolder;
+		String	sourceFolder	=	mainFolder+"/"+empId+"/"+fileName;
+		
+		
+		String			destinationFolder			=	contexPath+projectTempFolder;
+		File			destFolder					=	new File(destinationFolder);	
+		
+		if (!destFolder.exists())
+		{
+			destFolder.mkdir();			
+		}
+		
+		String			destinationFile				=	destinationFolder+"/"+fileName;
+		
+		if(commonMethodBean.copyfile(sourceFolder, destinationFile))
+		{
+			outputString	=	destinationFile;
+			writer.println("/"+projectTempFolder+"/"+fileName);
+		}
+		else
+		{
+			writer.print("ERROR");
+		}	
+		/*if(outputString.equalsIgnoreCase("ERROR"))
+		{
+			if(commonMethodBean.copyfile(destinationFile, destinationFile))
+			{
+				outputString	=	destinationFile;
+				writer.println("/"+projectTempFolder+fileName);
+			}
+		}*/
+		return mapping.findForward(null);
+	}
+	
+	
+	/**
+	 * Action Name 	: showLeaveListPage
+	 * Purpose		: To show Leave List Page
+	 * @author		: Sourabh	
+	 * Date			: 19/08/2013
+	 */
+	public ActionForward showLeaveListPage(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		HttpSession				session				=	request.getSession();
+		CommonMethodBean		commonMethodBean	=	new CommonMethodBean();
+		LeaveRequestForm 		leaveRequestForm	= 	(LeaveRequestForm)form;
+		
+		leaveRequestForm.reset(mapping, request);
+		
+		
+		String	userName	=	(String)session.getAttribute("username");
+		String	userType	=	commonMethodBean.getDataOnOneCondition("usermst", "usertype", "user_name", userName);
+		if(userType!=null && userType.length() > 0 && userType.equals("EMPLOYEE"))
+		{
+			String	employeeId		=	commonMethodBean.getDataOnOneCondition("usermst", "employeeid", "user_name", userName);
+			leaveRequestForm.setEmpId(employeeId);
+			String	employeeName	=	commonMethodBean.getDataOnOneCondition("usermst", "display_name", "user_name", userName);
+			leaveRequestForm.setEmpName(employeeName);
+			
+			request.setAttribute("reqDisabled", "true");
+		}
+		request.removeAttribute("reqHeaderList");
+		leaveRequestForm.setFromDate(commonMethodBean.getDate());
+		leaveRequestForm.setToDate(commonMethodBean.getDate());
+		
+		String rarId		=	"42";
+		String userProcess	=	(String)session.getAttribute("userProcess");
+		
+		String validLink	=	commonMethodBean.getValidOrNot(userProcess, ","+rarId+",");
+		if(validLink!=null && validLink.equalsIgnoreCase("NOTVALID"))
+		{
+			return mapping.findForward("invalid");
+		}
+		
+		return mapping.findForward("showLeaveListPage");
+	}
+	
+	/**
+	 * Action Name 	: showLeaveListPage
+	 * Purpose		: To show Leave List Page
+	 * @author		: Sourabh	
+	 * Date			: 19/08/2013
+	 */
+	public ActionForward showLeaves(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		HttpSession				session				=	request.getSession();
+		CommonMethodBean		commonMethodBean	=	new CommonMethodBean();
+		LeaveRequestForm 		leaveRequestForm	= 	(LeaveRequestForm)form;
+		LeaveRequestBean    	leaveRequestBean	=	new LeaveRequestBean();					
+		
+		String	userName	=	(String)session.getAttribute("username");
+		String	userType	=	commonMethodBean.getDataOnOneCondition("usermst", "usertype", "user_name", userName);
+		if(userType!=null && userType.length() > 0 && userType.equals("EMPLOYEE"))
+		{
+			String	employeeId		=	commonMethodBean.getDataOnOneCondition("usermst", "employeeid", "user_name", userName);
+			leaveRequestForm.setEmpId(employeeId);
+			String	employeeName	=	commonMethodBean.getDataOnOneCondition("usermst", "display_name", "user_name", userName);
+			leaveRequestForm.setEmpName(employeeName);
+			
+			request.setAttribute("reqDisabled", "true");
+		}
+		
+		ArrayList<CommonForm> dataList		=	leaveRequestBean.getLeaves(leaveRequestForm);
+		
+		if(dataList!=null && dataList.size()>0){
+			request.setAttribute("reqHeaderList", dataList);
+			}
+			else{
+				request.setAttribute("msgType","FAIL");
+				request.setAttribute("saveResult","NO DATA FOUND.");
+			}
+		
+		return mapping.findForward("showLeaveListPage");
+	}
+	
+	
+	/**
+	 * Action Name 	: showLeaveListDetailsPage
+	 * Purpose		: To show Leave List Details Page
+	 * @author		: Sourabh
+	 * Date			: 21/08/2013
+	 */
+	
+	public ActionForward showLeaveListDetailsPage(ActionMapping mapping,ActionForm form, HttpServletRequest request, HttpServletResponse response){
+		LeaveRequestBean    leaveRequestBean	=	new LeaveRequestBean();
+		String				leaveRequestId		=	request.getParameter("id");
+		CommonMethodBean	commonMethodBean	= 	new CommonMethodBean();
+		ArrayList<CommonForm>	dataList		=	leaveRequestBean.getLeaveListPopUp(leaveRequestId);
+		String						[]to		=	leaveRequestBean.getSendToApprovalList(leaveRequestId);
+		ArrayList<String>	sentForApproval		=	new ArrayList<String>();
+		
+		
+		
+		if(dataList!=null && dataList.size()>0){
+			
+			for(int i=0;i<to.length;i++){
+				sentForApproval.add(commonMethodBean.getDataOnOneCondition("employee_master", " employee_name", "email_id",to[i]));	
+			}
+			
+		request.setAttribute("reqLeaveList", dataList);
+		request.setAttribute("reqForApproval", sentForApproval);
+		}
+		else{
+			request.setAttribute("msgType","FAIL");
+			request.setAttribute("saveResult","NO DATA FOUND.");
+		}
+			
+		return mapping.findForward("showLeaveListPopUp");
+	}
+}

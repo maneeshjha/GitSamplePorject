@@ -1,0 +1,1167 @@
+package com.inf.dvo.mbm.Bean.Master;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Arrays;
+
+import org.apache.struts.upload.FormFile;
+
+import com.inf.dvo.mbm.Bean.CommonMethodBean;
+import com.inf.dvo.mbm.DAO.CommonForm;
+import com.inf.dvo.mbm.DAO.Master.LeaveRequestForm;
+import com.inf.dvo.mbm.DBConnection.DBConnection;
+
+public class LeaveRequestBean {
+
+	DBConnection dbConn = new DBConnection();
+	
+	/**
+	 * Action Name 	: saveGenerateRequest
+	 * Purpose		: To Save Generated Request
+	 * @author		: Sourabh
+	 * Date			: 13/08/2013
+	 */
+	
+	public String saveGenerateRequest(LeaveRequestForm 	leaveRequestForm, String username){
+			
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		  Connection	con						=	dbConn.connect(); 	
+		  String		outputString			=	"";
+		  String 		empId					= 	leaveRequestForm.getEmpId();
+		  String		leaveType				=	leaveRequestForm.getLeaveType()	;
+		  String		leaveCategory			=	leaveRequestForm.getLeaveCategory();			
+		  String 		fromDate				=	leaveRequestForm.getFromDate();
+		  String 		toDate					=	leaveRequestForm.getToDate();
+		  String		desc					=	leaveRequestForm.getDesc();
+		  String		to[]					=	leaveRequestForm.getTo();
+		  String 		cc						=	leaveRequestForm.getCc();
+		  String 		bcc						=	leaveRequestForm.getBcc();	
+		  String 		concernedPerson			=	leaveRequestForm.getConcernedPerson()==null?"":leaveRequestForm.getConcernedPerson();
+		  FormFile		uploadFile				=	leaveRequestForm.getUploadFile();
+		  String		newFileName				=	"";
+		  int			fk						=	0;
+		  if(	uploadFile	!=	null && uploadFile.getFileSize()>0){
+		  String 		fileName				=	uploadFile.getFileName()==null?"":uploadFile.getFileName();
+		  String		fileExtension			=	fileName.substring(fileName.lastIndexOf("."), fileName.length());
+		  				newFileName				=	fromDate.replaceAll("/", "")+fileExtension;
+		  }
+		  ResultSet		rs						=	null;
+		  int			count					=	0;
+		 try{
+			 
+			 String		query		=	" insert into leave_request_header 	(	    leave_type,		leave_category,		empid,        	"+
+										"										    fromdate,		todate,		description,          	"+
+										"										    concerned_person,		attachment,		createdby,	"+
+										"										    createdon,	updatedby, 	updatedon,		status   )	"+
+										" values	 						( 		? , 	? , 	? , 	str_to_date(?,'%d/%m/%Y'), 	"+
+										"											str_to_date(?,'%d/%m/%Y'),	?,	?,	?,	?,sysdate(),"+
+										"											?,		sysdate(),		?							" +
+										"									)															";
+			 
+		 PreparedStatement	pst					=   con.prepareStatement(query);
+		 
+		 					pst.setString(1, leaveType);
+		 					pst.setString(2, leaveCategory);
+		 					pst.setString(3, empId);
+		 					pst.setString(4, fromDate);
+		 					pst.setString(5, toDate);
+		 					pst.setString(6, desc);
+		 					pst.setString(7, concernedPerson);
+		 					pst.setString(8, newFileName);
+		 					pst.setString(9, username);
+		 					pst.setString(10,username);
+		 					pst.setString(11,"NEW");
+		 					//outputString		=	pst.executeUpdate()>0?"PASS.LEAVE REQUEST SENT SUCCESSFULLY.":"FAIL.FAILED TO SEND LEAVE REQUEST";
+		 					int result			=	pst.executeUpdate();
+		 					
+		 					 if(result>0){
+		 						 
+		 						 //Gather Foreign Key
+		 						 
+		 						query	=	"select 	max(leave_request_id) 	from	leave_request_header";
+		 						
+		 						rs		=	pst.executeQuery(query);
+		 						
+		 						if(rs!=null){
+		 						
+		 							rs.next();
+		 							
+		 							fk=	Integer.parseInt(rs.getString(1));
+		 							
+		 							query	=	"insert 	into 	leave_request_details 	(	leave_request_id, empid , 						"+
+		 										"												emailID, cc, bcc,						"+		 									
+		 										" 												createdby, createdon, updatedby, updatedon)		"+
+		 										"			values							(	?, ?, ?, ?, ?, ?, sysdate(), ?, sysdate())	";
+		 							
+		 							pst		=	con.prepareStatement(query);
+		 								for(int i=0; i < to.length; i++){
+		 									String toEmpID	=	commonMethodBean.getDataOnOneCondition("employee_master", "employeeid ", "email_id", to[i]);	
+		 									pst.setInt(1,fk);
+				 							pst.setString(2,toEmpID);				 							
+				 							pst.setString(3,to[i]);
+				 							pst.setString(4,cc);
+				 							pst.setString(5,bcc);
+				 							pst.setString(6,username);
+				 							pst.setString(7,username);
+
+				 							pst.executeUpdate();
+				 							
+				 							count++;
+		 								}	
+		 						}
+		 						
+		 					 }
+		 					 
+		 		outputString	=	count == to.length ? "PASS.LEAVE REQUEST NO : "+fk+" GENERATED SUCCESSFULLY.":"FAIL.LEAVE REQUEST NO : "+fk+" GENERATED WITH PROBLEMS.";
+		 }				
+		 catch (Exception e){
+			 
+			 	outputString	=	"ERROR";
+				System.out.println("Exception in LeaveRequestBean.saveGenerateRequest");
+				e.printStackTrace();
+				
+			}finally
+			{
+				try {
+					if(con!=null)
+					{
+						con.close();
+						con=null;
+					}
+				} catch (Exception e) 
+				{
+					System.out.println("Exception while Closing Connection in LeaveRequestBean.saveGenerateRequest");
+					e.printStackTrace();
+				}
+			}
+		  
+		  
+		return outputString;
+	}
+	
+	/**
+	 * Action Name 	: generateMailBodyForLeaveRequest
+	 * Purpose		: To Generate Mail Body For Leave Request
+	 * @author		: Sourabh
+	 * Date			: 13/08/2013
+	 */
+	
+	public String  generateMailBodyForLeaveRequest(LeaveRequestForm 	leaveRequestForm, String username){
+		
+		CommonMethodBean	commonMethodBean		= 	new CommonMethodBean();
+			  String		leaveType				=	leaveRequestForm.getLeaveType()	;
+			  String		leaveCategory			=	leaveRequestForm.getLeaveCategory();			
+			  String 		fromDate				=	leaveRequestForm.getFromDate();
+			  String 		toDate					=	leaveRequestForm.getToDate();
+			  String		desc					=	leaveRequestForm.getDesc();
+			  String		to[]					=	leaveRequestForm.getTo();
+			  String 		concernedPerson			=	leaveRequestForm.getConcernedPerson()==null?"":leaveRequestForm.getConcernedPerson();
+			  String 		employeeName			=	"";
+			  int 			count					=	1;
+
+		String 	mailBody	=	"<table width='70%' border='0' cellspacing='1' cellpadding='1'>																																	"+
+								"		  <tr>																																													"+
+								"		    <td width='15%' align='left' valign='middle'style='font-family:Arial, Helvetica, sans-serif;font-weight: bold;;font-size:12px;color:#000000;padding:6px;'>Leave Type</td>           "+
+								"		    <td width='1%' align='left' valign='middle' style='font-family: Arial, Helvetica, sans-serif;font-size:12px;color:#161616;height:17px;' >:</td>										"+
+								"		    <td width='24%' align='left' valign='middle' style='font-family: Arial, Helvetica, sans-serif;font-size:12px;color:#161616;height:17px;' >"+leaveType+"</td>						"+
+								"		    <td width='15%' align='left' valign='middle' style='font-family:Arial, Helvetica, sans-serif;font-weight: bold;;font-size:12px;color:#000000;padding:6px;'>Leave Category</td>		"+
+								"		    <td width='1%' align='left' style='font-family: Arial, Helvetica, sans-serif;font-size:12px;color:#161616;height:17px;'>:</td>														"+
+								"		    <td width='24%' align='left' style='font-family: Arial, Helvetica, sans-serif;font-size:12px;color:#161616;height:17px;'>"+leaveCategory+"</td>										"+
+								"		  </tr>																																													"+										  
+								"		  <tr>																																													"+	
+								"		    <td width='15%' align='left' valign='middle' style='font-family:Arial, Helvetica, sans-serif;font-weight: bold;;font-size:12px;color:#000000;padding:6px;'>From Date</td>			"+
+								"		    <td width='1%' align='left' valign='middle' style='font-family: Arial, Helvetica, sans-serif;font-size:12px;color:#161616;height:17px;'>:</td>										"+
+								"		    <td width='24%' align='left' valign='middle' style='font-family: Arial, Helvetica, sans-serif;font-size:12px;color:#161616;height:17px;'>"+fromDate+"</td>							"+
+								"		    <td width='15%' align='left' valign='middle' style='font-family:Arial, Helvetica, sans-serif;font-weight: bold;;font-size:12px;color:#000000;padding:6px;'>To Date</td>				"+
+								"		    <td width='1%' align='left' style='font-family: Arial, Helvetica, sans-serif;font-size:12px;color:#161616;height:17px;'>:</td>														"+
+								"		    <td width='24%' align='left' style='font-family: Arial, Helvetica, sans-serif;font-size:12px;color:#161616;height:17px;'>"+toDate+"</td>											"+
+								"		 </tr>																																													"+
+								"		 <tr>																																													"+
+								"		    <td width='15%' align='left' valign='top' style='font-family:Arial, Helvetica, sans-serif;font-weight: bold;;font-size:12px;color:#000000;padding:6px;'>Description</td>			"+
+								"		    <td width='1%'  align='left' valign='top' style='font-family: Arial, Helvetica, sans-serif;font-size:12px;color:#161616;height:17px;'>:</td>										"+
+								"		    <td colspan='4' width='24%'  align='left' valign='top' style='font-family: Arial, Helvetica, sans-serif;font-size:12px;color:#161616;height:17px;'>"+desc+"</td>					"+
+								"		 </tr>	"+
+								"		 <tr>	"+
+								"		    <td width='15%' align='left' valign='top' style='font-family:Arial, Helvetica, sans-serif;font-weight: bold;;font-size:12px;color:#000000;padding:6px;'>Concerned Person </td>		"+
+								"		    <td width='1%' align='left' style='font-family: Arial, Helvetica, sans-serif;font-size:12px;color:#161616;height:17px;'>:</td>														"+
+								"		    <td colspan='4' width='24%' align='left' style='font-family: Arial, Helvetica, sans-serif;font-size:12px;color:#161616;height:17px;'>"+concernedPerson+"</td>						"+
+								"		 </tr>																																													"+
+								"</table>																																														"+
+								"<table width='60%' cellpadding='2' cellspacing='2'>																																			"+	 
+								"		<tr>																																													"+  
+								"			<td width='80%' style='font-family:Arial, Helvetica, sans-serif;font-weight: bold;;font-size:12px;color:#000000;padding:6px;'>Sent For Approval</td>	 							"+
+								"		</tr>																																													"+	 														 
+								"		<tr>	 																																												"+
+								"		   <td width='80%'><table width='60%' border='0' style='font-family:Arial, Helvetica, sans-serif;color:#000000;border: 1px solid #085798;width: 100%;margin: 20px 0 20px 0 !important;'>"+ 
+								"		   <tr style='height:25px;font-size:13px;font-weight:bold;background-color: #D4E3E8;padding-left:3px;'> 																				"+
+								"		   <td width='5%' align='center' valign='middle'>#</td> 																																"+
+								"		   <td width='95%'>Employee Name </td> 																																					"+
+								"		 </tr> 																																													";
+		
+							for(int i=0; i< to.length; i++){
+								
+								employeeName	=	commonMethodBean.getDataOnOneCondition("employee_master", " employee_name", "email_id",to[i]);
+								
+			  mailBody	   +=	"   <tr style='font-family:Arial,Helvetica,sans-serif;font-size:12px;vertical-align:middle;height:15px;padding-left:3px;background-color: #E6F6F6; '> 											"+
+								"   <td width='5%' align='center' valign='middle'>"+count+"</td>																																"+
+								"   <td width='95%'>"+employeeName+"</td>																																						"+
+								"   </tr> 																																														";	
+								count++;	
+							}
+							
+																																																								
+			mailBody		+=	"	</table></table><table><tr>																																									"+
+								"	<td width='80%' style='font-family:Arial, Helvetica, sans-serif;font-weight: bold;;font-size:12px;color:#000000;padding:6px;'>Regards ,</td>												"+
+								"	</tr>																																														"+
+								"	<tr>																																														"+
+								"	<td width='80%' style='font-family:Arial, Helvetica, sans-serif;font-weight: bold;;font-size:12px;color:#000000;padding:6px;'>"+username+"</td>												"+
+								"	</tr>																																														"+
+								"	</table>																																													";
+	return mailBody;
+	}
+	
+	/**
+	 * Action Name 	: getCancelRequestList
+	 * Purpose		: To get Cancel Request List
+	 * @author		: Sourabh
+	 * Date			: 16/08/2013
+	 */
+	
+	
+	public ArrayList<CommonForm> getCancelRequestList (String empID){
+		Connection	con						=	dbConn.connect();
+		ArrayList <CommonForm>	dataList	=	new ArrayList <CommonForm>();
+		ResultSet	rs						=	null;	
+		
+		String 		query					=	"SELECT 		LEAVE_REQUEST_ID,LEAVE_TYPE ,LEAVE_CATEGORY, DATE_FORMAT(FROMDATE,'%d/%m/%Y'), DATE_FORMAT(TODATE,'%d/%m/%Y'),CONCERNED_PERSON,"+
+												"				DESCRIPTION ,ATTACHMENT,STATUS 		"+
+												"FROM 			LEAVE_REQUEST_HEADER 				"+
+												"WHERE 			EMPID = ?							"+
+												"AND			( 									"+
+												"						STATUS 		=	'NEW'		"+
+												"				OR	( 								"+
+												"						STATUS		=	'APPROVE' 	"+ 
+												"						AND	DATE_FORMAT(SYSDATE(),'%d/%m/%Y')	<	DATE_FORMAT(FROMDATE,'%d/%m/%Y')"+
+												"					) 								"+
+												"				) 									"+
+												"ORDER BY	LEAVE_REQUEST_ID,FROMDATE"				;
+		
+		try{
+			PreparedStatement ps		    =	con.prepareStatement(query);
+			ps.setString(1, empID);
+			rs	=	ps.executeQuery();
+			
+			while(rs.next()){
+				CommonForm cForm	= new CommonForm();
+				cForm.setField1(rs.getString(1));//LEAVE_REQUEST_ID
+				cForm.setField2(rs.getString(2));//
+				cForm.setField3(rs.getString(3));
+				cForm.setField4(rs.getString(4));
+				cForm.setField5(rs.getString(5));
+				cForm.setField6(rs.getString(6) == null || rs.getString(6).length()==0?"-":rs.getString(6));				
+				cForm.setField7(rs.getString(7));
+				cForm.setField8(rs.getString(8));
+				cForm.setField9(rs.getString(9));//STATUS
+				dataList.add(cForm);
+			}
+		}
+		catch (Exception e){
+			 
+			System.out.println("Exception in LeaveRequestBean.getCancelRequestList");
+			e.printStackTrace();
+			
+		}finally
+		{
+			try {
+				if(con!=null)
+				{
+					con.close();
+					con=null;
+				}
+			} catch (Exception e) 
+			{
+				System.out.println("Exception while Closing Connection in LeaveRequestBean.getCancelRequestList");
+				e.printStackTrace();
+			}
+		}
+	return dataList;	
+	}
+	
+	/**
+	 * Action Name 	: getCancelRequestDetails
+	 * Purpose		: To get Cancel Request Details
+	 * @author		: Sourabh
+	 * Date			: 17/08/2013
+	 */
+	
+	
+	public ArrayList<CommonForm> getCancelRequestDetails (String leaveRequestId){
+ 		Connection	con						=	dbConn.connect();
+		ArrayList <CommonForm>	dataList	=	new ArrayList <CommonForm>();
+		ResultSet	rs						=	null;	
+		
+		String 		query					=	"SELECT 		LEAVE_REQUEST_ID,LEAVE_TYPE ,LEAVE_CATEGORY, DATE_FORMAT(FROMDATE,'%d/%m/%Y'), DATE_FORMAT(TODATE,'%d/%m/%Y'),CONCERNED_PERSON,"+
+												"				DESCRIPTION ,ATTACHMENT,EMPID,STATUS "+
+												"FROM 			LEAVE_REQUEST_HEADER "+
+												"WHERE 			LEAVE_REQUEST_ID = ? ";
+		
+		try{
+			PreparedStatement ps		    =	con.prepareStatement(query);
+			ps.setString(1, leaveRequestId);
+			rs	=	ps.executeQuery();
+			
+			while(rs.next()){
+				CommonForm cForm	= new CommonForm();
+				cForm.setField1(rs.getString(1));
+				cForm.setField2(rs.getString(2));
+				cForm.setField3(rs.getString(3));
+				cForm.setField4(rs.getString(4));
+				cForm.setField5(rs.getString(5));
+				cForm.setField6(rs.getString(6) == null || rs.getString(6).length()==0?"-":rs.getString(6));
+				cForm.setField7(rs.getString(7));
+				cForm.setField8(rs.getString(8));
+				cForm.setField9(rs.getString(9));//empid
+				cForm.setField10(rs.getString(10));//Status
+				dataList.add(cForm);
+			}
+		}
+		catch (Exception e){
+			 
+			System.out.println("Exception in LeaveRequestBean.getCancelRequestDetails");
+			e.printStackTrace();
+			
+		}finally
+		{
+			try {
+				if(con!=null)
+				{
+					con.close();
+					con=null;
+				}
+			} catch (Exception e) 
+			{
+				System.out.println("Exception while Closing Connection in LeaveRequestBean.getCancelRequestDetails");
+				e.printStackTrace();
+			}
+		}
+	return dataList;	
+	}
+	
+	
+	/**
+	 * Action Name 	: cancelRequestMade
+	 * Purpose		: To Cancel Request Made
+	 * @author		: Sourabh
+	 * Date			: 16/08/2013
+	 */
+	
+	public String cancelRequestMade(LeaveRequestForm leaveRequestForm){
+			
+		String				leaveRequestId		=	leaveRequestForm.getLeaveId();
+		String				remark				=	leaveRequestForm.getRemark();
+		  Connection		con					=	dbConn.connect(); 	
+		  String			outputString		=	"";
+		 try{
+			 
+			 				String		query	=	" UPDATE LEAVE_REQUEST_HEADER SET STATUS = ? , REMARK = ?  WHERE LEAVE_REQUEST_ID = ?";
+			 
+			 	PreparedStatement		pst		=   con.prepareStatement(query);
+		 					
+		 					pst.setString(1, "CANCEL");
+		 					pst.setString(2, remark);
+		 					pst.setString(3, leaveRequestId);
+		 					
+		 		int result		=	pst.executeUpdate();
+		 					 
+		 		outputString	=	result>0 ? "PASS.LEAVE REQUEST NO : "+leaveRequestId+" CANCELLED.":"FAIL.LEAVE REQUEST NO : "+leaveRequestId+" CANCELLATION FAILED.";
+		 }				
+		 catch (Exception e){
+			 
+			 	outputString	=	"ERROR";
+				System.out.println("Exception in LeaveRequestBean.saveGenerateRequest");
+				e.printStackTrace();
+				
+				
+			}finally
+			{
+				try {
+					if(con!=null)
+					{
+						con.close();
+						con=null;
+					}
+				} catch (Exception e) 
+				{
+					System.out.println("Exception while Closing Connection in LeaveRequestBean.saveGenerateRequest");
+					e.printStackTrace();
+				}
+			}
+		  
+		  
+		return outputString;
+	}
+	
+	/**
+	 * Action Name 	: sendToApprovalList
+	 * Purpose		: To get send To Approval List
+	 * @author		: Sourabh	 
+	 * * Date		: 16/08/2013
+	 */
+	
+	public String[]	sendToApprovalList(String leaveRequestId,String userEmailId){
+			
+		  ArrayList<String>	toList				=	new ArrayList<String>();	
+		  Connection		con					=	dbConn.connect(); 
+		  ResultSet			rs					= 	null;
+		 try{
+			 
+			 				String		query	=	" SELECT EMAILID FROM LEAVE_REQUEST_DETAILS WHERE LEAVE_REQUEST_ID   = ?";
+			 
+			 	PreparedStatement		pst		=   con.prepareStatement(query);
+				pst.setString(1, leaveRequestId);		 					
+				rs		=	pst.executeQuery();
+		 					 
+		 		while(rs.next()){
+		 			toList.add(rs.getString(1));
+		 		}
+		 		//Adding users email ID to List
+		 		toList.add(userEmailId);
+		 }				
+		 catch (Exception e){
+			 
+				System.out.println("Exception in LeaveRequestBean.sendToApprovalList");
+				e.printStackTrace();
+				
+			}finally
+			{
+				try {
+					if(con!=null)
+					{
+						con.close();
+						con=null;
+					}
+				} catch (Exception e) 
+				{
+					System.out.println("Exception while Closing Connection in LeaveRequestBean.sendToApprovalList");
+					e.printStackTrace();
+				}
+			}
+		
+		return (String[]) toList.toArray(new String[0]);
+		
+	}
+	
+	
+	/**
+	 * Action Name 	: sendToApprovalListCc
+	 * Purpose		: To get CC List
+	 * @author		: Sourabh
+	 * Date			: 16/08/2013
+	 */
+	public String[]	sendToApprovalListCc(String leaveRequestId){
+		
+		 
+		  Connection		con					=	dbConn.connect(); 
+		  ResultSet			rs					= 	null;
+		  String			[]cc				=	null;
+		  
+		 try{
+			 
+			 	String		query	=	" SELECT CC FROM LEAVE_REQUEST_DETAILS WHERE LEAVE_REQUEST_ID   = ?";
+			 
+			 	PreparedStatement		pst		=   con.prepareStatement(query);
+				pst.setString(1, leaveRequestId);		 					
+				rs		=	pst.executeQuery();
+		 		rs.next();
+		 		cc		=	rs.getString(1).split(",");
+		 }				
+		 catch (Exception e){
+			 
+				System.out.println("Exception in LeaveRequestBean.sendToApprovalListCc");
+				e.printStackTrace();
+				
+			}finally
+			{
+				try {
+					if(con!=null)
+					{
+						con.close();
+						con=null;
+					}
+				} catch (Exception e) 
+				{
+					System.out.println("Exception while Closing Connection in LeaveRequestBean.sendToApprovalListCc");
+					e.printStackTrace();
+				}
+			}
+		  
+		return cc;
+		
+	}
+	
+	
+	/**
+	 * Action Name 	: sendToApprovalListBcc
+	 * Purpose		: To get BCC List
+	 * @author		: Sourabh
+	 * Date			: 16/08/2013
+	 */
+	public String[]	sendToApprovalListBcc(String leaveRequestId){
+		
+		  String			[]bcc				=	null;
+		  Connection		con					=	dbConn.connect(); 
+		  ResultSet			rs					= 	null;
+		 try{
+			 
+			 				String		query	=	" SELECT CC FROM LEAVE_REQUEST_DETAILS WHERE LEAVE_REQUEST_ID   = ?";
+			 
+			 	PreparedStatement		pst		=   con.prepareStatement(query);
+				pst.setString(1, leaveRequestId);		 					
+				rs		=	pst.executeQuery();
+		 		rs.next();
+		 		bcc		=	rs.getString(1).split(",");
+		 }				
+		 catch (Exception e){
+			 
+				System.out.println("Exception in LeaveRequestBean.sendToApprovalListCc");
+				e.printStackTrace();
+				
+			}finally
+			{
+				try {
+					if(con!=null)
+					{
+						con.close();
+						con=null;
+					}
+				} catch (Exception e) 
+				{
+					System.out.println("Exception while Closing Connection in LeaveRequestBean.sendToApprovalListCc");
+					e.printStackTrace();
+				}
+			}
+		  
+		return bcc;
+		
+	}
+	
+	
+	/**
+	 * Action Name 	: generateMailBodyToCancelLeaveRequest
+	 * Purpose		: To Generate Mail Body To Cancel Leave Request
+	 * @author		: Sourabh
+	 * Date			: 16/08/2013
+	 */
+	
+	public String  generateMailBodyToCancelLeaveRequest(LeaveRequestForm 	leaveRequestForm, String username ){
+			
+		 	  Connection	con						=	dbConn.connect(); 
+		 	  ResultSet		rs						= 	null;
+		 	  String		leaveRequestId			=	leaveRequestForm.getLeaveId();
+		 	  String		remark					=	leaveRequestForm.getRemark();
+			  String		leaveType				=	null;
+			  String		leaveCategory			=	null;			
+			  String 		fromDate				=	null;
+			  String 		toDate					=	null;
+			  String		desc					=	null;
+			  String 		concernedPerson			=	null;
+			  
+			  try{
+					 
+				 	String		query	=	" SELECT 			LEAVE_TYPE,LEAVE_CATEGORY ,DATE_FORMAT(FROMDATE,'%d/%m/%Y') , DATE_FORMAT(TODATE,'%d/%m/%Y') , DESCRIPTION, CONCERNED_PERSON"+
+				 							" FROM 				LEAVE_REQUEST_HEADER " +
+				 							" WHERE 			LEAVE_REQUEST_ID =?";
+				 
+				 	PreparedStatement		pst		=   con.prepareStatement(query);
+					pst.setString(1, leaveRequestId);		 					
+					rs		=	pst.executeQuery();
+			 		rs.next();
+			 		leaveType		=	rs.getString(1);
+			 		leaveCategory	=	rs.getString(2);
+			 		fromDate		=	rs.getString(3);
+			 		toDate			=	rs.getString(4);
+			 		desc			=	rs.getString(5);
+			 		concernedPerson =	rs.getString(6);
+			 }				
+			 catch (Exception e){
+				 
+					System.out.println("Exception in LeaveRequestBean.generateMailBodyToCancelLeaveRequest");
+					e.printStackTrace();
+					
+				}finally
+				{
+					try {
+						if(con!=null)
+						{
+							con.close();
+							con=null;
+						}
+					} catch (Exception e) 
+					{
+						System.out.println("Exception while Closing Connection in LeaveRequestBean.generateMailBodyToCancelLeaveRequest");
+						e.printStackTrace();
+					}
+				}
+			  
+			  
+
+		String 	mailBody	=	"<table width='70%' border='0' cellspacing='1' cellpadding='1'>																																	"+
+								"		  <tr>																																													"+
+								"		    <td width='15%' align='left' valign='middle'style='font-family:Arial, Helvetica, sans-serif;font-weight: bold;;font-size:12px;color:#000000;padding:6px;'>Leave Type</td>           "+
+								"		    <td width='1%' align='left' valign='middle' style='font-family: Arial, Helvetica, sans-serif;font-size:12px;color:#161616;height:17px;' >:</td>										"+
+								"		    <td width='24%' align='left' valign='middle' style='font-family: Arial, Helvetica, sans-serif;font-size:12px;color:#161616;height:17px;' >"+leaveType+"</td>						"+
+								"		    <td width='15%' align='left' valign='middle' style='font-family:Arial, Helvetica, sans-serif;font-weight: bold;;font-size:12px;color:#000000;padding:6px;'>Leave Category</td>		"+
+								"		    <td width='1%' align='left' style='font-family: Arial, Helvetica, sans-serif;font-size:12px;color:#161616;height:17px;'>:</td>														"+
+								"		    <td width='24%' align='left' style='font-family: Arial, Helvetica, sans-serif;font-size:12px;color:#161616;height:17px;'>"+leaveCategory+"</td>										"+
+								"		  </tr>																																													"+										  
+								"		  <tr>																																													"+	
+								"		    <td width='15%' align='left' valign='middle' style='font-family:Arial, Helvetica, sans-serif;font-weight: bold;;font-size:12px;color:#000000;padding:6px;'>From Date</td>			"+
+								"		    <td width='1%' align='left' valign='middle' style='font-family: Arial, Helvetica, sans-serif;font-size:12px;color:#161616;height:17px;'>:</td>										"+
+								"		    <td width='24%' align='left' valign='middle' style='font-family: Arial, Helvetica, sans-serif;font-size:12px;color:#161616;height:17px;'>"+fromDate+"</td>							"+
+								"		    <td width='15%' align='left' valign='middle' style='font-family:Arial, Helvetica, sans-serif;font-weight: bold;;font-size:12px;color:#000000;padding:6px;'>To Date</td>				"+
+								"		    <td width='1%' align='left' style='font-family: Arial, Helvetica, sans-serif;font-size:12px;color:#161616;height:17px;'>:</td>														"+
+								"		    <td width='24%' align='left' style='font-family: Arial, Helvetica, sans-serif;font-size:12px;color:#161616;height:17px;'>"+toDate+"</td>											"+
+								"		 </tr>																																													"+
+								"		 <tr>																																													"+
+								"		    <td width='15%' align='left' valign='top' style='font-family:Arial, Helvetica, sans-serif;font-weight: bold;;font-size:12px;color:#000000;padding:6px;'>Description</td>			"+
+								"		    <td width='1%'  align='left' valign='top' style='font-family: Arial, Helvetica, sans-serif;font-size:12px;color:#161616;height:17px;'>:</td>										"+
+								"		    <td colspan='4' width='24%'  align='left' valign='top' style='font-family: Arial, Helvetica, sans-serif;font-size:12px;color:#161616;height:17px;'>"+desc+"</td>					"+
+								"		 </tr>	"+
+								"		 <tr>	"+
+								"		    <td width='15%' align='left' valign='top' style='font-family:Arial, Helvetica, sans-serif;font-weight: bold;;font-size:12px;color:#000000;padding:6px;'>Concerned Person </td>		"+
+								"		    <td width='1%' align='left' style='font-family: Arial, Helvetica, sans-serif;font-size:12px;color:#161616;height:17px;'>:</td>														"+
+								"		    <td colspan='4' width='24%' align='left' style='font-family: Arial, Helvetica, sans-serif;font-size:12px;color:#161616;height:17px;'>"+concernedPerson+"</td>						"+
+								"		 </tr>																																													"+
+								"		 <tr>	"+
+								"		    <td width='15%' align='left' valign='top' style='font-family:Arial, Helvetica, sans-serif;font-weight: bold;;font-size:12px;color:#000000;padding:6px;'>Remark </td>				"+
+								"		    <td width='1%' align='left' style='font-family: Arial, Helvetica, sans-serif;font-size:12px;color:#161616;height:17px;'>:</td>														"+
+								"		    <td colspan='4' width='24%' align='left' style='font-family: Arial, Helvetica, sans-serif;font-size:12px;color:#161616;height:17px;'>"+remark+"</td>								"+
+								"		 </tr><tr><td>&nbsp;</td></tr>																																							"+
+								"</table>																																														"+
+								"</table><table><tr>																																											"+
+								"	<td width='80%' style='font-family:Arial, Helvetica, sans-serif;font-weight: bold;;font-size:12px;color:#000000;padding:6px;'>Regards ,</td>												"+
+								"	</tr>																																														"+
+								"	<tr>																																														"+
+								"	<td width='80%' style='font-family:Arial, Helvetica, sans-serif;font-weight: bold;;font-size:12px;color:#000000;padding:6px;'>"+username+"</td>												"+
+								"	</tr>																																														"+
+								"	</table>																																													";
+	return mailBody;
+	}
+	
+	
+	/**
+	 * Action Name 	: getAppoveRejectList
+	 * Purpose		: To get Appove Reject List
+	 * @author		: Sourabh
+	 * Date			: 19/08/2013
+	 */
+	
+	
+	public ArrayList<CommonForm> getAppoveRejectList (String empID){
+		Connection	con						=	dbConn.connect();
+		ArrayList <CommonForm>	dataList	=	new ArrayList <CommonForm>();
+		ResultSet	rs						=	null;	
+		
+		String 		query					=	"SELECT 		LRH.LEAVE_REQUEST_ID,LRH.EMPID,EM.EMPLOYEE_NAME, LRH.LEAVE_TYPE, LRH.LEAVE_CATEGORY, DATE_FORMAT(LRH.FROMDATE,'%d/%m/%Y'), DATE_FORMAT(LRH.TODATE,'%d/%m/%Y'), "+ 
+												"				LRH.CONCERNED_PERSON, LRH.DESCRIPTION,LRH.ATTACHMENT														  "+
+												"FROM 			LEAVE_REQUEST_DETAILS	LRD																					  "+
+												"INNER JOIN		LEAVE_REQUEST_HEADER	LRH	ON 	LRH.LEAVE_REQUEST_ID	=	LRD.LEAVE_REQUEST_ID							  "+
+												"											AND	LRH.STATUS				=	'NEW'											  "+
+												"											AND	LRD.EMPID				=	?												  "+
+												"INNER JOIN		EMPLOYEE_MASTER			EM	ON	EM.EMPLOYEEID			=	LRH.EMPID										  "+
+												"GROUP BY		LRH.LEAVE_REQUEST_ID,LRH.EMPID,EM.EMPLOYEE_NAME, LRH.LEAVE_TYPE, LRH.LEAVE_CATEGORY, LRH.FROMDATE, LRH.TODATE,"+ 
+												"				LRH.CONCERNED_PERSON, LRH.DESCRIPTION,LRH.ATTACHMENT 														  "+
+												"ORDER BY		LRH.LEAVE_REQUEST_ID																						  ";
+		
+		try{
+			PreparedStatement ps		    =	con.prepareStatement(query);
+			ps.setString(1, empID);
+			rs	=	ps.executeQuery();
+			
+			while(rs.next()){
+				CommonForm cForm	= new CommonForm();
+				cForm.setField1(rs.getString(1));//LEAVE_REQUEST_ID
+				cForm.setField2(rs.getString(2));//EMPID
+				cForm.setField3(rs.getString(3));//EMPLOYEE_NAME
+				cForm.setField4(rs.getString(4));//LEAVE_TYPE
+				cForm.setField5(rs.getString(5));//LEAVE_CATEGORY
+				cForm.setField6(rs.getString(6));//FROMDATE				
+				cForm.setField7(rs.getString(7));//TODATE	
+				cForm.setField8(rs.getString(8) == null || rs.getString(8).length()==0?"-":rs.getString(8));//CONCERNED_PERSON
+				cForm.setField9(rs.getString(9));//DESCRIPTION
+				cForm.setField10(rs.getString(10));//ATTACHMENT
+				
+				dataList.add(cForm);
+			}
+		}
+		catch (Exception e){
+			 
+			System.out.println("Exception in LeaveRequestBean.getAppoveRejectList");
+			e.printStackTrace();
+			
+		}finally
+		{
+			try {
+				if(con!=null)
+				{
+					con.close();
+					con=null;
+				}
+			} catch (Exception e) 
+			{
+				System.out.println("Exception while Closing Connection in LeaveRequestBean.getAppoveRejectList");
+				e.printStackTrace();
+			}
+		}
+	return dataList;	
+	}
+	
+	/**
+	 * Action Name 	: approveRejectRequest
+	 * Purpose		: To Approve Reject Request
+	 * @author		: Sourabh
+	 * Date			: 19/08/2013
+	 */
+	
+	public String approveRejectRequest(LeaveRequestForm leaveRequestForm,String status, String empId){
+			
+		  
+		  String			leaveRequestId		=	leaveRequestForm.getLeaveId();
+		  String			remark				=	leaveRequestForm.getRemark();
+		  Connection		con					=	dbConn.connect(); 	
+		  String			outputString		=	"";
+		  CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		  String			finalStatus			=	status.equalsIgnoreCase("APPROVE")==true?"APPROVED":"REJECTED";
+		  String			currentStatus		=	commonMethodBean.getDataOnOneCondition("leave_request_header", "status", "leave_request_id", leaveRequestId);
+		 try{
+			 
+			 	if(currentStatus!= null && currentStatus.length() > 0 && currentStatus.equals("NEW")){
+			 
+			 				String		query	=	" update 	leave_request_header "+
+			 										" set 		status = ? , remark = ? , approver_rej_empid = ? " +
+			 										" where 	leave_request_id = ?";
+			 
+			 	PreparedStatement		pst		=   con.prepareStatement(query);
+		 					
+		 					pst.setString(1, status);
+		 					pst.setString(2, remark);
+		 					pst.setString(3, empId);
+		 					pst.setString(4, leaveRequestId);
+		 					
+		 		int result		=	pst.executeUpdate();
+		 					 
+		 		outputString	=	result>0 ? "PASS.LEAVE REQUEST NO : "+leaveRequestId+" "+finalStatus+" SUCCESSFULLY.":"FAIL.FAILED TO "+status+" .";
+			 	}
+			 	else{
+			 		
+			 	outputString	=	"FAIL.EITHER REQUEST NO : "+leaveRequestId+ " IS ALREADY APPROVED OR REJECTED.";
+			 		
+			 	}
+		 }				
+		 catch (Exception e){
+			 
+			 	outputString	=	"ERROR";
+				System.out.println("Exception in LeaveRequestBean.approveRejectRequest");
+				e.printStackTrace();
+				
+			}finally
+			{
+				try {
+					if(con!=null)
+					{
+						con.close();
+						con=null;
+					}
+				} catch (Exception e) 
+				{
+					System.out.println("Exception while Closing Connection in LeaveRequestBean.approveRejectRequest");
+					e.printStackTrace();
+				}
+			}
+		  
+		  
+		return outputString;
+	}
+	
+	/**
+	 * Action Name 	: generateMailBodyToApproveRejectLeaveRequest
+	 * Purpose		: To Generate Mail Body To Cancel Leave Request
+	 * @author		: Sourabh
+	 * Date			: 16/08/2013
+	 */
+	
+	public String  generateMailBodyToApproveRejectLeaveRequest(LeaveRequestForm 	leaveRequestForm, String username ){
+			
+		 	  Connection	con						=	dbConn.connect(); 
+		 	  ResultSet		rs						= 	null;
+		 	  String		leaveRequestId			=	leaveRequestForm.getLeaveId();
+		 	  String		remark					=	leaveRequestForm.getRemark();
+			  String		leaveType				=	null;
+			  String		leaveCategory			=	null;			
+			  String 		fromDate				=	null;
+			  String 		toDate					=	null;
+			  String		desc					=	null;
+			  String 		concernedPerson			=	null;
+			  String 		status					=	null;
+			  
+			  try{
+					 
+				 	String		query	=	" SELECT 			LEAVE_TYPE,LEAVE_CATEGORY ,DATE_FORMAT(FROMDATE,'%d/%m/%Y') , DATE_FORMAT(TODATE,'%d/%m/%Y') , DESCRIPTION, CONCERNED_PERSON,STATUS"+
+				 							" FROM 				LEAVE_REQUEST_HEADER " +
+				 							" WHERE 			LEAVE_REQUEST_ID =?";
+				 
+				 	PreparedStatement		pst		=   con.prepareStatement(query);
+					pst.setString(1, leaveRequestId);		 					
+					rs		=	pst.executeQuery();
+			 		rs.next();
+			 		leaveType		=	rs.getString(1);
+			 		leaveCategory	=	rs.getString(2);
+			 		fromDate		=	rs.getString(3);
+			 		toDate			=	rs.getString(4);
+			 		desc			=	rs.getString(5);
+			 		concernedPerson =	rs.getString(6);
+			 		status			=	rs.getString(7);
+			 }				
+			 catch (Exception e){
+				 
+					System.out.println("Exception in LeaveRequestBean.generateMailBodyToCancelLeaveRequest");
+					e.printStackTrace();
+					
+				}finally
+				{
+					try {
+						if(con!=null)
+						{
+							con.close();
+							con=null;
+						}
+					} catch (Exception e) 
+					{
+						System.out.println("Exception while Closing Connection in LeaveRequestBean.generateMailBodyToCancelLeaveRequest");
+						e.printStackTrace();
+					}
+				}
+			  
+			  
+
+		String 	mailBody	=	"<table width='70%' border='0' cellspacing='1' cellpadding='1'>																																	"+
+								"		  <tr>																																													"+
+								"		    <td width='15%' align='left' valign='middle'style='font-family:Arial, Helvetica, sans-serif;font-weight: bold;;font-size:12px;color:#000000;padding:6px;'>Leave Type</td>           "+
+								"		    <td width='1%' align='left' valign='middle' style='font-family: Arial, Helvetica, sans-serif;font-size:12px;color:#161616;height:17px;' >:</td>										"+
+								"		    <td width='24%' align='left' valign='middle' style='font-family: Arial, Helvetica, sans-serif;font-size:12px;color:#161616;height:17px;' >"+leaveType+"</td>						"+
+								"		    <td width='15%' align='left' valign='middle' style='font-family:Arial, Helvetica, sans-serif;font-weight: bold;;font-size:12px;color:#000000;padding:6px;'>Leave Category</td>		"+
+								"		    <td width='1%' align='left' style='font-family: Arial, Helvetica, sans-serif;font-size:12px;color:#161616;height:17px;'>:</td>														"+
+								"		    <td width='24%' align='left' style='font-family: Arial, Helvetica, sans-serif;font-size:12px;color:#161616;height:17px;'>"+leaveCategory+"</td>										"+
+								"		  </tr>																																													"+										  
+								"		  <tr>																																													"+	
+								"		    <td width='15%' align='left' valign='middle' style='font-family:Arial, Helvetica, sans-serif;font-weight: bold;;font-size:12px;color:#000000;padding:6px;'>From Date</td>			"+
+								"		    <td width='1%' align='left' valign='middle' style='font-family: Arial, Helvetica, sans-serif;font-size:12px;color:#161616;height:17px;'>:</td>										"+
+								"		    <td width='24%' align='left' valign='middle' style='font-family: Arial, Helvetica, sans-serif;font-size:12px;color:#161616;height:17px;'>"+fromDate+"</td>							"+
+								"		    <td width='15%' align='left' valign='middle' style='font-family:Arial, Helvetica, sans-serif;font-weight: bold;;font-size:12px;color:#000000;padding:6px;'>To Date</td>				"+
+								"		    <td width='1%' align='left' style='font-family: Arial, Helvetica, sans-serif;font-size:12px;color:#161616;height:17px;'>:</td>														"+
+								"		    <td width='24%' align='left' style='font-family: Arial, Helvetica, sans-serif;font-size:12px;color:#161616;height:17px;'>"+toDate+"</td>											"+
+								"		 </tr>																																													"+
+								"		 <tr>																																													"+
+								"		    <td width='15%' align='left' valign='top' style='font-family:Arial, Helvetica, sans-serif;font-weight: bold;;font-size:12px;color:#000000;padding:6px;'>Description</td>			"+
+								"		    <td width='1%'  align='left' valign='top' style='font-family: Arial, Helvetica, sans-serif;font-size:12px;color:#161616;height:17px;'>:</td>										"+
+								"		    <td colspan='4' width='24%'  align='left' valign='top' style='font-family: Arial, Helvetica, sans-serif;font-size:12px;color:#161616;height:17px;'>"+desc+"</td>					"+
+								"		 </tr>	"+
+								"		 <tr>	"+
+								"		    <td width='15%' align='left' valign='top' style='font-family:Arial, Helvetica, sans-serif;font-weight: bold;;font-size:12px;color:#000000;padding:6px;'>Concerned Person </td>		"+
+								"		    <td width='1%' align='left' style='font-family: Arial, Helvetica, sans-serif;font-size:12px;color:#161616;height:17px;'>:</td>														"+
+								"		    <td colspan='4' width='24%' align='left' style='font-family: Arial, Helvetica, sans-serif;font-size:12px;color:#161616;height:17px;'>"+concernedPerson+"</td>						"+
+								"		 </tr>																																													"+
+								"		 <tr>	"+
+								"		    <td width='15%' align='left' valign='top' style='font-family:Arial, Helvetica, sans-serif;font-weight: bold;;font-size:12px;color:#000000;padding:6px;'>Remark </td>				"+
+								"		    <td width='1%' align='left' style='font-family: Arial, Helvetica, sans-serif;font-size:12px;color:#161616;height:17px;'>:</td>														"+
+								"		    <td colspan='4' width='24%' align='left' style='font-family: Arial, Helvetica, sans-serif;font-size:12px;color:#161616;height:17px;'>"+remark+"</td>								"+
+								"		 </tr>" +
+								"		 <tr>	"+
+								"		    <td width='15%' align='left' valign='top' style='font-family:Arial, Helvetica, sans-serif;font-weight: bold;;font-size:12px;color:#000000;padding:6px;'>Leave Status </td>			"+
+								"		    <td width='1%' align='left' style='font-family: Arial, Helvetica, sans-serif;font-size:12px;color:#161616;height:17px;'>:</td>														"+
+								"		    <td colspan='4' width='24%' align='left' style='font-family: Arial, Helvetica, sans-serif;font-size:12px;color:#161616;height:17px;'>"+status+"</td>								"+
+								"		 </tr>" +
+								"<tr><td>&nbsp;</td></tr>																																										"+
+								"</table>																																														"+
+								"</table><table><tr>																																											"+
+								"	<td width='80%' style='font-family:Arial, Helvetica, sans-serif;font-weight: bold;;font-size:12px;color:#000000;padding:6px;'>Regards ,</td>												"+
+								"	</tr>																																														"+
+								"	<tr>																																														"+
+								"	<td width='80%' style='font-family:Arial, Helvetica, sans-serif;font-weight: bold;;font-size:12px;color:#000000;padding:6px;'>"+username+"</td>												"+
+								"	</tr>																																														"+
+								"	</table>																																													";
+	return mailBody;
+	}
+	
+	/**
+	 * Action Name 	: getEmailId
+	 * Purpose		: To get Email Id
+	 * @author		: Sourabh	 *
+	 *  Date		: 19/08/2013
+	 */
+	
+	public String	getEmailId(String leaveRequestId){
+			
+		  ArrayList<String>	toList				=	new ArrayList<String>();	
+		  Connection		con					=	dbConn.connect(); 
+		  ResultSet			rs					= 	null;
+		  String 			emailId				=	null;
+		 try{
+			 
+			 				String		query	=	"SELECT 	   EM.EMAIL_ID " +
+			 										"FROM 		   EMPLOYEE_MASTER  EM "+
+			 										"INNER JOIN    LEAVE_REQUEST_HEADER LH	ON 	   LH.EMPID	=	EM.EMPLOYEEID "+
+			 										"WHERE         LH.LEAVE_REQUEST_ID = ?";
+			 
+			 	PreparedStatement		pst		=   con.prepareStatement(query);
+				pst.setString(1, leaveRequestId);		 					
+				rs		=	pst.executeQuery();
+		 		rs.next();
+		 		emailId	=	rs.getString(1);
+		 		
+		 }				
+		 catch (Exception e){
+			 
+				System.out.println("Exception in LeaveRequestBean.sendToApprovalList");
+				e.printStackTrace();
+				
+			}finally
+			{
+				try {
+					if(con!=null)
+					{
+						con.close();
+						con=null;
+					}
+				} catch (Exception e) 
+				{
+					System.out.println("Exception while Closing Connection in LeaveRequestBean.sendToApprovalList");
+					e.printStackTrace();
+				}
+			}
+		
+		return emailId;
+		
+	}
+	
+	
+	/**
+	 * Method Name  : getLeaves
+	 * Purpose		: To getLeaves
+	 * @author		: Sourabh
+	 * Date			: 19/08/2013 	 
+	 */
+	public ArrayList<CommonForm> getLeaves(LeaveRequestForm leaveRequestForm) 
+	{
+		ArrayList<CommonForm>	dataList	=	new ArrayList<CommonForm>();
+		Connection				con			=	null;
+		Statement				st			=	null; 
+		ResultSet				rs			=	null;
+		String					empId		=	leaveRequestForm.getEmpId();
+		String					fromDate	=	leaveRequestForm.getFromDate();	
+		String					toDate		=	leaveRequestForm.getToDate();
+		String					leaveType	=	leaveRequestForm.getLeaveType();
+		String				leaveCategory	=	leaveRequestForm.getLeaveCategory();
+		String				leaveStatus		=	leaveRequestForm.getLeaveStatus();
+		String					query		=	"";
+		
+		
+		try
+		{
+				query	+=	"	select 		leave_request_id, empid, leave_type, leave_category, date_format(fromdate,'%d/%m/%Y')fromdate , date_format(todate,'%d/%m/%Y')todate, " +
+							"				description,concerned_person, attachment, remark,lh.status, em.employee_name,ifnull(arem.employee_name,'-') approver_rej_emp " +						
+							"	from 		leave_request_header 	lh " +
+							"	inner join 	employee_master 	em	on	em.employeeid		=	lh.empid " ;
+				if(fromDate!=null && fromDate.length() > 0)
+				{
+				query	+=	"				and	lh.fromdate			>= 	str_to_date('"+fromDate+"','%d/%m/%Y') ";
+				}
+				if(fromDate!=null && fromDate.length() > 0)
+				{
+				query	+=	"				and	lh.todate			<= 	str_to_date('"+toDate+"','%d/%m/%Y') ";
+				}
+				if(leaveType!=null && leaveType.length() > 0)
+				{
+				query	+=	"				and	lh.leave_type		=	'"+leaveType+"'";
+				}
+				if(leaveCategory!=null && leaveCategory.length() > 0)
+				{
+				query	+=	"				and	lh.leave_category	=	'"+leaveCategory+"'";
+				}
+				if(leaveStatus!=null && leaveStatus.length() > 0)
+				{
+				query	+=	"				and	lh.status			=	'"+leaveStatus+"'";
+				}
+				if(empId!=null && empId.length() > 0)
+				{
+				query	+=	"				and	empid				=	'"+empId+"'";
+				}
+				
+				query	+=	" 	left outer join	employee_master 	arem	on	arem.employeeid		=	lh.approver_rej_empid	"+
+							" 	order by 	lh.leave_request_id ";
+				con		=	dbConn.connect();
+				st		=	con.createStatement();
+				rs		=	st.executeQuery(query);
+				while(rs.next())
+				{
+					CommonForm cForm	=	new CommonForm();
+					cForm.setField1(rs.getString(1));//leave_request_id
+					cForm.setField2(rs.getString(2));//empid		
+					cForm.setField3(rs.getString(3));//leave_type
+					cForm.setField4(rs.getString(4));//leave_category
+					cForm.setField5(rs.getString(5));//fromdate
+					cForm.setField6(rs.getString(6));//todate
+					cForm.setField7(rs.getString(7));//description
+					cForm.setField8(rs.getString(8)== null || rs.getString(8).length()==0?"-":rs.getString(8));//concerned_person
+					cForm.setField9(rs.getString(9));//attachment
+					cForm.setField10(rs.getString(10)== null || rs.getString(10).length()==0?"-":rs.getString(10));//remark
+					cForm.setField11(rs.getString(11));//status
+					cForm.setField12(rs.getString(12));//emp_name
+					cForm.setField13(rs.getString(13));//app_rej_emp_name
+					dataList.add(cForm);
+				}
+		}
+		catch (Exception e) 
+		{
+			System.out.println("Exception In LeaveRequestBean.getLeaves : "+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				System.out.println("Exception While Closing The Connection in LeaveRequestBean.getLeaves :"+e);
+			}
+		}
+		return	dataList;
+	}
+	
+	/**
+	 * Method Name  : getLeaveListPopUp
+	 * Purpose		: To get Leave List Pop Up
+	 * @author		: Sourabh
+	 * Date			: 21/08/2013 	 
+	 */
+	public ArrayList<CommonForm> getLeaveListPopUp(String leaveRequestId) 
+	{
+		ArrayList<CommonForm>	dataList	=	new ArrayList<CommonForm>();
+		Connection				con			=	null;
+		Statement				st			=	null; 
+		ResultSet				rs			=	null;		
+		String					query		=	"";
+		
+		
+		try
+		{
+				query	+=	"	select 		leave_request_id, empid, leave_type, leave_category, date_format(fromdate,'%d/%m/%Y') , date_format(todate,'%d/%m/%Y'), " +
+							"				description,concerned_person, attachment, remark,lh.status, em.employee_name, ifnull(arem.employee_name,'-') approver_rej_emp " +						
+							"	from 		leave_request_header 	lh " +
+							"	inner join 	employee_master 	em	on	em.employeeid		=	lh.empid " +				
+							"   left outer join	employee_master 	arem	on	arem.employeeid		=	lh.approver_rej_empid	"+
+							"   where 		lh.leave_request_id		=	" +leaveRequestId+ 
+							"   order by 	leave_request_id ";
+				
+				con		=	dbConn.connect();
+				st		=	con.createStatement();							
+				
+				rs		=	st.executeQuery(query);
+				
+				while(rs.next())
+				{
+					CommonForm cForm	=	new CommonForm();
+					cForm.setField1(rs.getString(1));//leave_request_id
+					cForm.setField2(rs.getString(2));//empid		
+					cForm.setField3(rs.getString(3));//leave_type
+					cForm.setField4(rs.getString(4));//leave_category
+					cForm.setField5(rs.getString(5));//fromdate
+					cForm.setField6(rs.getString(6));//todate
+					cForm.setField7(rs.getString(7));//description
+					cForm.setField8(rs.getString(8)== null || rs.getString(8).length()==0?"-":rs.getString(8));//concerned_person
+					cForm.setField9(rs.getString(9));//attachment
+					cForm.setField10(rs.getString(10)== null || rs.getString(10).length()==0?"-":rs.getString(10));//remark
+					cForm.setField11(rs.getString(11));//status
+					cForm.setField12(rs.getString(12));//emp_name
+					cForm.setField13(rs.getString(13));//app_rej_emp_name
+					dataList.add(cForm);
+				}
+		}
+		catch (Exception e) 
+		{
+			System.out.println("Exception In LeaveRequestBean.getLeaveListPopUp : "+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				System.out.println("Exception While Closing The Connection in LeaveRequestBean.getLeaveListPopUp :"+e);
+			}
+		}
+		return	dataList;
+	}
+	
+	/**
+	 * Action Name 	: getSendToApprovalList
+	 * Purpose		: To get Send To Approval List
+	 * @author		: Sourabh	 
+	 * * Date		: 21/08/2013
+	 */
+	
+	public String[]	getSendToApprovalList(String leaveRequestId){
+			
+		  ArrayList<String>	toList				=	new ArrayList<String>();	
+		  Connection		con					=	dbConn.connect(); 
+		  ResultSet			rs					= 	null;
+		 try{
+			 
+			 				String		query	=	" SELECT EMAILID FROM LEAVE_REQUEST_DETAILS WHERE LEAVE_REQUEST_ID   = ?";
+			 
+			 	PreparedStatement		pst		=   con.prepareStatement(query);
+				pst.setString(1, leaveRequestId);		 					
+				rs		=	pst.executeQuery();
+		 					 
+		 		while(rs.next()){
+		 			toList.add(rs.getString(1));
+		 		}		 		
+		 }				
+		 catch (Exception e){
+			 
+				System.out.println("Exception in LeaveRequestBean.getSendToApprovalList");
+				e.printStackTrace();
+				
+			}finally
+			{
+				try {
+					if(con!=null)
+					{
+						con.close();
+						con=null;
+					}
+				} catch (Exception e) 
+				{
+					System.out.println("Exception while Closing Connection in LeaveRequestBean.getSendToApprovalList");
+					e.printStackTrace();
+				}
+			}
+		
+		return toList.toArray(new String[0]);
+		
+	}
+}

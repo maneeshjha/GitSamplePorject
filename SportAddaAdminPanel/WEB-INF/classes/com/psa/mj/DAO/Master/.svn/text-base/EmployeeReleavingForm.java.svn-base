@@ -1,0 +1,98 @@
+package com.inf.dvo.mbm.DAO.Master;
+
+import javax.servlet.http.HttpServletRequest;
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionMapping;
+
+
+public class EmployeeReleavingForm extends ActionForm
+{
+
+	private static final long serialVersionUID = 1L;
+	
+	private String	empId;
+	private	String	empName;
+	private	String	relievingDate;
+	private	String	releavingReason;
+	private String	status;
+	private String	releavingFromDate;
+	private String	releavingToDate;
+	private String	currentDate;
+	public void reset(ActionMapping mapping,HttpServletRequest request)
+	{
+		empId			=	null;
+		empName			=	null;
+		relievingDate	=	null;
+		releavingReason	=	null;
+		status			=	null;
+		releavingFromDate	=	null;
+		releavingToDate		=	null;
+		currentDate			=	null;
+	}
+
+	public String getEmpId() {
+		return empId;
+	}
+
+	public void setEmpId(String empId) {
+		this.empId = empId;
+	}
+
+	public String getEmpName() {
+		return empName;
+	}
+
+	public void setEmpName(String empName) {
+		this.empName = empName;
+	}
+
+	public String getRelievingDate() {
+		return relievingDate;
+	}
+
+	public void setRelievingDate(String relievingDate) {
+		this.relievingDate = relievingDate;
+	}
+
+	public String getReleavingReason() {
+		return releavingReason;
+	}
+
+	public void setReleavingReason(String releavingReason) {
+		this.releavingReason = releavingReason;
+	}
+
+	public String getStatus() {
+		return status;
+	}
+
+	public void setStatus(String status) {
+		this.status = status;
+	}
+
+	public String getReleavingFromDate() {
+		return releavingFromDate;
+	}
+
+	public void setReleavingFromDate(String releavingFromDate) {
+		this.releavingFromDate = releavingFromDate;
+	}
+
+	public String getReleavingToDate() {
+		return releavingToDate;
+	}
+
+	public void setReleavingToDate(String releavingToDate) {
+		this.releavingToDate = releavingToDate;
+	}
+
+	public String getCurrentDate() {
+		return currentDate;
+	}
+
+	public void setCurrentDate(String currentDate) {
+		this.currentDate = currentDate;
+	}
+	
+	
+}

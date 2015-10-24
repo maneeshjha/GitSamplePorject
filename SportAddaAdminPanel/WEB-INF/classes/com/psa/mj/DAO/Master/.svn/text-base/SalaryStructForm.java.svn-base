@@ -1,0 +1,79 @@
+package com.inf.dvo.mbm.DAO.Master;
+
+import javax.servlet.http.HttpServletRequest;
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionMapping;
+
+
+public class SalaryStructForm extends ActionForm
+{
+
+	private static final long serialVersionUID = 1L;
+	private String	structureName;
+	private String	structureId;
+	private String	structureDesc;
+	private String	salaryHeadId;
+	private String	percOrAmt;
+	private String	value;
+		
+	
+	public void reset(ActionMapping mapping,HttpServletRequest request)
+	{
+		structureName		=	null;
+		structureDesc		=	null;
+		salaryHeadId		=	null;
+		percOrAmt			=	null;
+		value				=	null;
+		structureId			=	null;
+	}
+
+	public String getStructureName() {
+		return structureName;
+	}
+
+	public void setStructureName(String structureName) {
+		this.structureName = structureName;
+	}
+
+	public String getStructureDesc() {
+		return structureDesc;
+	}
+
+	public void setStructureDesc(String structureDesc) {
+		this.structureDesc = structureDesc;
+	}
+
+	public String getSalaryHeadId() {
+		return salaryHeadId;
+	}
+
+	public void setSalaryHeadId(String salaryHeadId) {
+		this.salaryHeadId = salaryHeadId;
+	}
+
+	public String getPercOrAmt() {
+		return percOrAmt;
+	}
+
+	public void setPercOrAmt(String percOrAmt) {
+		this.percOrAmt = percOrAmt;
+	}
+
+	public String getValue() {
+		return value;
+	}
+
+	public void setValue(String value) {
+		this.value = value;
+	}
+
+	public String getStructureId() {
+		return structureId;
+	}
+
+	public void setStructureId(String structureId) {
+		this.structureId = structureId;
+	}
+	
+	
+}

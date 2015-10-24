@@ -1,0 +1,718 @@
+package com.inf.dvo.mbm.Bean.Master;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.util.ArrayList;
+
+import com.inf.dvo.mbm.Bean.CommonMethodBean;
+import com.inf.dvo.mbm.DAO.CommonForm;
+import com.inf.dvo.mbm.DAO.Master.ProjectForm;
+import com.inf.dvo.mbm.DBConnection.DBConnection;
+
+public class ProjectBean 
+{
+	DBConnection	dbConn	=	new DBConnection();
+	
+	/**
+	 * Method Name  : saveCountryMaster
+	 * Purpose		: To saveCountryMaster
+	 * @author		: Prashant
+	 * Date			: 07/03/2012
+	 * 
+	 */
+
+	public String saveProjectMaster(ProjectForm projectForm, String userName) 
+	{
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		String				outputString		=	"";
+		Connection			con					=	null;
+		PreparedStatement	pst					=	null;
+		String				query				=	"";
+		String				projectName			=	projectForm.getProjectName().trim().toUpperCase();
+		String				projectDesc			=	projectForm.getProjectDesc()!=null && projectForm.getProjectDesc().length() > 0 ? projectForm.getProjectDesc().trim().toUpperCase() : null;
+		String				status				=	projectForm.getStatus();
+		String				clientId			=	projectForm.getClientId();
+		String				contactParsonId		=	projectForm.getContactParsonId();
+		String				chkArray[]			=	projectForm.getUserArray();
+		try
+		{
+			
+			if(commonMethodBean.checkDuplicate("projectmst","project_name",projectName))
+			{
+				con		=	dbConn.connect();
+				query	=	"	insert into projectmst 	(	project_name, project_desc, status, createdby, createdon, updatedby, updatedon ,clientid,concern_person_id )" +
+							"	values					(   ?, ?, ?, ?, sysdate(),?,sysdate(),? , ? )";
+				
+				pst		=	con.prepareStatement(query);
+				pst.setString(1,projectName);
+				pst.setString(2,projectDesc);
+				pst.setString(3,status);
+				pst.setString(4,userName);
+				pst.setString(5,userName);
+				pst.setString(6,clientId);
+				pst.setString(7,contactParsonId);
+			
+				
+				int	count	=	pst.executeUpdate();
+				if(count > 0)
+				{
+					int	processCount	=	0;
+					
+					if(chkArray!=null && chkArray.length > 0 )
+					{	
+						String	projectId	=	commonMethodBean.getDataOnOneCondition("projectmst", "projectid", "project_name", projectName);	
+						query				=	"	insert into project_users (	projectid, userid, createdby, createdon, updatedby, updatedon ) " +
+												"	values					  ( ?, ?, ?, sysdate(), ?, sysdate() ) ";
+						for(int i=0;i<chkArray.length;i++)
+						{	
+							pst		=	con.prepareStatement(query);
+							pst.setString(1,projectId);
+							pst.setString(2,chkArray[i]);
+							pst.setString(3,userName);
+							pst.setString(4,userName);
+							
+							processCount += pst.executeUpdate();
+						}	
+						if(processCount > 0)
+						{
+							outputString		=	"PASS.PROJECT NAME : "+projectName+" SAVED SUCCESSFULLY.";
+						}
+						else
+						{
+							outputString		=	"FAIL.PROBLEM WHILE SAVING PROJECT NAME : "+projectName+".";
+						}
+					}
+					else
+					{
+						outputString	=	"FAIL.EMPLOYEE DETAILS NOT PROVIDED AGAINST PROJECT : "+projectName+".";
+					}
+				}
+				pst.close();
+			}
+			else
+			{
+				outputString	=	"FAIL.PROJECT NAME : "+projectName+" IS ALREADY PRESENT.";
+			}
+		}
+		catch(Exception e)
+		{
+			outputString = "ERROR";
+			System.out.println("ERROR In ProjectBean.saveProjectMaster:"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				outputString = "ERROR";
+				System.out.println("Exception While Closing The Connection in ProjectBean.saveCountryMaster:"+e);
+			}
+		}
+		return outputString;
+	}
+
+	/**
+	 * Method Name  : getProjectSearchList
+	 * Purpose		: To getProjectSearchList
+	 * @author		: Prashant
+	 * Date			: 07/09/2012
+	 * 
+	 */
+	public ArrayList<CommonForm> getProjectSearchList(ProjectForm projectForm) 
+	{
+		ArrayList<CommonForm> dataList		=	new ArrayList<CommonForm>();
+		Connection		con			=	null;
+		Statement		st			=	null;
+		ResultSet		rs			=	null;
+		String			query		=	"";
+		int				srNo		=	1;
+		String			projectId	=	projectForm.getProjectId();
+		String			status		=	projectForm.getStatus();
+		try
+		{
+			query	+=	"	select 	pm.projectid, pm.project_name, pm.project_desc, pm.status , cm.clientname , cd.personname" +
+						"	from 	projectmst pm" +
+						"	inner 	join client_mst cm          	on pm.clientid =  cm.clientid" +
+						"	inner 	join client_contact_dtls cd 	on pm.concern_person_id =  cd.client_dtls_id" +
+						"	where	0=0 " ;
+			if(projectId!=null && projectId.length() > 0)
+			{
+			query	+=	"			and	pm.projectid	=	'"+projectId+"'";
+			}
+			if(status!=null && status.length() > 0)
+			{
+			query	+=	"			and	pm.status		=	'"+status+"'";
+			}
+			query	+=	"	order by project_name ";	
+				
+			con		=	dbConn.connect();
+			st		=	con.createStatement();
+			rs		=	st.executeQuery(query);
+			while(rs.next())
+			{
+				CommonForm	cForm	=	new CommonForm();
+				cForm.setField1(""+(srNo++));//SRNO
+				cForm.setField2(rs.getString(1));//projectid
+				cForm.setField3(rs.getString(2));//project_name
+				cForm.setField4(rs.getString(3)!=null && rs.getString(3).length() > 0 ? rs.getString(3) : "-");//project_desc
+				cForm.setField5(rs.getString(4));//status
+				cForm.setField6(rs.getString(5));//clientname
+				cForm.setField7(rs.getString(6));//personname
+				
+				dataList.add(cForm);
+			}
+		}
+		catch(Exception e)
+		{
+			System.out.println("ERROR In ProjectBean.getProjectSearchList:"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				System.out.println("Exception While Closing The Connection in ProjectBean.getProjectSearchList:"+e);
+			}
+		}
+		return dataList;
+	}
+	
+	/**
+	 * Method Name  : getDataForModify
+	 * Purpose		: To getDataForModify
+	 * @author		: Prashant
+	 * Date			: 07/09/2012
+	 * 
+	 */
+	public void getDataForModify(ProjectForm projectForm)
+	{
+		Connection		con			=	null;
+		Statement		st			=	null;
+		ResultSet		rs			=	null;
+		String			query		=	"";
+		try
+		{
+			query	+=	"	select 	projectid, project_name, project_desc, status ,clientid ,concern_person_id " +
+						"	from 	projectmst " +
+						"	where	projectid	=	'"+projectForm.getProjectId()+"'";	
+				
+			con		=	dbConn.connect();
+			st		=	con.createStatement();
+			rs		=	st.executeQuery(query);
+			while(rs.next())
+			{
+				projectForm.setProjectId(rs.getString(1));
+				projectForm.setProjectName(rs.getString(2));
+				projectForm.setProjectDesc(rs.getString(3)); 
+				projectForm.setStatus(rs.getString(4)); 
+				projectForm.setClientId(rs.getString(5)); 
+				projectForm.setContactParsonId(rs.getString(6)); 
+			}
+		}
+		catch(Exception e)
+		{
+			System.out.println("ERROR In ProjectBean.getProjectSearchList:"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				System.out.println("Exception While Closing The Connection in ProjectBean.getProjectSearchList:"+e);
+			}
+		}
+	}
+
+	/**
+	 * Method Name  : getModifyProjectMaster
+	 * Purpose		: To getModifyProjectMaster
+	 * @author		: Prashant
+	 * Date			: 07/09/2012
+	 * 
+	 */
+	public String getModifyProjectMaster(ProjectForm projectForm,String userName) 
+	{
+		
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		String				outputString		=	"";
+		Connection			con					=	null;
+		PreparedStatement	pst					=	null;
+		String				query				=	"";
+		String				projectName			=	projectForm.getProjectName().trim().toUpperCase();
+		String				projectDesc			=	projectForm.getProjectDesc()!=null && projectForm.getProjectDesc().length() > 0 ? projectForm.getProjectDesc().trim().toUpperCase() : null;
+		String				status				=	projectForm.getStatus();
+		String				clientId			=	projectForm.getClientId();
+		String				contactPersonId		=	projectForm.getContactParsonId();
+		String				chkArray[]			=	projectForm.getUserArray();
+		String				projectId			=	projectForm.getProjectId();
+		boolean 			flag 				=	true;
+		try
+		{
+			if(!commonMethodBean.checkDuplicateForModification("projectmst", "project_name", projectName, "projectid", projectId))
+			{
+				flag = false;
+				outputString	=	"FAIL.PROJECT NAME : "+projectName+" IS ALREADY PRESENT.";
+			}
+			String	old_Status	=	commonMethodBean.getDataOnOneCondition("projectmst", "status", "projectid", projectId);
+			
+			if(flag == true && !getDeleteCount(projectId) && old_Status.equals("ACTIVE") && status.equals("INACTIVE"))
+			{
+				flag = false;
+				outputString	=	"FAIL.CANNOT MODIFY : EMPLOYEES ARE PRESENT AGAINST PROJECT.";
+			}
+			
+			if(flag == true)
+			{
+				con		=	dbConn.connect();
+				query	=	"	update 	projectmst " +
+							"	set		project_name	=	?, 	" +
+							"			project_desc	=	?, 	" +
+							"			status			=	?,  " +
+							"			updatedby		=	?, 	" +
+							"			updatedon		=	sysdate(),	" +
+							"			clientid		=	?,	" +
+							"			concern_person_id =	?	" +
+							"	where	projectid		=	? 	";
+				
+				pst		=	con.prepareStatement(query);
+				pst.setString(1,projectName);
+				pst.setString(2,projectDesc);
+				pst.setString(3,status);
+				pst.setString(4,userName);
+				pst.setString(5,clientId);
+				pst.setString(6,contactPersonId);
+				pst.setString(7,projectId);
+			
+				
+				int	count	=	pst.executeUpdate();
+				if(count > 0)
+				{
+					int	processCount	=	0;
+					
+					if(chkArray!=null && chkArray.length > 0 )
+					{	
+						query				=	"	insert into project_users (	projectid, userid, createdby, createdon, updatedby, updatedon ) " +
+												"	values					  ( ?, ?, ?, sysdate(), ?, sysdate() ) ";
+						for(int i=0;i<chkArray.length;i++)
+						{	
+							pst		=	con.prepareStatement(query);
+							pst.setString(1,projectId);
+							pst.setString(2,chkArray[i]);
+							pst.setString(3,userName);
+							pst.setString(4,userName);
+							
+							processCount += pst.executeUpdate();
+						}	
+						if(processCount > 0)
+						{
+							outputString		=	"PASS.PROJECT NAME : "+projectName+" MODIFIED SUCCESSFULLY.";
+						}
+						else
+						{
+							outputString		=	"FAIL.PROBLEM WHILE MODIFING PROJECT NAME : "+projectName+".";
+						}
+					}
+					else if(chkArray == null || chkArray.length <= 0 )
+					{
+						outputString	=	"PASS.PROJECT NAME : "+projectName+" MODIFIED SUCCESSFULLY.";
+					}
+				}
+				
+				pst.close();
+			}
+			
+		}
+		catch(Exception e)
+		{
+			outputString = "ERROR";
+			System.out.println("ERROR In ProjectBean.getModifyProjectMaster:"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e) 
+			{
+				outputString = "ERROR";
+				System.out.println("Exception While Closing The Connection in ProjectBean.getModifyProjectMaster :"+e);
+			}
+		}
+		return outputString;
+	}
+	
+	/**
+	 * Method Name  : deleteProject
+	 * Purpose		: To deleteProject
+	 * @author		: Prashant
+	 * Date			: 07/09/2012
+	 * 
+	 */
+	public String deleteProject(String projectId, String projectName) 
+	{
+		String			outputString			=	"";
+		Connection		con						=	null;
+		Statement		st						=	null;
+		String			query					=	"";
+		int 			count					=	0;
+		try
+		{
+				
+			if(getDeleteCount(projectId))
+			{	
+				/*NOTE : DELETE FROM PROJECT USRES TABLE*/
+				query			=	"	delete " +
+									"	from	project_users" +
+									"	where	projectid	=	'"+projectId+"'";
+			
+				con				=	dbConn.connect();
+				st				=	con.createStatement();	
+				count			=	st.executeUpdate(query);
+				
+				/*NOTE : DELETE FROM PROJECT MASTER TABLE*/
+				if(count > 0)
+				{
+					query			=	"	delete	" +
+										"	from	projectmst " +
+										"	where	projectid	=	'"+projectId+"'";	
+					
+					
+					count			=	st.executeUpdate(query);
+					
+					if( count > 0)
+					{
+						outputString	=	"PASS.PROJECT : "+projectName+" DELETED SUCCESSFULLY.";
+					}
+					else
+					{
+						outputString	=	"FAIL.PROJECT : "+projectName+" NOT DELETE.";
+					}
+				}
+				else
+				{
+					outputString	=	"FAIL.PROBLEM WHILE DELETING PROJECT : "+projectName+".";
+				}
+			}
+			else
+			{
+				outputString	=	"FAIL.CANNOT DELETE : EMPLOYEES ARE PRESENT AGAINST PROJECT.";
+			}
+				
+		}
+		catch(Exception e)
+		{
+			outputString = "ERROR";
+			System.out.println("ERROR In ProjectBean.deleteProject : "+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				outputString = "ERROR";
+				System.out.println("Exception While Closing The Connection in ProjectBean.deleteProject : "+e);
+			}
+		}
+		return outputString;
+	}
+	
+	/**
+	 * Method Name  : getEmployeeList
+	 * Purpose		: To getEmployeeList
+	 * @author		: Prashant
+	 * Date			: 07/09/2012
+	 * 
+	 */
+	public ArrayList<CommonForm> getEmployeeList(String projectId,String purpose,String status) 
+	{
+		ArrayList<CommonForm>	dataList	=	new ArrayList<CommonForm>();
+		Connection				con			=	null;
+		Statement				st			=	null;
+		ResultSet				rs			=	null;
+		String					query		=	"";
+		int						srNo		=	1;
+		
+		try
+		{
+			if(purpose!=null && purpose.length() > 0 && purpose.equalsIgnoreCase("ADD"))
+			{	
+				query	+=	"	select		um.userid,um.user_name,em.employee_code,em.employee_name " +
+							"	from		usermst um " +
+							"	inner join   employee_master	em on em.employeeid = um.employeeid" +
+							"	and			um.usertype	=	'EMPLOYEE' ";
+				if(status!=null && status.length() > 0)
+				{
+				query	+=	"				and	um.status	=	'"+status+"'";
+				}
+				query	+=	"	order by	user_name ";				
+			}	
+			else if(purpose!=null && purpose.length() > 0 && purpose.equalsIgnoreCase("EDIT"))
+			{
+				query	+=	"	select		um.userid,um.user_name,em.employee_code,em.employee_name " + 
+							"	from		usermst um" +
+							"	inner join   employee_master	em on em.employeeid = um.employeeid" +
+							"	where		0=0" +
+							"				and	um.userid not in ( 	select		pu.userid" +
+							"										from		usermst um" +
+							"										inner 	join	project_users	pu	on	pu.userid	=	um.userid" +
+							"										inner	join	projectmst	pm	on	pm.projectid	=	pu.projectid" +
+							"																		and	pm.projectid	=	'"+projectId+"'" +
+							"									 )	" +
+							"			and	um.usertype	=	'EMPLOYEE'";
+				if(status!=null && status.length() > 0)
+				{
+				query	+=	"			and	um.status	=	'"+status+"'";
+				}
+				query	+=	"	order by	um.user_name ";
+			}
+			con		=	dbConn.connect();
+			st		=	con.createStatement();
+			rs		=	st.executeQuery(query);
+			String 	empCode	=	"";
+			while(rs.next())
+			{
+				CommonForm	cForm	=	new CommonForm();
+				cForm.setField1(""+(srNo++));//SRNO
+				cForm.setField2(rs.getString(1));//userid
+				cForm.setField3(rs.getString(2).toUpperCase());//user_name
+				cForm.setField4(rs.getString(3));//employee_Code
+				cForm.setField5(rs.getString(4).toUpperCase());//employee_name
+				empCode	=	rs.getString(3);
+				cForm.setField6(rs.getString(4)+" ("+empCode+")");
+				dataList.add(cForm);
+			}
+		}
+		catch(Exception e)
+		{
+			System.out.println("ERROR In ProjectBean.getEmployeeList :"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				System.out.println("Exception While Closing The Connection in ProjectBean.getEmployeeList :"+e);
+			}
+		}
+		return dataList;
+	}
+	
+	/**
+	 * Method Name  : getProjectIdWiseEmployeeList
+	 * Purpose		: To getProjectIdWiseEmployeeList
+	 * @author		: Prashant
+	 * Date			: 07/09/2012
+	 * 
+	 */
+	public ArrayList<CommonForm> getProjectIdWiseEmployeeList(String projectId) 
+	{
+		ArrayList<CommonForm>	dataList	=	new ArrayList<CommonForm>();
+		Connection				con			=	null;
+		Statement				st			=	null;
+		ResultSet				rs			=	null;
+		String					query		=	"";
+		int						srNo		=	1;
+		
+		try
+		{
+				
+			query	+=	"	select		um.userid,um.user_name,pu.project_dtlsid,em.employee_code,em.employee_name" +
+						"	from		usermst um " +
+						"	inner 	join	project_users	pu	on	pu.userid		=	um.userid " +
+						"	inner	join	projectmst		pm	on	pm.projectid	=	pu.projectid" +
+						"										and	pm.projectid	=	'"+projectId+"'	" +
+						"	inner join   employee_master	em  on  em.employeeid 	= 	um.employeeid" +
+						"	order by um.user_name ";
+			
+			con		=	dbConn.connect();
+			st		=	con.createStatement();
+			rs		=	st.executeQuery(query);
+			String	empCode	=	"";
+			while(rs.next())
+			{
+				CommonForm	cForm	=	new CommonForm();
+				cForm.setField1(""+(srNo++));//SRNO
+				cForm.setField2(rs.getString(1));//userid
+				cForm.setField3(rs.getString(2).toUpperCase());//user_name
+				cForm.setField4(rs.getString(3));//project_dtlsid
+				cForm.setField5(rs.getString(4));//employee_code
+				cForm.setField6(rs.getString(5));//employee_name
+				empCode	=	rs.getString(4);
+				cForm.setField7(rs.getString(5)+" ("+empCode+")");
+				dataList.add(cForm);
+			}
+		}
+		catch(Exception e)
+		{
+			System.out.println("ERROR In ProjectBean.getProjectIdWiseEmployeeList : "+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				System.out.println("Exception While Closing The Connection in ProjectBean.getProjectIdWiseEmployeeList : "+e);
+			}
+		}
+		return dataList;
+	}
+	
+	/**
+	 * Method Name  : projectWiseEmployeeDelete
+	 * Purpose		: To projectWiseEmployeeDelete
+	 * @author		: Prashant
+	 * Date			: 07/09/2012
+	 * @param empName 
+	 * 
+	 */
+	public String projectWiseEmployeeDelete(String projectDtlsId, String empName) 
+	{
+		String				outputString		=	"";
+		Connection			con					=	null;
+		Statement			st					=	null;
+		String				query				=	"";
+		int 				count				=	0;
+		try
+		{
+			query			+=		"	delete	" +
+									"	from 	project_users";
+			if(projectDtlsId!= null && projectDtlsId.length() > 0)
+			{	
+				query		+=		"	where	project_dtlsid	=	'"+projectDtlsId+"'";
+			}	
+			con				=	dbConn.connect();
+			st				=	con.createStatement();
+			
+			count			=	st.executeUpdate(query);
+			if( count > 0)
+			{
+				outputString	=	"PASS.EMPLOYEE : "+empName.toUpperCase()+" REMOVE SUCCESSFULLY.";
+			}
+			else
+			{
+				outputString	=	"FAIL.EMPLOYEE : "+empName.toUpperCase()+" NOT REMOVE.";
+			}	
+				
+		}
+		catch(Exception e)
+		{
+			outputString = "ERROR";
+			System.out.println("ERROR In ProjectBean.projectWiseEmployeeDelete :"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				outputString = "ERROR";
+				System.out.println("Exception While Closing The Connection in ProjectBean.projectWiseEmployeeDelete : "+e);
+			}
+		}
+		return outputString;
+	}
+
+	
+	/**
+	 * Method Name  : getDeleteCount
+	 * Purpose		: To getDeleteCount
+	 * @author		: Prashant
+	 * Date			: 13/09/2012
+	 * @param status 
+	 */
+	public  boolean getDeleteCount(String projectId)
+	{
+		Connection	con		=	null;
+		boolean 	flag	=	true;
+		int 		count	=	-1;
+		try	
+		{
+			String 		query	=	"	select	count(projectid)" +
+									"	from	wms	" +
+									"	where	0=0" +
+									"			and	projectid	=	'"+projectId+"'";
+									//"		and	status		=	'SAVED'";
+			con					=	dbConn.connect();
+			Statement 	st		=	con.createStatement();
+			ResultSet 	result	=	st.executeQuery(query);
+			while(result.next()) 
+			{
+				count = result.getInt(1);
+			}
+			if(count>0)
+				flag = false;
+			else
+				flag = true;
+				
+		}catch(Exception e)	
+		{
+			System.out.println("Error in ProjectBean.getDeleteCount : "+e);
+		}finally 
+		{
+			try
+			{
+				if(con != null)
+					con.close();
+			}catch(Exception s)
+			{
+				System.out.println("Error in closing connection in ProjectBean.getDeleteCount : "+s);
+			}
+		}		
+		return flag;
+	}
+}

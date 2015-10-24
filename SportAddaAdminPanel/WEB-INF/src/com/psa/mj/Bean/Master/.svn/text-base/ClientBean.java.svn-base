@@ -1,0 +1,935 @@
+package com.inf.dvo.mbm.Bean.Master;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.util.ArrayList;
+
+import javax.servlet.http.HttpSession;
+
+import com.inf.dvo.mbm.Bean.CommonMethodBean;
+import com.inf.dvo.mbm.DAO.CommonForm;
+import com.inf.dvo.mbm.DAO.Master.BankForm;
+import com.inf.dvo.mbm.DAO.Master.ClientForm;
+import com.inf.dvo.mbm.DAO.Master.CountryForm;
+import com.inf.dvo.mbm.DAO.Master.RoleForm;
+import com.inf.dvo.mbm.DBConnection.DBConnection;
+import com.sun.org.apache.bcel.internal.generic.InstructionConstants.Clinit;
+
+public class ClientBean  {
+	
+	DBConnection	dbConn	=	new DBConnection();
+
+	/**
+	 * Method Name  : saveClientMaster
+	 * Purpose		: To Save Client Details
+	 * @author		: Prashant
+	 * Date			: 18/09/2012 
+	 */
+	
+	public String saveClientMaster(ClientForm clientForm,String userName, HttpSession session,String defaultPerson) 
+	{
+		
+		CommonMethodBean		commonMethodBean	=	new CommonMethodBean();
+		String					outputString		=	"";
+		Connection				con					=	null;
+		PreparedStatement		pst					=	null;
+		String					query				=	"";
+		ArrayList<CommonForm> 	dataList			=	(ArrayList<CommonForm>)session.getAttribute("sesClientDetails");
+		String					clientCode			=	clientForm.getClientCode().trim();
+		String					clientName			=	clientForm.getClientName()!= null && clientForm.getClientName().length() > 0 ? clientForm.getClientName().trim().toUpperCase() : "";
+		String					address1			=	clientForm.getAddress1();
+		String					address2			=	clientForm.getAddress2()!=null && clientForm.getAddress2().length()>0  ? clientForm.getAddress2().trim():"";
+		String					address3			=	clientForm.getAddress3()!=null && clientForm.getAddress3().length()>0  ? clientForm.getAddress3().trim():"";
+		String					country				=	clientForm.getCountryId();
+		String					state				=	clientForm.getStateId();
+		String					city				=	clientForm.getCityId();
+		String					status				=	clientForm.getStatus();	
+		int 					defaultFlag			=	Integer.parseInt(defaultPerson);
+		String					personName			=	"";
+		String					designation			=	"";
+		String				  	directNumber		=	"";
+		String					mobNumber			=	"";
+		String					landLineNumber		=	"";
+		String					emailId				=	"";
+		String					defaultStatus		=	"";
+		
+		boolean 				flag				=	true;
+		int						count				=	0;
+		try
+		{
+			con		=	dbConn.connect();
+			
+			if(commonMethodBean.checkDuplicate("client_mst","clientcode",clientCode) == false)
+			{
+				flag = false;
+				outputString	=	"FAIL.CLIENT CODE : "+clientCode+" IS ALREADY PRESENT.";
+			}
+			if(commonMethodBean.checkDuplicate("client_mst","clientname",clientName) == false)
+			{
+				flag			=	false;
+				outputString	=	"FAIL.CLIENT NAME : "+clientName+" IS ALREADY PRESENT.";
+			}
+			if(flag	==	true)
+			{
+				
+				query	=	"	insert into client_mst ( clientcode, clientname,address1 ,address2,address3,country,state,city,status,createdby, createdon, updatedby, updatedon	)" +
+							"	values	( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, sysdate(), ?, sysdate()	)";
+				pst		=	con.prepareStatement(query);
+				pst.setString(1,clientCode);
+				pst.setString(2,clientName);
+				pst.setString(3,address1);
+				pst.setString(4,address2);
+				pst.setString(5,address3);
+				pst.setString(6,country);
+				pst.setString(7,state);
+				pst.setString(8,city);
+				pst.setString(9,status);
+				pst.setString(10,userName);
+				pst.setString(11,userName);
+				count	=	pst.executeUpdate();
+				if(count > 0)
+				{
+					outputString	=	"PASS.CLIENT NAME : "+clientName+" SAVED SUCCESSFULLY.";
+				}
+				
+				pst.close();
+			}
+			if(count > 0 )	
+			{	
+				String	clientId		=	commonMethodBean.getDataOnOneCondition("client_mst","clientid","clientcode",clientCode);
+				for(int i = 0;i<dataList.size();i++)
+				{	
+					
+					if(defaultFlag == i+1)
+					{
+						defaultStatus	=	"DEFAULT";
+					}
+					else
+					{
+						defaultStatus	=	"";
+					}
+					
+					
+					CommonForm	cForm		=	dataList.get(i);
+					personName				=	cForm.getField2()!= null && cForm.getField2().length() > 0 && !cForm.getField2().equals("-") ? cForm.getField2() : "";;
+					designation				=	cForm.getField3()!= null && cForm.getField3().length() > 0 && !cForm.getField3().equals("-") ? cForm.getField3() : "";;
+					directNumber			=	cForm.getField4()!= null && cForm.getField4().length() > 0 && !cForm.getField4().equals("-") ? cForm.getField4() : "";
+					mobNumber				=	cForm.getField5()!= null && cForm.getField5().length() > 0 && !cForm.getField5().equals("-") ? cForm.getField5() : "";
+					landLineNumber			=	cForm.getField6()!= null && cForm.getField6().length() > 0 && !cForm.getField6().equals("-") ? cForm.getField6() : "";
+					emailId					=	cForm.getField7()!= null && cForm.getField7().length() > 0 && !cForm.getField7().equals("-") ? cForm.getField7() : "";;
+					
+					query	=	"	insert into client_contact_dtls (	clientid, personname, designation, directno, mobileno, landline_no, emailid,default_status ,createdby, " +
+																	"	createdon, updatedby, updatedon	)	" +
+								"	values	( ?, ?, ?, ?, ?, ?, ?, ?, ?, sysdate(), ?, sysdate() )";
+					pst		=	con.prepareStatement(query);
+					
+					pst.setString(1, clientId);
+					pst.setString(2, personName);
+					pst.setString(3, designation);
+					pst.setString(4, directNumber);
+					pst.setString(5, mobNumber);
+					pst.setString(6, landLineNumber);
+					pst.setString(7, emailId);
+					pst.setString(8, defaultStatus);
+					
+					pst.setString(9, userName);
+					pst.setString(10, userName);
+					
+					count	=	pst.executeUpdate();
+					if(count > 0)
+					{
+						outputString	=	"PASS.CLIENT NAME : "+clientName+" SAVED SUCCESSFULLY.";
+					}
+				}	
+					pst.close();
+			}
+		}
+		catch(Exception e)
+		{
+			outputString = "ERROR";
+			System.out.println("ERROR In ClientBean.saveClientMaster :"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				outputString = "ERROR";
+				System.out.println("Exception While Closing The Connection in ClientBean.saveClientMaster :"+e);
+			}
+		}
+		return outputString;
+	}
+	
+	
+
+	/**
+	 * Method Name  : checkDuplicatePersonName
+	 * Purpose		: To checkDuplicatePersonName
+	 * @author		: Prashant
+	 * Date			: 26/03/2012
+	 * @param status 
+	 */
+	public  boolean checkDuplicatePersonName(String clientId, String personName)
+	{
+		Connection con = dbConn.connect();
+		try	
+		{
+			
+		String 	query   =	"	select  personname " +
+							"	from  client_contact_dtls  " +
+							"	where 0=0 " ;
+					if(personName!=null && personName.length()>0)
+					{
+				query	+=	"	and  personname ='"+personName+"' " ;
+					}
+					if(clientId!=null && clientId.length()>0 )
+					{
+				query	+=	"	and clientid = '"+clientId+"'	"	;
+					}
+				
+			Statement st=con.createStatement();
+			ResultSet result=st.executeQuery(query);
+			while(result.next()) 
+			{
+				if((result.getString("personname")).equals(personName))
+					return false;
+			}
+		}catch(Exception e)	
+		{
+			System.out.println("Error in ClientBean.checkDuplicatePersonName():- "+e);
+		}finally 
+		{
+			try
+			{
+				if(con != null)
+					con.close();
+			}catch(Exception s)
+			{
+				System.out.println("Error in closing connection in ClientBean.checkDuplicatePersonName():- "+s);
+			}
+		}		
+		return true;
+	}
+	
+	
+	/**
+	 * Method Name  : getSearchClientList
+	 * Purpose		: To getSearchClientList
+	 * @author		: Prashant
+	 * Date			: 27/09/2012 
+	 */
+	public ArrayList<CommonForm> getSearchClientList(ClientForm clientForm)
+	{
+		ArrayList<CommonForm> dataList		=	new ArrayList<CommonForm>();
+		Connection		con			=	null;
+		Statement		st			=	null;
+		ResultSet		rs			=	null;
+		String			query		=	"";
+		int				srNo		=	1;
+		String			clientId	=	clientForm.getClientId();
+		String			clientName	=	clientForm.getClientName();
+		String			default_status	=	"DEFAULT";
+		String			status		=	clientForm.getStatus();
+		try
+		{
+			
+			query	+=	"	select  cm.clientcode , cm.clientname ,cm.address1 , cm.address2 ,cm.address3," +
+						"	cd.personname,con.country_name,st.state_name,cit.city_name,cm.clientid,cm.status" +
+						"	from client_mst cm " +
+						"	inner join client_contact_dtls cd  on cm.clientid = cd.clientid" +
+						"	inner join country_master con  on con.countryid = cm.country" +
+						"	inner join state_master st  on st.stateid = cm.state" +
+						"	inner join city_master cit  on cit.cityid = cm.city	" +
+						"	where 0=0";
+			if(clientId!=null && clientId.length() > 0)
+			{
+			query	+=	"			and	cm.clientid			=	'"+clientId+"'";
+			}
+			if(clientName!=null && clientName.length() > 0)
+			{
+			query	+=	"			and	cm.clientname			=	'"+clientName+"'";
+			}
+			if(status!= null && status.length() > 0)
+			{
+			query	+=	"			and	cm.status			=	'"+status+"'";
+			}
+			if(default_status!= null && default_status.length() > 0)
+			{
+			query	+=	"			and	cd.default_status			=	'"+default_status+"'";
+			}
+			query	+=	"	order by clientname ";
+			
+			con		=	dbConn.connect();
+			st		=	con.createStatement();
+			rs		=	st.executeQuery(query);
+			while(rs.next())
+			{
+				
+				CommonForm	cForm	=	new CommonForm();
+				cForm.setField1(""+(srNo++));//SRNO
+				cForm.setField2(rs.getString(1));//clientcode
+				cForm.setField3(rs.getString(2));//clientname
+				cForm.setField4(rs.getString(3));//address1
+				cForm.setField5(rs.getString(4)!=null && rs.getString(4).length()>0 ? rs.getString(4) : "-");//address2
+				cForm.setField6(rs.getString(5)!=null && rs.getString(5).length()>0	? rs.getString(5) :	"-");//address3
+				cForm.setField7(rs.getString(6));//personname
+				cForm.setField8(rs.getString(7));//country
+				cForm.setField9(rs.getString(8));//state
+				cForm.setField10(rs.getString(9));//city
+				cForm.setField11(rs.getString(10));//clientId
+				cForm.setField12(rs.getString(11));//clientId
+				
+				
+				
+				dataList.add(cForm);
+			}
+		}
+		catch(Exception e)
+		{
+			
+			System.out.println("ERROR In ClientBean.getSearchClientList :"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				System.out.println("Exception While Closing The Connection in ClientBean.getSearchClientList :"+e);
+			}
+		}
+		return dataList;
+	}
+	
+	/**
+	 * Method Name  : getClientDataForModify
+	 * Purpose		: To getClientDataForModify
+	 * @author		: Prashant
+	 * Date			: 28/09/2012 
+	 */
+	public ArrayList<CommonForm> getClientHeaderDataForModify(String clientId)
+	{
+		ArrayList<CommonForm>dataList	=	new ArrayList<CommonForm>();
+		Connection			con			=	null;
+		Statement			st			=	null;
+		ResultSet			rs			=	null;
+		String				query		=	"";
+		try
+		{
+			query	+=	"	select      cm.clientcode , cm.clientname ,cm.address1 , cm.address2 ,cm.address3," +
+						"	con.country_name,st.state_name,cit.city_name,cm.status,cm.clientid,con.countryid,st.stateid,cit.cityid	" +
+						"	from client_mst  cm		" +
+						"	inner join country_master con  on con.countryid = cm.country" +
+						"	inner join state_master st  on st.stateid = cm.state" +
+						"	inner join city_master cit  on cit.cityid = cm.city	" +
+						"	where 0=0	" ;
+						if(clientId!=null && clientId.length()>0)
+						{
+			query	+=	"	and 	clientid        =   '"+clientId+"' ";
+						}
+			
+			con		=	dbConn.connect();
+			st		=	con.createStatement();
+			rs		=	st.executeQuery(query);
+			if(rs.next())
+			{
+				CommonForm	cForm	=	new CommonForm();
+				
+				cForm.setField1(rs.getString(1));//clientcode
+				cForm.setField2(rs.getString(2));//clientname
+				cForm.setField3(rs.getString(3));//address1
+				cForm.setField4(rs.getString(4));//address2
+				cForm.setField5(rs.getString(5));//address3
+				cForm.setField6(rs.getString(6));//country
+				cForm.setField7(rs.getString(7));//state
+				cForm.setField8(rs.getString(8));//city
+				cForm.setField9(rs.getString(9));//status
+				cForm.setField10(rs.getString(10));//clientid
+				cForm.setField11(rs.getString(11));//countryId
+				cForm.setField12(rs.getString(12));//stateId
+				cForm.setField13(rs.getString(13));//cityId
+				
+				dataList.add(cForm);
+			}
+		}
+		catch(Exception e)
+		{
+			System.out.println("ERROR In ClientBean.getClientDataForModify :"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				System.out.println("Exception While Closing The Connection in ClientBean.getClientDataForModify :"+e);
+			}
+		}
+		return	dataList;
+	}
+	
+	
+	/**
+	 * Method Name  : getClientLineItemDataForModify
+	 * Purpose		: To getClientLineItemDataForModify
+	 * @author		: Prashant
+	 * Date			: 28/09/2012 
+	 */
+	public ArrayList<CommonForm> getClientLineItemDataForModify(String clientId)
+	{
+		ArrayList<CommonForm>dataList	=	new ArrayList<CommonForm>();
+		Connection			con			=	null;
+		Statement			st			=	null;
+		ResultSet			rs			=	null;
+		int					srNo		=	1;
+		String				query		=	"";
+		try
+		{
+			query	+=	"	select      client_dtls_id , clientid ,personname , designation ,directno," +
+						"	mobileno,landline_no,emailid,default_status" +
+						"	from client_contact_dtls  " +
+						"	where 0=0 ";
+						if(clientId!=null && clientId.length()>0)
+						{
+			query	+=	"	and 	clientid        =   '"+clientId+"' ";
+						}
+			
+			con		=	dbConn.connect();
+			st		=	con.createStatement();
+			rs		=	st.executeQuery(query);
+			while(rs.next())
+			{
+				CommonForm	cForm	=	new CommonForm();
+				cForm.setField1(""+(srNo++));//SRNO
+				cForm.setField2(rs.getString(1));//client_dtls_id
+				cForm.setField3(rs.getString(2));//clientid
+				cForm.setField4(rs.getString(3));//personname
+				cForm.setField5(rs.getString(4)!=null && rs.getString(4).length()>0 ? rs.getString(4) : "-");//designation
+				cForm.setField6(rs.getString(5)!=null && rs.getString(5).length()>0 ? rs.getString(5) : "-");//directno
+				cForm.setField7(rs.getString(6)!=null && rs.getString(6).length()>0 ? rs.getString(6) : "-");//mobileno
+				cForm.setField8(rs.getString(7)!=null && rs.getString(7).length()>0 ? rs.getString(7) : "-");//landline_no
+				cForm.setField9(rs.getString(8));//emailid
+				cForm.setField10(rs.getString(9));//default_status
+				
+				
+				dataList.add(cForm);
+			}
+		}
+		catch(Exception e)
+		{
+			System.out.println("ERROR In ClientBean.getClientLineItemDataForModify :"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				System.out.println("Exception While Closing The Connection in ClientBean.getClientLineItemDataForModify :"+e);
+			}
+		}
+		return	dataList;
+	}
+	
+	
+	/**
+	 * Method Name  : deleteAlreadyAddedClient
+	 * Purpose		: To deleteAlreadyAddedClient
+	 * @author		: Prashant
+	 * Date			: 27/09/2012
+	 * 
+	 */
+	public String deleteAlreadyAddedClient(String client_dtls_id, String personName , String clientId) 
+	{	
+		
+		String				outputString		=	"";
+		Connection			con					=	null;
+		Statement			st					=	null;
+		ResultSet			rs					=	null;	
+		String				query				=	"";
+		boolean				flag				=	true;
+		int 				count				=	-1;
+		int 				deleteCount			=	-1;
+		try
+		{
+			con			=	dbConn.connect();
+				
+			query		+=	"	select count(concern_person_id)" +
+							"	from projectmst " +
+							"	where 0 = 0"	 ;
+					if(clientId!=null && clientId.length()>0 )
+					{
+			query		+=	"	and clientid = '"+clientId+"' " ;
+					}
+					if(client_dtls_id!=null && client_dtls_id.length()>0)
+					{	
+			query		+=	"	and concern_person_id = '"+client_dtls_id+"' " ;
+					}
+
+					st		=	con.createStatement();
+					rs		=	st.executeQuery(query);
+				
+				if(rs.next())
+				{
+					deleteCount		=	rs.getInt(1);
+				}
+				
+				if(deleteCount > 0)
+				{
+					flag = false;
+					outputString	=	"FAIL.CANNOT DELETE. PROJECT IS ASSIGNED FOR PERSON : "+personName+" .";
+				}
+					
+				
+				if(flag	==	true)
+				{
+					st				=	null;
+					rs				=	null;
+					query			=		"";	
+					query			+=		"	delete	" +
+											"	from 	client_contact_dtls ";
+					if(client_dtls_id!= null && client_dtls_id.length() > 0)
+					{	
+						query		+=		"	where	client_dtls_id	=	'"+client_dtls_id+"'";
+					}
+					else
+					{
+						query		+=		"	where	client_dtls_id	=	'' 	";
+					}	
+					
+					st				=	con.createStatement();
+					
+					count			=	st.executeUpdate(query);
+					if( count > 0)
+					{
+						outputString	=	"PASS.CONTACT DETAILS FOR PERSON : "+personName+" DELETED SUCCESSFULLY.";
+					}
+					else
+					{
+						outputString	=	"FAIL.CONTACT DETAILS FOR PERSON : "+personName+" NOT DELETED.";
+					}
+				}
+				
+		}
+		catch(Exception e)
+		{
+			outputString = "ERROR";
+			System.out.println("ERROR In ClientBean.deleteAlreadyAddedClient:"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				outputString = "ERROR";
+				System.out.println("Exception While Closing The Connection in ClientBean.deleteAlreadyAddedClient:"+e);
+			}
+		}
+		return outputString;
+	}
+	
+	
+	/**
+	 * Method Name  : modifyClientMaster
+	 * Purpose		: To modifyClientMaster
+	 * @author		: Prashant
+	 * Date			: 27/09/2012
+	 * 
+	 */
+	public String modifyClientMaster(ClientForm clientForm, String userName, HttpSession session, ArrayList<CommonForm> dataList,String defaultPerson) 
+	{
+		
+		CommonMethodBean	commonMethodBean		=	new CommonMethodBean();
+		String				outputString			=	"";
+		Connection			con						=	null;
+		PreparedStatement	pst						=	null;
+		Statement			st						=	null;
+		ResultSet			rs						=	null;
+		int 					defaultFlag			=	-1;
+		String				query					=	"";
+		ArrayList<CommonForm> 	sesLineItemList			=	(ArrayList<CommonForm>)session.getAttribute("sesClientDetails");
+		String					clientId			=	clientForm.getClientId();
+		String					clientCode			=	clientForm.getClientCode().trim();
+		String					clientName			=	clientForm.getClientName()!= null && clientForm.getClientName().length() > 0 ? clientForm.getClientName().trim().toUpperCase() : "";
+		String					address1			=	clientForm.getAddress1();
+		String					address2			=	clientForm.getAddress2()!=null && clientForm.getAddress2().length()>0  ? clientForm.getAddress2().trim():"";
+		String					address3			=	clientForm.getAddress3()!=null && clientForm.getAddress3().length()>0  ? clientForm.getAddress3().trim():"";
+		String					country				=	clientForm.getCountryId();
+		String					state				=	clientForm.getStateId();
+		String					city				=	clientForm.getCityId();
+		String					status				=	clientForm.getStatus();
+		if(defaultPerson!=null && defaultPerson.length()>0)
+		{
+		defaultFlag			=	Integer.parseInt(defaultPerson);
+		}
+		String					personName			=	"";
+		String					designation			=	"";
+		String				  	directNumber		=	"";
+		String					mobNumber			=	"";
+		String					landLineNumber		=	"";
+		String					emailId				=	"";
+		String					defaultStatus		=	"";
+		int						clientCount			=	-1;
+		boolean				flag					=	true;	
+		int 				count					=	0;
+		int					totalCount				=	0;
+		int					chkCount				=	-1;
+		try
+		{
+			con		=	dbConn.connect();
+			chkCount = countOfClientInProjectMst(clientId);
+			String	old_Status	=	commonMethodBean.getDataOnOneCondition("client_mst", "status", "clientid", clientId);
+			if(chkCount > 0 && old_Status.equals("ACTIVE") && status.equals("INACTIVE"))
+			{
+				flag = false;
+				outputString	=	"FAIL.STATUS CANNOT BE INACTIVE , PROJECT IS DEFINE FOR CLIENT : "+clientName +".";
+			}
+			if(commonMethodBean.checkDuplicateForModification("client_mst", "clientCode", clientCode, "clientid", clientId) == false)
+			{
+				flag = false;
+				outputString	=	"FAIL.CLIENT CODE : "+clientCode+" IS ALREADY PRESENT.";
+			}
+			if(commonMethodBean.checkDuplicateForModification("client_mst", "clientname", clientName, "clientid", clientId) == false)
+			{
+				flag = false;
+				outputString	=	"FAIL.CLIENT NAME : "+clientName+" IS ALREADY PRESENT.";
+			}
+
+			if(flag == true)
+			{	
+				
+					query	+=	" 	update 	client_mst" +
+								"	set		clientcode			=	?," +
+								"			clientname 			=	?," +
+								"			address1			=	?," +
+								"			address2			=	?," +
+								"			address3			=	?," +
+								"			country				=	?," +
+								"			state				=	?," +
+								"			city				=	?," +
+								"			status				=	?," +
+								"			updatedby			=	?," +
+								"			updatedon			=	sysdate()" +
+								"	where	clientid			=	?";
+					
+					
+					pst		=	con.prepareStatement(query);
+					pst.setString(1,clientCode);
+					pst.setString(2,clientName);
+					pst.setString(3,address1);
+					pst.setString(4,address2);
+					pst.setString(5,address3);
+					pst.setString(6,country);
+					pst.setString(7,state);
+					pst.setString(8,city);
+					pst.setString(9,status);
+					pst.setString(10,userName);
+					pst.setString(11,clientId);
+					
+					int	cnt		=	pst.executeUpdate();
+					if(cnt > 0)
+					{
+						pst.close();
+						cnt = 0;
+						query	=	"";
+						query	=	"	update client_contact_dtls" +
+									"	set default_status = ''    " +
+									"	where clientid = ?	";
+						pst		=	con.prepareStatement(query);
+						pst.setString(1,clientId);
+						cnt		=	pst.executeUpdate();
+						
+						
+						if(sesLineItemList != null && sesLineItemList.size() > 0)
+						{
+							for(int i = 0;i<sesLineItemList.size();i++)
+							{	
+								
+								if(defaultFlag == i+1)
+								{
+									defaultStatus	=	"DEFAULT";
+								}
+								else
+								{
+									defaultStatus	=	"";
+								}
+								
+								
+								CommonForm	cForm		=	sesLineItemList.get(i);
+								personName				=	cForm.getField2()!= null && cForm.getField2().length() > 0 && !cForm.getField2().equals("-") ? cForm.getField2() : "";;
+								designation				=	cForm.getField3()!= null && cForm.getField3().length() > 0 && !cForm.getField3().equals("-") ? cForm.getField3() : "";;
+								directNumber			=	cForm.getField4()!= null && cForm.getField4().length() > 0 && !cForm.getField4().equals("-") ? cForm.getField4() : "";
+								mobNumber				=	cForm.getField5()!= null && cForm.getField5().length() > 0 && !cForm.getField5().equals("-") ? cForm.getField5() : "";
+								landLineNumber			=	cForm.getField6()!= null && cForm.getField6().length() > 0 && !cForm.getField6().equals("-") ? cForm.getField6() : "";
+								emailId					=	cForm.getField7()!= null && cForm.getField7().length() > 0 && !cForm.getField7().equals("-") ? cForm.getField7() : "";;
+								
+								query	=	"	insert into client_contact_dtls (	clientid, personname, designation, directno, mobileno, landline_no, emailid,default_status ,createdby, " +
+																				"	createdon, updatedby, updatedon	)	" +
+											"	values	( ?, ?, ?, ?, ?, ?, ?, ?, ?, sysdate(), ?, sysdate() )";
+								pst		=	con.prepareStatement(query);
+								
+								pst.setString(1, clientId);
+								pst.setString(2, personName);
+								pst.setString(3, designation);
+								pst.setString(4, directNumber);
+								pst.setString(5, mobNumber);
+								pst.setString(6, landLineNumber);
+								pst.setString(7, emailId);
+								pst.setString(8, defaultStatus);
+								
+								pst.setString(9, userName);
+								pst.setString(10, userName);
+								
+								count	=	pst.executeUpdate();
+								if(count > 0)
+								{
+									outputString	=	"PASS.CLIENT NAME : "+clientName+" MODIFIED SUCCESSFULLY.";
+								}
+							}
+							
+						}
+						
+						pst.close();
+						query	=	"";
+						query	=	"	select count(clientId) " +
+									"	from client_contact_dtls " +
+									"	where 0=0 " ;
+						if(clientId!=null && clientId.length()>0)
+						{
+						query	+=	"	and 	clientid        =   '"+clientId+"'	"	;
+						}
+						st		=	con.createStatement();
+						rs		=	st.executeQuery(query);
+						if(rs.next())
+						{
+						 clientCount	=	rs.getInt(1);
+						}
+						
+						if(sesLineItemList	==	null || clientCount > 0)
+						{
+							pst.close();
+							count = -1;
+							defaultStatus	=	"DEFAULT";
+							query	=	"";
+							query	=	"	update client_contact_dtls " +
+										"	set default_status 		= ?	" +
+										"	where client_dtls_id 	= ? ";
+							pst		=	con.prepareStatement(query);
+							
+							pst.setString(1, defaultStatus);
+							pst.setInt(2, defaultFlag);
+							count	=	pst.executeUpdate();
+							if(count > 0)
+							{
+								outputString	=	"PASS.CLIENT NAME : "+clientName+" MODIFIED SUCCESSFULLY.";
+							}
+							
+						}
+						
+						
+						outputString	=	"PASS.CLIENT NAME : "+clientName+" MODIFIED SUCCESSFULLY.";
+						
+					}
+					else
+					{
+						outputString	=	"FAIL.CLIENT NAME : "+clientName+" NOT MODIFIED .";
+					}
+			}
+		}
+		catch(Exception e)
+		{
+			outputString = "ERROR";
+			System.out.println("ERROR In ClientBean.modifyClientMaster:"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				outputString = "ERROR";
+				System.out.println("Exception While Closing The Connection in ClientBean.modifyClientMaster:"+e);
+			}
+		}
+		return outputString;
+	}
+	
+	
+	/**
+	 * Method Name  : deleteClientMaster
+	 * Purpose		: To deleteClientMaster
+	 * @author		: Prashant
+	 * Date			: 28/09/2012
+	 * 
+	 */
+	public String deleteClientMaster(String clientName,String clientId) 
+	{	
+		
+		String				outputString		=	"";
+		Connection			con					=	null;
+		Statement			st					=	null;
+		String				query				=	"";
+		int 				count				=	-1;
+		int 				chkCount			=	-1;
+		boolean				flag				=	true;
+		try
+		{
+			
+			chkCount = countOfClientInProjectMst(clientId);
+			if(chkCount > 0)
+			{
+				flag = false;
+				outputString	=	"FAIL.CANNOT DELETE. PROJECT IS DEFINE FOR CLIENT : "+clientName;
+			}
+			
+			if(flag == true)
+			{
+				query			+=		"	delete from client_mst " +
+										"	where 0=0	";
+				if(clientId != null && clientId.length()>0 )
+				{
+				query			+=		"	and clientid = '"+clientId+"'	";
+				}
+				else
+				{
+				query			+=		"	and clientid = ''	";
+				}
+					
+				con				=	dbConn.connect();
+				st				=	con.createStatement();
+				
+				count			=	st.executeUpdate(query);
+				if( count > 0)
+				{
+					outputString	=	"PASS.CLIENT : "+clientName+" DELETED SUCCESSFULLY.";
+				}
+				else
+				{
+					outputString	=	"FAIL.CLIENT : "+clientName+" NOT DELETED.";
+				}
+			}	
+				
+		}
+		catch(Exception e)
+		{
+			outputString = "ERROR";
+			System.out.println("ERROR In ClientBean.deleteClientMaster:"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				outputString = "ERROR";
+				System.out.println("Exception While Closing The Connection in ClientBean.deleteClientMaster:"+e);
+			}
+		}
+		return outputString;
+	}
+	
+	
+	
+	/**
+	 * Method Name  : countOfClientInProjectMst
+	 * Purpose		: To countOfClientInProjectMst
+	 * @author		: Prashant
+	 * Date			: 29/09/2012
+	 * @param status 
+	 */
+	public int countOfClientInProjectMst(String clientId) 
+	{
+		ArrayList<CommonForm> dataList		=	new ArrayList<CommonForm>();
+		Connection		con					=	null;
+		Statement		st					=	null;
+		ResultSet		rs					=	null;
+		String			query				=	"";
+		int				count				=	-1;
+		try
+		{
+			query	+=	"	select count(clientid) " +
+						"	from projectmst" +
+						"	where 0	= 0	";
+			if(clientId!= null && clientId.length() >0)
+			{
+			query	+=	"			and	clientid 		=	'"+clientId+"'";
+			}
+			else
+			{
+			query	+=	"			and	clientid 		=	''	";
+			}	
+			
+			
+			con		=    dbConn.connect();
+				st	=	con.createStatement();
+				rs	=	st.executeQuery(query);
+			if(rs.next())
+			{
+				 count	=	rs.getInt(1);
+			}
+			
+		}catch(Exception e)	
+		{
+			System.out.println("Error in ClientBean.countOfClientInProjectMst():- "+e);
+		}finally 
+		{
+			try
+			{
+				if(con != null)
+					con.close();
+			}catch(Exception s)
+			{
+				System.out.println("Error in closing connection in ClientBean.countOfClientInProjectMst():- "+s);
+			}
+		}		
+		return count;
+	}
+
+}

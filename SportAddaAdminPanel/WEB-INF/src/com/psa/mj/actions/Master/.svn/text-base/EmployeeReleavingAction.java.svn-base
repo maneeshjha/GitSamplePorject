@@ -1,0 +1,187 @@
+package com.inf.dvo.mbm.actions.Master;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionForward;
+import org.apache.struts.action.ActionMapping;
+import com.inf.dvo.mbm.Bean.CommonMethodBean;
+import com.inf.dvo.mbm.Bean.Master.EmployeeReleavingBean;
+import com.inf.dvo.mbm.DAO.CommonForm;
+import com.inf.dvo.mbm.DAO.Master.EmployeeReleavingForm;
+import com.inf.dvo.mbm.actions.CMGMTDispatchAction;
+
+
+public class EmployeeReleavingAction extends  CMGMTDispatchAction
+{
+	
+	/**
+	 * Action Name 	: showEmployeeReleavingListPage
+	 * Purpose		: To showEmployeeReleavingListPage
+	 * @author		: Prashant
+	 * Date			: 01/05/2012
+	 */
+	public ActionForward showEmployeeReleavingListPage(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		CommonMethodBean			commonMethodBean	=	new CommonMethodBean();
+		EmployeeReleavingForm		empReleavingFrom	=	(EmployeeReleavingForm)form;
+		HttpSession					session				=	request.getSession();
+		empReleavingFrom.reset(mapping, request);
+		empReleavingFrom.setReleavingFromDate(commonMethodBean.getDate());
+		empReleavingFrom.setReleavingToDate(commonMethodBean.getDate());
+		
+		String rarId		=	"31";
+		String userProcess	=	(String)session.getAttribute("userProcess");
+		
+		String validLink	=	commonMethodBean.getValidOrNot(userProcess, ","+rarId+",");
+		if(validLink!=null && validLink.equalsIgnoreCase("NOTVALID"))
+		{
+			return mapping.findForward("invalid");
+		}
+		
+		return mapping.findForward("showEmployeeReleavingListPage");
+	}
+	
+	/**
+	 * Action Name 	: showSearchEmployeeReleavingList
+	 * Purpose		: To showSearchEmployeeReleavingList 
+	 * @author		: Prashant
+	 * Date			: 01/05/2012
+	 */
+	
+	public ActionForward showSearchEmployeeReleavingList(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		EmployeeReleavingForm		empReleavingFrom	=	(EmployeeReleavingForm)form;
+		EmployeeReleavingBean		empReleavingBean	=	new EmployeeReleavingBean();
+		
+		ArrayList<CommonForm> dataList		=	empReleavingBean.getEmployeeReleavingSearchList(empReleavingFrom);
+		if(dataList!= null && dataList.size() > 0)
+		{
+			request.setAttribute("reqResignedList",dataList);
+		}
+		else
+		{
+			request.setAttribute("msgType", "FAIL");
+			request.setAttribute("saveResult", "NO DATA FOUND.");
+		}
+		return mapping.findForward("showEmployeeReleavingListPage");
+	}
+	
+	/**
+	 * Action Name 	: showEmployeeReleavingPage
+	 * Purpose		: To showEmployeeReleavingPage
+	 * @author		: Prashant
+	 * Date			: 01/05/2012
+	 */
+	public ActionForward showEmployeeReleavingPage(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		EmployeeReleavingForm		empReleavingFrom	=	(EmployeeReleavingForm)form;
+		CommonMethodBean			commonMethodBean	=	new CommonMethodBean();
+		empReleavingFrom.reset(mapping, request);
+		
+		
+		empReleavingFrom.setRelievingDate(commonMethodBean.getDate());
+		empReleavingFrom.setCurrentDate(commonMethodBean.getDate());
+		
+		return mapping.findForward("showEmployeeReleavingPage");
+	}
+	/**
+	 * Action Name 	: showEmployeedetails
+	 * Purpose		: To showEmployeedetails
+	 * @author		: Prashant
+	 * Date			: 01/05/2012
+	 */
+	public ActionForward showEmployeedetails(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		PrintWriter					writer				=	response.getWriter();
+		CommonMethodBean			commonMethodBean	=	new CommonMethodBean();
+		String						outputString		=	"";
+		EmployeeReleavingBean		empReleavingBean	=	new EmployeeReleavingBean();
+		String						empId				=	request.getParameter("empId");
+		ArrayList<CommonForm> 		dataList			=	empReleavingBean.getEmployeeDetails(empId);
+		if(dataList!=null && dataList.size() > 0)
+		{
+			//em.employeeid, em.employee_code,em.employee_name, date_format(em.joining_date,'%d/%m/%Y') joininig_date
+			//em.department,dm.department_name, em.designation,gvd.groupvalue_name,em.posting_location,em.contact_number
+			//em.email_id, em.joining_salary,em.salarystructureid,ssh.structure_name,em.reference_name
+			CommonForm	cForm			=	dataList.get(0);
+			String		empCode			=	cForm.getField2();
+			String		empName			=	cForm.getField3();
+			String		joiningDate		=	cForm.getField4();
+			String		departmenName	=	cForm.getField6();
+			String		designation		=	cForm.getField8();
+			String		postinLocn		=	cForm.getField9()!=null && cForm.getField9().length() > 0 ? cForm.getField9() : "-";
+			String		contactNo		=	cForm.getField10();
+			String		emailId			=	cForm.getField11()!=null && cForm.getField11().length() > 0 ? cForm.getField11() : "-";
+			String		joiningSal		=	cForm.getField12()!=null && cForm.getField12().length() > 0 ? commonMethodBean.applyFormater(cForm.getField12()) : "-";
+			String		structureName	=	cForm.getField14()!=null && cForm.getField14().length() > 0 ? cForm.getField14() : "-";
+			String		referenceName	=	cForm.getField15()!=null && cForm.getField15().length() > 0 ? cForm.getField15() : "-";
+			
+			outputString	=	empCode+"#@#"+empName+"#@#"+joiningDate+"#@#"+departmenName+"#@#"+designation+"#@#"+postinLocn+"#@#"+contactNo+"#@#"+emailId+"#@#"+joiningSal+"#@#"+structureName+"#@#"+referenceName;
+		}
+		writer.print(outputString);
+		return mapping.findForward(null);
+	}
+	
+	/**
+	 * Action Name 	: saveReleavingEntry
+	 * Purpose		: To saveReleavingEntry
+	 * @author		: Prashant
+	 * Date			: 01/05/2012
+	 */
+	
+	public ActionForward saveReleavingEntry(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		HttpSession				session					=	request.getSession();
+		EmployeeReleavingForm	employeeReleavingForm	=	(EmployeeReleavingForm)form;
+		EmployeeReleavingBean	employeeReleavingBean	=	new EmployeeReleavingBean();
+		CommonMethodBean		commonMethodBean		=	new CommonMethodBean();
+		
+		String					mappingString			=	"ERROR";
+		String					mode					=	request.getParameter("mode");
+		String					userName				=	(String)session.getAttribute("username");
+		
+		String					saveResult				=	employeeReleavingBean.saveReleavingEntry(employeeReleavingForm,userName);
+		if(saveResult!= null && saveResult.length() > 0 && !saveResult.equalsIgnoreCase("ERROR"))
+		{
+				String	msgType		=	saveResult.substring(0,4);
+				saveResult			=	saveResult.substring(5,saveResult.length());
+				
+				request.setAttribute("msgType",msgType);
+				request.setAttribute("saveResult",saveResult);
+				
+				if(msgType!= null && msgType.length() > 0 && msgType.equals("PASS"))
+				{
+					if(mode!= null && mode.length() > 0 && mode.equalsIgnoreCase("SAVE"))
+					{
+						mappingString	=	"showEmployeeReleavingPage";
+						employeeReleavingForm.reset(mapping, request);
+						employeeReleavingForm.setRelievingDate(commonMethodBean.getDate());
+						employeeReleavingForm.setCurrentDate(commonMethodBean.getDate());
+						
+					}
+					else if(mode!= null && mode.length() > 0 && mode.equalsIgnoreCase("SAVEEXIT"))
+					{
+						mappingString	=	"showEmployeeReleavingListPage";
+						employeeReleavingForm.reset(mapping, request);
+						
+						employeeReleavingForm.setReleavingFromDate(commonMethodBean.getDate());
+						employeeReleavingForm.setReleavingToDate(commonMethodBean.getDate());
+					}
+						
+				}
+				else if(msgType!= null && msgType.length() > 0 && msgType.equals("FAIL"))
+				{
+					mappingString	=	"showEmployeeReleavingPage";
+					employeeReleavingForm.setCurrentDate(commonMethodBean.getDate());
+				}
+		}
+		return mapping.findForward(mappingString);
+	}
+	
+}

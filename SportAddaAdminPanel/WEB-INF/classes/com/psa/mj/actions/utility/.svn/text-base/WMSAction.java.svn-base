@@ -1,0 +1,692 @@
+package com.inf.dvo.mbm.actions.utility;
+
+import java.io.IOException;
+import java.sql.SQLException;
+import java.util.ArrayList;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionForward;
+import org.apache.struts.action.ActionMapping;
+
+import com.inf.dvo.mbm.Bean.CommonMethodBean;
+import com.inf.dvo.mbm.Bean.SendMailBean;
+import com.inf.dvo.mbm.Bean.Master.EmployeeBean;
+import com.inf.dvo.mbm.Bean.utility.WMSBean;
+import com.inf.dvo.mbm.DAO.CommonForm;
+import com.inf.dvo.mbm.DAO.Master.WMSForm;
+import com.inf.dvo.mbm.actions.CMGMTDispatchAction;
+
+public class WMSAction extends CMGMTDispatchAction
+{
+	/**
+	 * Action Name 	: showSaveWMSPage
+	 * Purpose		: To showSaveWMSPage
+	 * @author		: Prashant
+	 * Date			: 10/09/2012
+	 */
+	public ActionForward showSaveWMSPage(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		HttpSession			session				=	request.getSession();
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		WMSForm				wmsForm				=	(WMSForm)form;	
+		WMSBean				wmsBean				=	new WMSBean();
+		wmsForm.reset(mapping, request);
+		
+		wmsForm.setWorkDate(commonMethodBean.getDate());
+		
+		String				userId				=	(String)session.getAttribute("userID");
+		String				userType			=	(String)session.getAttribute("userType");
+		ArrayList<CommonForm> projectList		=	wmsBean.getUserWiseProjectDetails(userId,"ACTIVE",userType);
+		
+		if(projectList!=null && projectList.size() > 0)
+		{
+			request.setAttribute("reqProjectList", projectList);
+		}
+		request.setAttribute("reqSysDate", commonMethodBean.getDate());
+		request.setAttribute("actions","add");
+		
+		String rarId		=	"34";
+		String userProcess	=	(String)session.getAttribute("userProcess");
+		
+		String validLink	=	commonMethodBean.getValidOrNot(userProcess, ","+rarId+",");
+		if(validLink!=null && validLink.equalsIgnoreCase("NOTVALID"))
+		{
+			return mapping.findForward("invalid");
+		}
+		
+		return mapping.findForward("showSaveWMSPage");
+		
+	}	
+	
+	/**
+	 * Action Name 	: saveWMS
+	 * Purpose		: To saveWMS
+	 * @author		: Prashant
+	 * Date			: 10/09/2012
+	 */
+	
+	public ActionForward saveWMS(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		HttpSession			session			=	request.getSession();		
+		WMSForm				wmsForm			=	(WMSForm)form;	
+		WMSBean				wmsBean			=	new WMSBean();
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		String				mode			=	request.getParameter("mode");
+		String		mappingString	=	"ERROR";
+		String		userName		=	(String)session.getAttribute("username");
+		String		userId			=	(String)session.getAttribute("userID");
+		String		userType		=	(String)session.getAttribute("userType");
+		String		saveResult		=	wmsBean.saveWMS(wmsForm,userName,userId);
+		String		workDate		=	wmsForm.getWorkDate();
+		String		projectId			=	wmsForm.getProjectId();
+		if(saveResult!= null && saveResult.length() > 0 && !saveResult.equalsIgnoreCase("ERROR"))
+		{
+			String	msgType		=	saveResult.substring(0,4);
+			saveResult			=	saveResult.substring(5,saveResult.length());
+			
+			request.setAttribute("msgType",msgType);
+			request.setAttribute("saveResult",saveResult);
+			
+			if(msgType!= null && msgType.length() > 0 && msgType.equals("PASS"))
+			{
+				if(mode != null && mode.length() > 0 && mode.equalsIgnoreCase("SAVE"))
+				{
+					wmsForm.reset(mapping, request);
+					ArrayList<CommonForm> projectList		=	wmsBean.getUserWiseProjectDetails(userId,"ACTIVE",userType);
+					
+					if(projectList!=null && projectList.size() > 0)
+					{
+						request.setAttribute("reqProjectList", projectList);
+					}
+					wmsForm.setWorkDate(workDate);
+					wmsForm.setProjectId(projectId);
+					request.setAttribute("reqSysDate", commonMethodBean.getDate());
+					request.setAttribute("actions", "add");
+					mappingString	=	"showSaveWMSPage";
+				}
+				else if(mode != null && mode.length() > 0 && mode.equalsIgnoreCase("SAVEEXIT"))
+				{
+					//request.setAttribute("reqSysDate", commonMethodBean.getDate());
+					wmsForm.reset(mapping, request);
+					//wmsForm.setWorkDate(commonMethodBean.getDate());
+					wmsForm.setFromDate(commonMethodBean.getDate());
+					wmsForm.setToDate(commonMethodBean.getDate());
+					ArrayList<CommonForm> projectList		=	wmsBean.getUserWiseProjectDetails(userId,"ACTIVE",userType);
+					if(projectList!=null && projectList.size() > 0)
+					{
+						request.setAttribute("reqProjectList", projectList);
+					}
+					ArrayList<CommonForm> reqClientList	=	commonMethodBean.getStatusWiseClientName("");
+					if(reqClientList!=null && reqClientList.size() > 0)
+					{
+						request.setAttribute("reqClientList",reqClientList);
+					}
+					mappingString	=	"showWMSListPage";
+				}
+					
+			}
+			else if(msgType!= null && msgType.length() > 0 && msgType.equals("FAIL"))
+			{
+				request.setAttribute("reqSysDate", commonMethodBean.getDate());	
+				
+				request.setAttribute("actions","add");
+				ArrayList<CommonForm> projectList		=	wmsBean.getUserWiseProjectDetails(userId,"ACTIVE",userType);
+				
+				if(projectList!=null && projectList.size() > 0)
+				{
+					request.setAttribute("reqProjectList", projectList);
+				}
+				mappingString	=	"showSaveWMSPage";
+			}			
+		}
+		return mapping.findForward(mappingString);
+	}
+	
+	
+	
+	/**
+	 * Action Name 	: showModifyWMSPage
+	 * Purpose		: To showModifyWMSPage
+	 * @author		: Prashant
+	 * Date			: 10/09/2012
+	 */
+	public ActionForward showModifyWMSPage(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		HttpSession			session				=	request.getSession();
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		WMSForm				wmsForm				=	(WMSForm)form;	
+		WMSBean				wmsBean				=	new WMSBean();
+		wmsBean.setDataForModification(wmsForm);
+		
+		String				userId				=	(String)session.getAttribute("userID");
+		String				userType			=	(String)session.getAttribute("userType");
+		ArrayList<CommonForm> projectList		=	wmsBean.getUserWiseProjectDetails(userId,"ACTIVE",userType);
+		
+		if(projectList!=null && projectList.size() > 0)
+		{
+			request.setAttribute("reqProjectList", projectList);
+		}
+		
+		request.setAttribute("reqSysDate", commonMethodBean.getDate());
+		request.setAttribute("actions","edit");
+		
+		return mapping.findForward("showSaveWMSPage");
+	}	
+	
+	
+	/**
+	 * Action Name 	: modifyWMS
+	 * Purpose		: To modifyWMS
+	 * @author		: Prashant
+	 * Date			: 11/09/2012
+	 */
+	
+	public ActionForward modifyWMS(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		HttpSession			session			=	request.getSession();		
+		WMSForm				wmsForm			=	(WMSForm)form;	
+		WMSBean				wmsBean			=	new WMSBean();
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		
+		String		mappingString	=	"ERROR";
+		String		userName		=	(String)session.getAttribute("username");
+		String		userId			=	(String)session.getAttribute("userID");
+		String		userType		=	(String)session.getAttribute("userType");	
+		String		saveResult		=	wmsBean.modifyWMS(wmsForm,userName,userId);
+		if(saveResult!= null && saveResult.length() > 0 && !saveResult.equalsIgnoreCase("ERROR"))
+		{
+			String	msgType		=	saveResult.substring(0,4);
+			saveResult			=	saveResult.substring(5,saveResult.length());
+			
+			request.setAttribute("msgType",msgType);
+			request.setAttribute("saveResult",saveResult);
+			
+			if(msgType!= null && msgType.length() > 0 && msgType.equals("PASS"))
+			{
+				/*ArrayList<CommonForm>	workSheetList	=	wmsBean.getPendingForSubmittedList(wmsForm, userId, "SAVED", userType);
+				if(workSheetList!=null && workSheetList.size() > 0)
+				{
+					request.setAttribute("reqSaveWMSList", workSheetList);
+				}
+				else
+				{
+					request.setAttribute("msgType", "FAIL");
+					request.setAttribute("saveResult", "NO DATA FOUND.");
+				}*/
+				wmsForm.reset(mapping, request);
+				wmsForm.setFromDate(commonMethodBean.getDate());
+				wmsForm.setToDate(commonMethodBean.getDate());
+				
+				ArrayList<CommonForm> projectList		=	wmsBean.getUserWiseProjectDetails(userId,"ACTIVE",userType);
+				if(projectList!=null && projectList.size() > 0)
+				{
+					request.setAttribute("reqProjectList", projectList);
+				}
+				session.removeAttribute("sesSaveWMSList");
+				mappingString	=	"showSubmitWMSPage";
+			}
+			else if(msgType!= null && msgType.length() > 0 && msgType.equals("FAIL"))
+			{
+				request.setAttribute("actions","edit");
+				mappingString	=	"showSaveWMSPage";				
+			}
+			
+			request.setAttribute("reqSysDate", commonMethodBean.getDate());
+		}
+		return mapping.findForward(mappingString);
+	}
+	
+	
+	/**
+	 * Action Name 	: showSubmitWMSPage
+	 * Purpose		: To showSubmitWMSPage
+	 * @author		: Prashant
+	 * Date			: 13/09/2012
+	 */
+	public ActionForward showSubmitWMSPage(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		HttpSession			session				=	request.getSession();
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		WMSForm				wmsForm				=	(WMSForm)form;	
+		WMSBean				wmsBean				=	new WMSBean();
+		wmsForm.reset(mapping, request);
+		
+		wmsForm.setFromDate(commonMethodBean.getDate());
+		wmsForm.setToDate(commonMethodBean.getDate());
+		
+		session.removeAttribute("sesSaveWMSList");
+		
+		String				userId				=	(String)session.getAttribute("userID");
+		String				userType			=	(String)session.getAttribute("userType");
+		ArrayList<CommonForm> projectList		=	wmsBean.getUserWiseProjectDetails(userId,"ACTIVE",userType);
+		
+		if(projectList!=null && projectList.size() > 0)
+		{
+			request.setAttribute("reqProjectList", projectList);
+		}
+		
+		request.setAttribute("reqSysDate", commonMethodBean.getDate());
+		
+		String rarId		=	"35";
+		String userProcess	=	(String)session.getAttribute("userProcess");
+		
+		String validLink	=	commonMethodBean.getValidOrNot(userProcess, ","+rarId+",");
+		if(validLink!=null && validLink.equalsIgnoreCase("NOTVALID"))
+		{
+			return mapping.findForward("invalid");
+		}
+		
+		return mapping.findForward("showSubmitWMSPage");
+	}
+	
+	/**
+	 * Action Name 	: getPendingForSubmitList
+	 * Purpose		: To getPendingForSubmitList
+	 * @author		: Prashant
+	 * Date			: 13/09/2012
+	 */
+	public ActionForward getPendingForSubmitList(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		
+		HttpSession			session				=	request.getSession();
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		WMSForm				wmsForm				=	(WMSForm)form;	
+		WMSBean				wmsBean				=	new WMSBean();
+		String				userId				=	(String)session.getAttribute("userID");
+		String				userType			=	(String)session.getAttribute("userType");
+		session.removeAttribute("sesSaveWMSList");										
+		ArrayList<CommonForm>	sesSaveWMSList	=	wmsBean.getPendingForSubmittedList(wmsForm, userId, "SAVED", userType);
+		if(sesSaveWMSList!=null && sesSaveWMSList.size() > 0)
+		{
+			session.setAttribute("sesSaveWMSList", sesSaveWMSList);
+		}
+		else
+		{
+			request.setAttribute("msgType", "FAIL");
+			request.setAttribute("saveResult", "NO DATA FOUND.");
+		}
+		
+		wmsForm.setChkArray(null);
+		
+		ArrayList<CommonForm> projectList		=	wmsBean.getUserWiseProjectDetails(userId,"ACTIVE",userType);
+		
+		if(projectList!=null && projectList.size() > 0)
+		{
+			request.setAttribute("reqProjectList", projectList);
+		}
+		request.setAttribute("reqSysDate", commonMethodBean.getDate());
+		
+		return mapping.findForward("showSubmitWMSPage");
+	}
+	
+	/**
+	 * Action Name 	: deleteWorkReport
+	 * Purpose		: To deleteWorkReport
+	 * @author		: Prashant
+	 * Date			: 11/09/2012
+	 */
+	
+	public ActionForward deleteWorkReport(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		HttpSession			session				=	request.getSession();		
+		WMSForm				wmsForm				=	(WMSForm)form;	
+		WMSBean				wmsBean				=	new WMSBean();
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		
+		String				mappingString		=	"ERROR";
+		String				userId				=	(String)session.getAttribute("userID");
+		String				wmsId				=	wmsForm.getWmsId();	
+		String				projectName			=	request.getParameter("projectName");	
+		String				work_date			=	request.getParameter("work_date");
+		String				userType			=	(String)session.getAttribute("userType");
+		String				saveResult			=	wmsBean.deleteWorkReport(wmsId,projectName,work_date);
+		String				deleteFlag			=	"false";		
+		
+		if(saveResult != null && saveResult.length() > 0 && !saveResult.equalsIgnoreCase("ERROR"))
+		{
+			String	msgType		=	saveResult.substring(0,4);
+			saveResult			=	saveResult.substring(5,saveResult.length());
+			
+			request.setAttribute("msgType",msgType);
+			request.setAttribute("saveResult",saveResult);
+				
+			if(msgType!= null && msgType.length() > 0 && msgType.equals("PASS"))
+			{
+				//wmsForm.reset(mapping, request);
+				ArrayList<CommonForm> sesSaveWMSList = (ArrayList<CommonForm>) session.getAttribute("sesSaveWMSList");
+				for(int i=0;i<sesSaveWMSList.size();i++)
+				{
+					CommonForm		cForm				=	sesSaveWMSList.get(i);
+					String			sesWmsId			=	cForm.getField2();
+					if(sesWmsId!= null && sesWmsId.equals(wmsId))
+					{
+						sesSaveWMSList.remove(i);
+						deleteFlag = "true";
+						break;
+					}
+				}
+				
+				if(sesSaveWMSList.size()<= 0)
+				{
+					sesSaveWMSList	=	new  ArrayList<CommonForm>();
+				}
+				if(sesSaveWMSList!=null && sesSaveWMSList.size()>0)
+				{
+					session.setAttribute("sesSaveWMSList", sesSaveWMSList);
+				}
+				
+			}
+			
+			request.setAttribute("deleteFlag", deleteFlag);
+			
+			ArrayList<CommonForm>	workSheetList	=	wmsBean.getPendingForSubmittedList(wmsForm, userId, "SAVED", userType);
+			if(workSheetList!=null && workSheetList.size() > 0)
+			{
+				request.setAttribute("sesSaveWMSList", workSheetList);
+			}
+			
+			ArrayList<CommonForm> projectList		=	wmsBean.getUserWiseProjectDetails(userId,"ACTIVE",userType);
+			
+			if(projectList!=null && projectList.size() > 0)
+			{
+				request.setAttribute("reqProjectList", projectList);
+			}
+			
+			request.setAttribute("reqSysDate", commonMethodBean.getDate());
+			mappingString	=	"showSubmitWMSPage";
+			
+		}
+		return mapping.findForward(mappingString);
+	}
+	
+	/**
+	 * Action Name 	: saveWMS
+	 * Purpose		: To saveWMS
+	 * @author		: Prashant
+	 * Date			: 10/09/2012
+	 */
+	
+	public ActionForward submitWorkSheet(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		HttpSession			session				=	request.getSession();		
+		WMSForm				wmsForm				=	(WMSForm)form;	
+		WMSBean				wmsBean				=	new WMSBean();
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		
+		String				mappingString		=	"ERROR";
+		String				userName			=	(String)session.getAttribute("username");
+		String				userId				=	(String)session.getAttribute("userID");
+		String				userType			=	(String)session.getAttribute("userType");
+		String[]			to					=	wmsForm.getSendToMail();
+		String				cc					=	wmsForm.getCc();
+		String				bcc					=	wmsForm.getBcc();
+		String				displayName			=	(String)session.getAttribute("dispname");
+		EmployeeBean		employeeBean		=	new	EmployeeBean();
+		
+		
+		//ArrayList<CommonForm> cForm	=	new ArrayList<CommonForm>();
+		CommonForm	cForm		=	new CommonForm();			
+		ArrayList<CommonForm> sesSelectedWork		=	(ArrayList<CommonForm>)session.getAttribute("sesSelectedWorkList");
+		int size 			=	sesSelectedWork.size();
+		String	wmsIds[]	=	new String[size];
+		
+		for(int i = 0 ; i<sesSelectedWork.size() ; i++)
+		{
+			cForm		=	 sesSelectedWork.get(i);
+			wmsIds[i]	=	 cForm.getField2()!=null && cForm.getField2().length()>0 ? cForm.getField2() : "" ;
+		}
+		
+		//String[] 	to			=	{expectedStockForm.getTo()};
+		
+	
+		String		saveResult	=	wmsBean.submitWorkSheet(wmsForm,userName,userId,wmsIds);
+		if(saveResult!= null && saveResult.length() > 0 && !saveResult.equalsIgnoreCase("ERROR"))
+		{
+			String	msgType		=	saveResult.substring(0,4);
+			saveResult			=	saveResult.substring(5,saveResult.length());
+			
+		   if(msgType!= null && msgType.length() > 0 && msgType.equals("PASS"))
+			{
+				request.setAttribute("reqSysDate", commonMethodBean.getDate());
+				//wmsForm.reset(mapping, request);
+				
+				session.removeAttribute("sesSaveWMSList");
+				session.removeAttribute("sesSelectedWorkList");
+				
+				wmsForm.setFromDate(commonMethodBean.getDate());
+				wmsForm.setToDate(commonMethodBean.getDate());
+				
+				
+				
+				if(sendWmsMail(wmsForm,sesSelectedWork,displayName) == false)
+				{
+					msgType		=	"FAIL";
+					saveResult	=	"PROBLEM WHILE SENDING MAIL";
+				}
+				
+				request.setAttribute("msgType",msgType);
+				request.setAttribute("saveResult",saveResult);
+				
+				mappingString	=	"showSubmitWMSPage";
+			}
+			else if(msgType!= null && msgType.length() > 0 && msgType.equals("FAIL"))
+			{
+				request.setAttribute("reqSysDate", commonMethodBean.getDate());	
+				
+				ArrayList<CommonForm>	workSheetList	=	wmsBean.getPendingForSubmittedList(wmsForm, userId, "SAVED", userType);
+				if(workSheetList!=null && workSheetList.size() > 0)
+				{
+					request.setAttribute("reqSaveWMSList", workSheetList);
+				}
+				ArrayList<CommonForm>   	dataList	=	employeeBean.getEmployeeToSendMailId();
+				if(dataList != null && dataList.size() > 0)
+				{
+					request.setAttribute("reqToSendEmployeeMailIdList", dataList);
+				}
+				mappingString	=	"showSelectedSubmitWmsPage";
+			}	
+			
+			ArrayList<CommonForm> projectList		=	wmsBean.getUserWiseProjectDetails(userId,"ACTIVE",userType);
+			
+			if(projectList!=null && projectList.size() > 0)
+			{
+				request.setAttribute("reqProjectList", projectList);
+			}		
+		}		
+		return mapping.findForward(mappingString);
+	}
+	
+	/**
+	 * Action Name 	: showWMSListPage
+	 * Purpose		: To showWMSListPage
+	 * @author		: Prashant
+	 * Date			: 14/09/2012
+	 */
+	public ActionForward showWMSListPage(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		HttpSession			session				=	request.getSession();
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		WMSForm				wmsForm				=	(WMSForm)form;	
+		WMSBean				wmsBean				=	new WMSBean();
+		wmsForm.reset(mapping, request);
+		
+		wmsForm.setFromDate(commonMethodBean.getDate());
+		wmsForm.setToDate(commonMethodBean.getDate());		
+		
+		String				userId				=	(String)session.getAttribute("userID");
+		String				userType			=	(String)session.getAttribute("userType");
+		ArrayList<CommonForm> projectList		=	wmsBean.getUserWiseProjectDetails(userId,"ACTIVE",userType);
+		
+		if(projectList!=null && projectList.size() > 0)
+		{
+			request.setAttribute("reqProjectList", projectList);
+		}
+		ArrayList<CommonForm> reqClientList	=	commonMethodBean.getStatusWiseClientName("");
+		if(reqClientList!=null && reqClientList.size() > 0)
+		{
+			request.setAttribute("reqClientList",reqClientList);
+		}
+		
+		String rarId		=	"36";
+		String userProcess	=	(String)session.getAttribute("userProcess");
+		
+		String validLink	=	commonMethodBean.getValidOrNot(userProcess, ","+rarId+",");
+		if(validLink!=null && validLink.equalsIgnoreCase("NOTVALID"))
+		{
+			return mapping.findForward("invalid");
+		}
+		
+		return mapping.findForward("showWMSListPage");
+	}
+	
+	/**
+	 * Action Name 	: getWorkSheetList
+	 * Purpose		: To getWorkSheetList
+	 * @author		: Prashant
+	 * Date			: 14/09/2012
+	 */
+	public ActionForward getWorkSheetList(ActionMapping mapping,ActionForm form,HttpServletRequest request, HttpServletResponse response) throws IOException,SQLException
+	{
+		HttpSession			session				=	request.getSession();
+		WMSForm				wmsForm				=	(WMSForm)form;
+		WMSBean				wmsBean				=	new WMSBean();
+		String				userId				=	(String)session.getAttribute("userID");
+		String				userType			=	(String)session.getAttribute("userType");
+		CommonMethodBean	commonMethodBean	= 	new CommonMethodBean();
+		ArrayList<CommonForm>  wmsList			=	wmsBean.getWorkSheetList(userId,wmsForm,userType);
+		if(wmsList!=null && wmsList.size() > 0)
+		{
+			request.setAttribute("reqWMSList", wmsList);
+		}
+		else
+		{
+			request.setAttribute("msgType", "FAIL");
+			request.setAttribute("saveResult", "NO DATA FOUND.");
+		}
+		ArrayList<CommonForm> projectList		=	wmsBean.getUserWiseProjectDetails(userId,"ACTIVE",userType);
+		
+		if(projectList!=null && projectList.size() > 0)
+		{
+			request.setAttribute("reqProjectList", projectList);
+		}
+		ArrayList<CommonForm> reqClientList	=	commonMethodBean.getStatusWiseClientName("");
+		if(reqClientList!=null && reqClientList.size() > 0)
+		{
+			request.setAttribute("reqClientList",reqClientList);
+		}
+		return mapping.findForward("showWMSListPage");
+	}
+	
+	/**
+	 * Action Name 	: 	showSubmitWorkSheet
+	 * Purpose		:	To showSubmitWorkSheet
+	 * @author user	:	Prashant
+	 * Date			:	19/10/2012
+	 */
+	/* ------------------------------------------------------------------------------------------*/	
+	public ActionForward showSubmitWorkSheet(ActionMapping mapping,ActionForm form,HttpServletRequest request,HttpServletResponse response)    throws IOException, ServletException
+	/* ------------------------------------------------------------------------------------------*/	
+	{
+		HttpSession				session				=	request.getSession();
+		WMSForm					wmsForm				=	(WMSForm)form;
+		EmployeeBean			employeeBean		=	new	EmployeeBean();
+		session.removeAttribute("sesSelectedWorkList");		
+		
+		ArrayList<CommonForm>   sesSaveWMSList		=	(ArrayList<CommonForm>) session.getAttribute("sesSaveWMSList");
+		ArrayList<CommonForm>   sesSelectedWorkList	=	new ArrayList<CommonForm>();
+		String					selectedWorks[]		=	wmsForm.getChkArray();
+		request.setAttribute("selectedWorks", selectedWorks);
+		if(selectedWorks!=null && selectedWorks.length > 0)
+		{	
+			if(sesSaveWMSList!=null && sesSaveWMSList.size() > 0)
+			{
+				for(int i=0;i<selectedWorks.length;i++)
+				{
+					String	chkdWms	=	selectedWorks[i];
+					for(int j=0;j<sesSaveWMSList.size();j++)
+					{
+						CommonForm	cForm	=	sesSaveWMSList.get(j);
+						String		wmsId	=	cForm.getField2();
+						if(chkdWms!=null && chkdWms.length() >0 && wmsId!=null && wmsId.length() >0 && wmsId.equalsIgnoreCase(chkdWms))
+						{
+							sesSelectedWorkList.add(cForm);
+							break;
+						}
+					}
+				}
+			}
+		}	
+		
+		if(sesSelectedWorkList!=null && sesSelectedWorkList.size() > 0)
+		{
+			session.setAttribute("sesSelectedWorkList", sesSelectedWorkList);
+		}
+		ArrayList<CommonForm>   	dataList	=	employeeBean.getEmployeeToSendMailId();
+		if(dataList != null && dataList.size() > 0)
+		{
+			request.setAttribute("reqToSendEmployeeMailIdList", dataList);
+		}
+		
+		return mapping.findForward("showSelectedSubmitWmsPage");
+	}
+	
+	
+	/**
+	 * Action Name 	: sendWmsMail
+	 * Purpose		: To send Wms Mail
+	 * @author		: Prashant
+	 * Date			: 22/10/2012
+	 */
+	public boolean sendWmsMail(WMSForm wmsForm , ArrayList<CommonForm> sesSelectedWork ,String displayName)
+	{
+		
+		WMSBean				wmsBean				=	new WMSBean();
+		CommonMethodBean	commonMethodBean	=	new	CommonMethodBean();
+		String				cDate				=	commonMethodBean.getDate();
+		String				subject				=	"WSM - "+cDate;
+		//String[]			emailIds			=	wmsForm.getSendToMail();
+		String[]			to					=	wmsForm.getSendToMail();
+		String				csvCc				=	wmsForm.getCc();
+		String				csvBcc				=	wmsForm.getBcc();
+		String[]			cc					=	{};
+		String[]			bcc					=	{};
+				
+		boolean flag	=	false;
+		//to				=	emailIds;
+		/*if(emailIds!=null && emailIds.length()>0)
+		{
+				to			=	emailIds.split(",");
+		}*/
+		if(csvCc!=null && csvCc.length()>0)
+		{
+				cc			=	csvCc.split(",");
+		}
+		if(csvBcc!=null && csvBcc.length()>0)
+		{
+				bcc			=	csvBcc.split(",");
+		}
+		
+		
+		String		mailBody	=	wmsBean.generateMailBodyForWMS(sesSelectedWork);
+		boolean 	debug		=	true;
+		String 		text		=	mailBody;
+		String 		attachFile	=	"";
+		
+		if(SendMailBean.sendMailAttach("", displayName, "", "", "", debug, to, cc, bcc, subject, text, attachFile))
+		{
+			flag 	=	true;
+		}
+		else
+		{
+			flag	=	false;
+		}
+		
+	  return flag;
+	}	
+	
+}

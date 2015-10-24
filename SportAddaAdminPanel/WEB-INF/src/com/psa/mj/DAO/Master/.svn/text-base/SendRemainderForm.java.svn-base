@@ -1,0 +1,18 @@
+package com.inf.dvo.mbm.DAO.Master;
+
+import javax.servlet.http.HttpServletRequest;
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionMapping;
+
+
+public class SendRemainderForm extends ActionForm
+{
+
+	private static final long serialVersionUID = 1L;
+	
+	public void reset(ActionMapping mapping,HttpServletRequest request)
+	{
+		
+	}
+	
+}

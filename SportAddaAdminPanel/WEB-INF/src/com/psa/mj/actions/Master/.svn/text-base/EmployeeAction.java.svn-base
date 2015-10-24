@@ -1,0 +1,928 @@
+package com.inf.dvo.mbm.actions.Master;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.sql.SQLException;
+import java.util.ArrayList;
+
+import javax.servlet.ServletConfig;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionForward;
+import org.apache.struts.action.ActionMapping;
+import org.apache.struts.util.MessageResources;
+import org.json.JSONException;
+import org.json.JSONStringer;
+
+import com.inf.dvo.mbm.Bean.CommonMethodBean;
+import com.inf.dvo.mbm.Bean.Master.AttendanceRecordBean;
+import com.inf.dvo.mbm.Bean.Master.EmployeeBean;
+import com.inf.dvo.mbm.Bean.Master.SalarySlipBean;
+import com.inf.dvo.mbm.DAO.CommonForm;
+import com.inf.dvo.mbm.DAO.Master.EmployeeForm;
+
+import com.inf.dvo.mbm.actions.CMGMTDispatchAction;
+
+
+public class EmployeeAction extends  CMGMTDispatchAction
+{
+	
+	/**
+	 * Action Name 	: showEmployeeMasterList
+	 * Purpose		: To showEmployeeMasterList
+	 * @author		: Prashant
+	 * Date			: 19/03/2012
+	 */
+	public ActionForward showEmployeeMasterList(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		EmployeeForm	empForm		=	(EmployeeForm)form;
+		HttpSession				session				=	request.getSession();
+		CommonMethodBean		commonMethodBean	=	new CommonMethodBean();
+		
+		empForm.reset(mapping, request);
+		
+		empForm.setJoiningFromDate(commonMethodBean.getDate());
+		empForm.setJoiningToDate(commonMethodBean.getDate());
+		
+		ArrayList<CommonForm>desginationList	=	commonMethodBean.getActiveGroupValue("DESIGNATION");
+		if(desginationList!= null && desginationList.size() > 0)
+		{
+			request.setAttribute("reqDesignationList",desginationList);
+		}
+		
+		ArrayList<CommonForm>bankList	=	commonMethodBean.getBankName();
+		if(bankList!= null && bankList.size() > 0)
+		{
+			request.setAttribute("reqBankList",bankList);
+		}
+		
+		
+		ArrayList<CommonForm>branchNameList	=	commonMethodBean.getBankIdWiseBranchName("");
+		if(branchNameList!= null && branchNameList.size() > 0)
+		{
+			request.setAttribute("reqBranchNameList",branchNameList);
+		}
+		
+		String rarId		=	"9";
+		String userProcess	=	(String)session.getAttribute("userProcess");		
+		String validLink	=	commonMethodBean.getValidOrNot(userProcess, ","+rarId+",");
+		if(validLink!=null && validLink.equalsIgnoreCase("NOTVALID"))
+		{
+			return mapping.findForward("invalid");
+		}
+		return mapping.findForward("showEmployeeMasterList");
+	}
+	
+	/**
+	 * Action Name 	: showSearchEmployeeMasterList
+	 * Purpose		: To showSearchEmployeeMasterList 
+	 * @author		: Prashant
+	 * Date			: 19/03/2012
+	 */
+	
+	public ActionForward showSearchEmployeeMasterList(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		EmployeeForm		empForm				=	(EmployeeForm)form;
+		EmployeeBean		empBean				=	new EmployeeBean();
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		String				bankId				=	empForm.getBankNameId();
+		ArrayList<CommonForm> dataList			=	empBean.getSearchEmployeeList(empForm);
+		
+		if(dataList!= null && dataList.size() > 0)
+		{
+			request.setAttribute("reqEmployeeMasterList",dataList);
+		}
+		else
+		{
+			request.setAttribute("msgType", "FAIL");
+			request.setAttribute("saveResult", "NO DATA FOUND.");
+		}
+		
+		ArrayList<CommonForm>desginationList	=	commonMethodBean.getActiveGroupValue("DESIGNATION");
+		if(desginationList!= null && desginationList.size() > 0)
+		{
+			request.setAttribute("reqDesignationList",desginationList);
+		}
+		
+		ArrayList<CommonForm>bankList	=	commonMethodBean.getBankName();
+		if(bankList!= null && bankList.size() > 0)
+		{
+			request.setAttribute("reqBankList",bankList);
+		}
+		
+		ArrayList<CommonForm>branchNameList	=	commonMethodBean.getBankIdWiseBranchName(bankId);
+		if(branchNameList!= null && branchNameList.size() > 0)
+		{
+			request.setAttribute("reqBranchNameList",branchNameList);
+		}
+		
+		return mapping.findForward("showEmployeeMasterList");
+	}
+	
+	/**
+	 * Action Name 	: showEmployeeMasterPage
+	 * Purpose		: To showEmployeeMasterPage
+	 * @author		: Prashant
+	 * Date			: 16/03/2012
+	 */
+	
+	public ActionForward showEmployeeMasterPage(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		EmployeeForm	empForm		=	(EmployeeForm)form;
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		empForm.reset(mapping, request);
+		
+		empForm.setCurretDate(commonMethodBean.getDate());
+		ArrayList<CommonForm>qualificationList	=	commonMethodBean.getActiveGroupValue("QUALIFICATION");
+		if(qualificationList!= null && qualificationList.size() > 0)
+		{
+			request.setAttribute("reqQualificationList",qualificationList);
+		}
+		
+		ArrayList<CommonForm>desginationList	=	commonMethodBean.getActiveGroupValue("DESIGNATION");
+		if(desginationList!= null && desginationList.size() > 0)
+		{
+			request.setAttribute("reqDesignationList",desginationList);
+		}
+		
+		ArrayList<CommonForm>bankList	=	commonMethodBean.getBankName();
+		if(bankList!= null && bankList.size() > 0)
+		{
+			request.setAttribute("reqBankList",bankList);
+		}
+		ArrayList<CommonForm> salaryStructureList	=	commonMethodBean.getSalaryStructure();
+		if(salaryStructureList!=null && salaryStructureList.size() > 0)
+		{
+			request.setAttribute("reqSalaryStructure",salaryStructureList); 
+		}
+		/*ArrayList<CommonForm>branchNameList	=	commonMethodBean.getBankIdWiseBranchName("");
+		if(branchNameList!= null && branchNameList.size() > 0)
+		{
+			request.setAttribute("reqBranchNameList",branchNameList);
+		}*/
+		
+		ArrayList<CommonForm>	empCategoryList	=	commonMethodBean.getActiveGroupValue("EMPLOYEE CATEGORY");
+		if(empCategoryList!=null && empCategoryList.size() > 0)
+		{
+			request.setAttribute("reqEmpCategoryList",empCategoryList);
+		}
+		
+		empForm.setStatus("ACTIVE");
+		empForm.setPaidEmp("YES");
+		
+		request.setAttribute("actions","add");
+		
+		return mapping.findForward("showEmployeeMasterPage");
+	}
+	
+	/**
+	 * Action Name 	: saveEmployeeMaster
+	 * Purpose		: To saveEmployeeMaster
+	 * @author		: Prashant
+	 * Date			: 16/03/2012
+	 */
+	
+	public ActionForward saveEmployeeMaster(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		HttpSession			session				=	request.getSession();
+		EmployeeForm		empForm				=	(EmployeeForm)form;
+		EmployeeBean		empBean				=	new EmployeeBean();
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		empForm.setCurretDate(commonMethodBean.getDate());
+		String		mappingString	=	"ERROR";
+		String		mode			=	request.getParameter("mode");
+		String		userName		=	(String)session.getAttribute("username");
+		String		bankId			=	empForm.getBankNameId();
+		
+		String		saveResult		=	empBean.saveEmployeeMaster(empForm,userName);
+		
+		String		checkBoxValue	=	empForm.getCheckBoxValue()!= null && empForm.getCheckBoxValue().length() > 0 ? empForm.getCheckBoxValue() : "";
+		
+		if(saveResult!= null && saveResult.length() > 0 && !saveResult.equalsIgnoreCase("ERROR"))
+		{
+				String	msgType		=	saveResult.substring(0,4);
+				saveResult			=	saveResult.substring(5,saveResult.length());
+				
+				request.setAttribute("msgType",msgType);
+				request.setAttribute("saveResult",saveResult);
+				
+				if(msgType!= null && msgType.length() > 0 && msgType.equals("PASS"))
+				{
+					if(mode!= null && mode.length() > 0 && mode.equalsIgnoreCase("SAVE"))
+					{
+						mappingString	=	"showEmployeeMasterPage";
+						empForm.reset(mapping, request);
+						
+						ArrayList<CommonForm>qualificationList	=	commonMethodBean.getActiveGroupValue("QUALIFICATION");
+						if(qualificationList!= null && qualificationList.size() > 0)
+						{
+							request.setAttribute("reqQualificationList",qualificationList);
+						}
+						
+						ArrayList<CommonForm>desginationList	=	commonMethodBean.getActiveGroupValue("DESIGNATION");
+						if(desginationList!= null && desginationList.size() > 0)
+						{
+							request.setAttribute("reqDesignationList",desginationList);
+						}
+						
+						ArrayList<CommonForm>bankList	=	commonMethodBean.getBankName();
+						if(bankList!= null && bankList.size() > 0)
+						{
+							request.setAttribute("reqBankList",bankList);
+						}
+						
+						ArrayList<CommonForm> salaryStructureList	=	commonMethodBean.getSalaryStructure();
+						if(salaryStructureList!=null && salaryStructureList.size() > 0)
+						{
+							request.setAttribute("reqSalaryStructure",salaryStructureList); 
+						}
+						
+						/*ArrayList<CommonForm>branchNameList	=	commonMethodBean.getBankIdWiseBranchName("");
+						if(branchNameList!= null && branchNameList.size() > 0)
+						{
+							request.setAttribute("reqBranchNameList",branchNameList);
+						}*/
+						
+						empForm.setStatus("ACTIVE");
+						empForm.setPaidEmp("YES");
+						request.setAttribute("actions","add");
+					}
+					
+					else if(mode!= null && mode.length() > 0 && mode.equalsIgnoreCase("SAVEEXIT"))
+					{
+						mappingString	=	"showEmployeeMasterList";
+						
+						empForm.reset(mapping, request);
+						
+						empForm.setJoiningFromDate(commonMethodBean.getDate());
+						empForm.setJoiningToDate(commonMethodBean.getDate());
+						
+						ArrayList<CommonForm>desginationList	=	commonMethodBean.getActiveGroupValue("DESIGNATION");
+						if(desginationList!= null && desginationList.size() > 0)
+						{
+							request.setAttribute("reqDesignationList",desginationList);
+						}
+						
+						ArrayList<CommonForm>bankList	=	commonMethodBean.getBankName();
+						if(bankList!= null && bankList.size() > 0)
+						{
+							request.setAttribute("reqBankList",bankList);
+						}
+						
+						ArrayList<CommonForm>branchNameList	=	commonMethodBean.getBankIdWiseBranchName("");
+						if(branchNameList!= null && branchNameList.size() > 0)
+						{
+							request.setAttribute("reqBranchNameList",branchNameList);
+						}
+						
+						ArrayList<CommonForm>	empCategoryList	=	commonMethodBean.getActiveGroupValue("EMPLOYEE CATEGORY");
+						if(empCategoryList!=null && empCategoryList.size() > 0)
+						{
+							request.setAttribute("reqEmpCategoryList",empCategoryList);
+						}
+						
+						request.setAttribute("actions","add");
+					}
+						
+				}
+				else if(msgType!= null && msgType.length() > 0 && msgType.equals("FAIL"))
+				{
+					mappingString	=	"showEmployeeMasterPage";
+					
+					ArrayList<CommonForm>qualificationList	=	commonMethodBean.getActiveGroupValue("QUALIFICATION");
+					if(qualificationList!= null && qualificationList.size() > 0)
+					{
+						request.setAttribute("reqQualificationList",qualificationList);
+					}
+					
+					ArrayList<CommonForm>desginationList	=	commonMethodBean.getActiveGroupValue("DESIGNATION");
+					if(desginationList!= null && desginationList.size() > 0)
+					{
+						request.setAttribute("reqDesignationList",desginationList);
+					}
+					
+					ArrayList<CommonForm>bankList	=	commonMethodBean.getBankName();
+					if(bankList!= null && bankList.size() > 0)
+					{
+						request.setAttribute("reqBankList",bankList);
+					}
+					
+					ArrayList<CommonForm>branchNameList	=	commonMethodBean.getBankIdWiseBranchName(bankId);
+					if(branchNameList!= null && branchNameList.size() > 0)
+					{
+						request.setAttribute("reqBranchNameList",branchNameList);
+					}
+					ArrayList<CommonForm> salaryStructureList	=	commonMethodBean.getSalaryStructure();
+					if(salaryStructureList!=null && salaryStructureList.size() > 0)
+					{
+						request.setAttribute("reqSalaryStructure",salaryStructureList); 
+					}
+					ArrayList<CommonForm>	empCategoryList	=	commonMethodBean.getActiveGroupValue("EMPLOYEE CATEGORY");
+					if(empCategoryList!=null && empCategoryList.size() > 0)
+					{
+						request.setAttribute("reqEmpCategoryList",empCategoryList);
+					}
+					empForm.setCheckBoxValue(checkBoxValue);
+					
+					request.setAttribute("actions","add");
+				}
+		}
+		return mapping.findForward(mappingString);
+	}
+	
+	
+	/**
+	 * Action Name 	: showModifyEmployeeMaster
+	 * Purpose		: To showModifyEmployeeMaster
+	 * @author		: Prashant
+	 * Date			: 19/03/2012
+	 */
+	
+	public ActionForward showModifyEmployeeMaster(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		EmployeeForm			empForm				=	(EmployeeForm)form;
+		CommonMethodBean		commonMethodBean	=	new CommonMethodBean();
+		EmployeeBean			empBean				=	new EmployeeBean();
+		empForm.setCurretDate(commonMethodBean.getDate());
+		String					empId				=	request.getParameter("emp_Id")!= null && request.getParameter("emp_Id").length() > 0 ? request.getParameter("emp_Id") : "";
+		String					bankId				=	"";
+		
+		ArrayList<CommonForm> 	modifyData			=	empBean.getDataForModify(empId);
+		
+		if(modifyData!= null && modifyData.size() > 0)
+		{
+			CommonForm	cForm	=	modifyData.get(0);
+			empForm.setEmpId(cForm.getField1());//empId
+			empForm.setEmpCode(cForm.getField2());//employee_code
+			empForm.setFirstName(cForm.getField3());//first_name
+			empForm.setMiddleName(cForm.getField4());//middle_name
+			empForm.setLastName(cForm.getField5());//last_name
+			empForm.setLocalAddr(cForm.getField7());//local_address
+			empForm.setLocalCityId(cForm.getField8());//local_cityid
+			empForm.setLocalCity(cForm.getField9());//local_city_name
+			
+			empForm.setPermanatAddr(cForm.getField10());//permanant_address
+			empForm.setPeramantCityId(cForm.getField11());//permanant_cityId
+			empForm.setPeramantCity(cForm.getField12());//perment_city_name
+			
+			empForm.setContactNo(cForm.getField13());//contact_number
+			empForm.setEmergencyContNo(cForm.getField14());//emergency_contact
+			empForm.setEmailId(cForm.getField15());//email_id
+			empForm.setQualificationId(cForm.getField16());//QualificationId
+			empForm.setQualificationYear(cForm.getField17());//qualification_year
+			empForm.setExperince(cForm.getField18());//experience
+			empForm.setJoiningDate(cForm.getField19());//joining_date
+			empForm.setDepartementId(cForm.getField20());//department
+			empForm.setDepartementName(cForm.getField21());//department_name
+			empForm.setDesignationId(cForm.getField22());//designation
+			empForm.setDob(cForm.getField24());//dob
+			empForm.setSex(cForm.getField25());//sex
+			empForm.setMaritalStatus(cForm.getField26());//marital_status
+			empForm.setBloodGroup(cForm.getField27());//blood_group
+			empForm.setPanCardNo(cForm.getField28());//pan_no
+			empForm.setBankNameId(cForm.getField30());//bankid
+			empForm.setBankBranchId(cForm.getField31());//branchid
+			empForm.setBankAccountNo(cForm.getField32());//bank_acc_no
+			empForm.setBankAccountName(cForm.getField33());//bank_acc_name
+			empForm.setPaidEmp(cForm.getField34());//paid_Emp
+			empForm.setPostingLocation(cForm.getField35());//posting_location
+			empForm.setPfAcNo(cForm.getField36());//pf_account_no
+			empForm.setEsicAcNo(cForm.getField37());//esic_account_no
+			empForm.setRefName(cForm.getField38());//reference_name
+			empForm.setRefAddr(cForm.getField39());//reference_address
+			empForm.setReltionWithEmp(cForm.getField40());//reference_relation
+			empForm.setRefPhoneNo(cForm.getField41());//reference_contactno
+			empForm.setRefEmailId(cForm.getField42());//reference_emailid
+			empForm.setAddtionInfo(cForm.getField43());//additional_information
+			empForm.setStatus(cForm.getField44());//status
+			empForm.setJoiningSal(cForm.getField46());//Gross Sal
+			empForm.setSalStructId(cForm.getField47());//SalStructId
+			empForm.setSalStrucName(cForm.getField48());//SalStructName
+			
+			empForm.setSpouseName(cForm.getField49());//spouse_name
+			empForm.setSpouseBirthday(cForm.getField50());//spouse_birthday
+			empForm.setAnniversaryDate(cForm.getField51());//anniversary
+			empForm.setEmpCategoryId(cForm.getField52());//employee_category
+			
+			String	chkValue	=	cForm.getField45()!= null && cForm.getField45().length() > 0 ? cForm.getField45(): "";
+			if(chkValue!= null && chkValue.length() > 0)
+			{	
+				empForm.setCheckBoxValue(cForm.getField45());//
+			}	
+			
+			bankId	=	cForm.getField30()!=null && cForm.getField30().length() > 0 ? cForm.getField30() : "";
+		}
+		
+		ArrayList<CommonForm>qualificationList	=	commonMethodBean.getActiveGroupValue("QUALIFICATION");
+		if(qualificationList!= null && qualificationList.size() > 0)
+		{
+			request.setAttribute("reqQualificationList",qualificationList);
+		}
+		
+		ArrayList<CommonForm>desginationList	=	commonMethodBean.getActiveGroupValue("DESIGNATION");
+		if(desginationList!= null && desginationList.size() > 0)
+		{
+			request.setAttribute("reqDesignationList",desginationList);
+		}
+		
+		ArrayList<CommonForm>bankList	=	commonMethodBean.getBankName();
+		if(bankList!= null && bankList.size() > 0)
+		{
+			request.setAttribute("reqBankList",bankList);
+		}
+		
+		ArrayList<CommonForm>branchNameList	=	commonMethodBean.getBankIdWiseBranchName(bankId);
+		if(branchNameList!= null && branchNameList.size() > 0)
+		{
+			request.setAttribute("reqBranchNameList",branchNameList);
+		}
+		ArrayList<CommonForm> salaryStructureList	=	commonMethodBean.getSalaryStructure();
+		if(salaryStructureList!=null && salaryStructureList.size() > 0)
+		{
+			request.setAttribute("reqSalaryStructure",salaryStructureList); 
+		}
+		
+		ArrayList<CommonForm>	empCategoryList	=	commonMethodBean.getActiveGroupValue("EMPLOYEE CATEGORY");
+		if(empCategoryList!=null && empCategoryList.size() > 0)
+		{
+			request.setAttribute("reqEmpCategoryList",empCategoryList);
+		}
+		request.setAttribute("actions","edit");
+		
+		return mapping.findForward("showEmployeeMasterPage");
+	}
+	
+	/**
+	 * Action Name 	: modifyEmployeeMaster
+	 * Purpose		: To modifyEmployeeMaster
+	 * @author		: Prashant
+	 * Date			: 19/03/2012
+	 */
+	
+	public ActionForward modifyEmployeeMaster(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		HttpSession	session		=	request.getSession();
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		EmployeeForm	empForm		=	(EmployeeForm)form;
+		EmployeeBean	empBean		=	new EmployeeBean();
+		
+		String		mappingString	=	"ERROR";
+		String		userName		=	(String)session.getAttribute("username");
+		
+		String		saveResult		=	empBean.getModifyEmployeeMaster(empForm,userName);
+		
+		if(saveResult!= null && saveResult.length() > 0 && !saveResult.equalsIgnoreCase("ERROR"))
+		{
+				String	msgType		=	saveResult.substring(0,4);
+				saveResult			=	saveResult.substring(5,saveResult.length());
+				request.setAttribute("msgType",msgType);
+				request.setAttribute("saveResult",saveResult);
+				
+				if(msgType!= null && msgType.length() > 0 && msgType.equals("PASS"))
+				{
+					empForm.reset(mapping, request);
+					
+					empForm.setJoiningFromDate(commonMethodBean.getDate());
+					empForm.setJoiningToDate(commonMethodBean.getDate());
+					
+					ArrayList<CommonForm>desginationList	=	commonMethodBean.getActiveGroupValue("DESIGNATION");
+					if(desginationList!= null && desginationList.size() > 0)
+					{
+						request.setAttribute("reqDesignationList",desginationList);
+					}
+					
+					ArrayList<CommonForm>bankList	=	commonMethodBean.getBankName();
+					if(bankList!= null && bankList.size() > 0)
+					{
+						request.setAttribute("reqBankList",bankList);
+					}
+					
+					ArrayList<CommonForm>branchNameList	=	commonMethodBean.getBankIdWiseBranchName("");
+					if(branchNameList!= null && branchNameList.size() > 0)
+					{
+						request.setAttribute("reqBranchNameList",branchNameList);
+					}
+					ArrayList<CommonForm> salaryStructureList	=	commonMethodBean.getSalaryStructure();
+					if(salaryStructureList!=null && salaryStructureList.size() > 0)
+					{
+						request.setAttribute("reqSalaryStructure",salaryStructureList); 
+					}
+					mappingString	=	"showEmployeeMasterList";
+				}
+				
+				else if(msgType!= null && msgType.length() > 0 && msgType.equals("FAIL"))
+				{
+					mappingString	=	"showEmployeeMasterPage";
+					empForm.setCurretDate(commonMethodBean.getDate());
+					ArrayList<CommonForm>qualificationList	=	commonMethodBean.getActiveGroupValue("QUALIFICATION");
+					if(qualificationList!= null && qualificationList.size() > 0)
+					{
+						request.setAttribute("reqQualificationList",qualificationList);
+					}
+					
+					ArrayList<CommonForm>desginationList	=	commonMethodBean.getActiveGroupValue("DESIGNATION");
+					if(desginationList!= null && desginationList.size() > 0)
+					{
+						request.setAttribute("reqDesignationList",desginationList);
+					}
+					
+					ArrayList<CommonForm>bankList	=	commonMethodBean.getBankName();
+					if(bankList!= null && bankList.size() > 0)
+					{
+						request.setAttribute("reqBankList",bankList);
+					}
+					
+					ArrayList<CommonForm>branchNameList	=	commonMethodBean.getBankIdWiseBranchName("");
+					if(branchNameList!= null && branchNameList.size() > 0)
+					{
+						request.setAttribute("reqBranchNameList",branchNameList);
+					}
+					
+					ArrayList<CommonForm> salaryStructureList	=	commonMethodBean.getSalaryStructure();
+					if(salaryStructureList!=null && salaryStructureList.size() > 0)
+					{
+						request.setAttribute("reqSalaryStructure",salaryStructureList); 
+					}
+					
+					ArrayList<CommonForm>	empCategoryList	=	commonMethodBean.getActiveGroupValue("EMPLOYEE CATEGORY");
+					if(empCategoryList!=null && empCategoryList.size() > 0)
+					{
+						request.setAttribute("reqEmpCategoryList",empCategoryList);
+					}
+					
+					request.setAttribute("actions","edit");
+				}
+		}
+		return mapping.findForward(mappingString);
+	}
+	
+	/**
+	 * Action Name 	: deleteEmployee
+	 * Purpose		: To deleteEmployee
+	 * @author		: Prashant
+	 * Date			: 19/03/2012
+	 */
+	
+	public ActionForward deleteEmployee(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		EmployeeForm	empForm			=	(EmployeeForm)form;
+		EmployeeBean	empBean			=	new EmployeeBean();
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		
+		String		mappingString		=	"ERROR";
+		String		employeeId			=	request.getParameter("emp_Id");
+		String		employeeName		=	request.getParameter("emp_Name");
+		
+		String		saveResult		=	empBean.deleteEmployee(employeeId,employeeName);
+		
+		if(saveResult != null && saveResult.length() > 0 && !saveResult.equalsIgnoreCase("ERROR"))
+		{
+			String	msgType		=	saveResult.substring(0,4);
+			saveResult			=	saveResult.substring(5,saveResult.length());
+			
+			request.setAttribute("msgType",msgType);
+			request.setAttribute("saveResult",saveResult);
+			
+			if(msgType!= null && msgType.length() > 0 && msgType.equals("PASS"))
+			{
+				//empForm.reset(mapping, request);
+				
+				//empForm.setJoiningFromDate(commonMethodBean.getDate());
+				//empForm.setJoiningToDate(commonMethodBean.getDate());
+				
+				ArrayList<CommonForm> dataList		=	empBean.getSearchEmployeeList(empForm);
+				if(dataList!= null && dataList.size() > 0)
+				{
+					request.setAttribute("reqEmployeeMasterList",dataList);
+				}
+				else
+				{
+					empForm.reset(mapping, request);
+					empForm.setJoiningFromDate(commonMethodBean.getDate());
+					empForm.setJoiningToDate(commonMethodBean.getDate());
+				}
+				ArrayList<CommonForm>desginationList	=	commonMethodBean.getActiveGroupValue("DESIGNATION");
+				if(desginationList!= null && desginationList.size() > 0)
+				{
+					request.setAttribute("reqDesignationList",desginationList);
+				}
+				
+				ArrayList<CommonForm>bankList	=	commonMethodBean.getBankName();
+				if(bankList!= null && bankList.size() > 0)
+				{
+					request.setAttribute("reqBankList",bankList);
+				}
+				
+				ArrayList<CommonForm>branchNameList	=	commonMethodBean.getBankIdWiseBranchName("");
+				if(branchNameList!= null && branchNameList.size() > 0)
+				{
+					request.setAttribute("reqBranchNameList",branchNameList);
+				}
+				
+				mappingString	=	"showEmployeeMasterList";
+			}
+			else if(msgType!= null && msgType.length() > 0 && msgType.equals("FAIL"))
+			{
+				mappingString						=	"showEmployeeMasterList";
+				
+				ArrayList<CommonForm> dataList		=	empBean.getSearchEmployeeList(empForm);
+				if(dataList!= null && dataList.size() > 0)
+				{
+					request.setAttribute("reqEmployeeMasterList",dataList);
+				}
+				
+				ArrayList<CommonForm>desginationList	=	commonMethodBean.getActiveGroupValue("DESIGNATION");
+				if(desginationList!= null && desginationList.size() > 0)
+				{
+					request.setAttribute("reqDesignationList",desginationList);
+				}
+				
+				ArrayList<CommonForm>bankList	=	commonMethodBean.getBankName();
+				if(bankList!= null && bankList.size() > 0)
+				{
+					request.setAttribute("reqBankList",bankList);
+				}
+				
+				ArrayList<CommonForm>branchNameList	=	commonMethodBean.getBankIdWiseBranchName("");
+				if(branchNameList!= null && branchNameList.size() > 0)
+				{
+					request.setAttribute("reqBranchNameList",branchNameList);
+				}
+				
+			}
+			
+		}
+		return mapping.findForward(mappingString);
+	}
+	
+	/**
+	 * Action Name 	: getPermanatCityName
+	 * Purpose		: To getPermanatCityName
+	 * @author		: Prashant
+	 * Date			: 16/03/2012
+	 */
+	
+	public ActionForward getPermanatCityName(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		String 				cityName			=	request.getParameter("permantCityName")!= null && request.getParameter("permantCityName").length() > 0 ? request.getParameter("permantCityName").trim().toUpperCase() : "";
+		String				status				=	request.getParameter("status");
+		PrintWriter			writer				=	response.getWriter();
+		String				outResult			=	"";
+		
+		ArrayList<CommonForm> dataList			=	commonMethodBean.getCityNameList(cityName,status,"","");
+		try
+		{
+			if(dataList!= null && dataList.size() > 0)
+			{
+				outResult	+=	"<select id='ajaxPermanatCityNameID' name='ajaxPermanatCityNameID' size='5' ondblclick=changePermanatCityNameVal() onkeypress=checkPermanatCityName(event) class='multilist'>";
+				for(int i=0 ;i<dataList.size();i++)
+				{
+					CommonForm	cForm	=	dataList.get(i);
+					outResult	+=	"<option value='"+cForm.getField1()+"'>"+cForm.getField2()+"</option>";
+				}
+				outResult	+=	"</select>";
+			}
+			
+			writer.println(outResult);
+		}
+		catch(Exception e)
+		{
+			System.out.println("Error In EmployeeAction.getPermanatCityName : "+e); 
+		}
+		return mapping.findForward(null);
+	}
+	
+	/**
+	 * Action Name 	: showEmployeeDetailsPopUp
+	 * Purpose		: To showEmployeeDetailsPopUp
+	 * @author		: Prashant
+	 * Date			: 19/03/2012
+	 */
+	
+	public ActionForward showEmployeeDetailsPopUp(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		EmployeeBean	empBean			=	new EmployeeBean();
+		String			empId			=	request.getParameter("empId");
+		
+		ArrayList<CommonForm>dataList	=	empBean.getEmployeeDetailsForPopup(empId);
+		if(dataList!= null && dataList.size() > 0)
+		{
+			request.setAttribute("reqEmpDetailsPopUp",dataList);
+		}
+		return mapping.findForward("showEmployeeMasterPopUP");
+	}
+	
+	/**
+	 * Action Name 	: openDocument
+	 * Purpose		: To openDocument
+	 * @author		: Prashant
+	 * Date			: 04/05/2012
+	 */
+	
+	public ActionForward openDocument(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		CommonMethodBean	commonMethodBean		=	new CommonMethodBean();
+		PrintWriter			writer					=	response.getWriter();
+		String				outputString			=	"ERROR";
+		String				filePath				=	request.getParameter("filePath");
+		
+		String				fileName				=	filePath.substring(filePath.indexOf("/", filePath.lastIndexOf("/")), filePath.length());
+		
+		String				drivePath				=	"";		
+		String				mainFolder				=	"";
+		String				projectTempFolder		=	"";
+		
+		ServletConfig	servletConfig				=	getServlet().getServletConfig();
+		String			contexPath					=	servletConfig.getServletContext().getRealPath("/");	
+		try
+		{
+			MessageResources	msg	=	getResources(request);
+			drivePath				=	msg.getMessage("path.origin");
+			mainFolder				=	msg.getMessage("dir.mainfolder");
+			projectTempFolder		=	msg.getMessage("project.dir.temp");
+		}
+		catch(Exception e)
+		{
+			System.out.println("Exception While Reading Application.Resource File In EmployeeAction.openDocument: "+e); 
+		}
+		
+		mainFolder	=	drivePath+"/"+mainFolder;
+		String	sourceFolder	=	mainFolder+filePath;
+		
+		
+		String			destinationFolder			=	contexPath+projectTempFolder;
+		File			destFolder					=	new File(destinationFolder);	
+		
+		if (!destFolder.exists())
+		{
+			destFolder.mkdir();			
+		}
+		
+		String			destinationFile				=	destinationFolder+fileName;
+		
+		if(commonMethodBean.copyfile(sourceFolder, destinationFile))
+		{
+			outputString	=	destinationFile;
+			writer.println("/"+projectTempFolder+fileName);
+		}
+		else
+		{
+			writer.print("ERROR");
+		}	
+		return mapping.findForward(null);
+	}
+	
+	
+	
+	/**
+	 * Action Name 	: showEmployeeSalaryDetailsPage
+	 * Purpose		: To showEmployeeSalaryDetailsPage
+	 * @author		: Prashant
+	 * Date			: 02/01/2013
+	 */
+	public ActionForward showEmployeeSalaryDetailsPage(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		
+		CommonMethodBean		commonMethodBean	=	new CommonMethodBean();
+		AttendanceRecordBean	arBean				=	new AttendanceRecordBean();
+		String					sysdate				=	commonMethodBean.getDate();
+		
+		String[]			date				=	sysdate.split("/");
+		int					year				=	Integer.parseInt(date[2]);
+		int	[]				yearArray			=	new int[5];
+		
+		yearArray[0]		=	year-4;
+		yearArray[1]		=	year-3;
+		yearArray[2]		=	year-2;
+		yearArray[3]		=	year-1;
+		yearArray[4]		=	year;
+		
+		ArrayList<CommonForm>	yearList	=	arBean.getYearList(yearArray);
+		if(yearList!= null && yearList.size() > 0)
+		{
+			request.setAttribute("reqYearList", yearList);
+		}
+		
+		ArrayList<CommonForm> desginationList	=	commonMethodBean.getActiveGroupValue("DESIGNATION");
+		if(desginationList!= null && desginationList.size() > 0)
+		{
+			request.setAttribute("reqDesignationList",desginationList);
+		}
+		
+		return	mapping.findForward("showEmployeeSalaryDetails");
+	}
+	
+	
+	
+	/**
+	 * Action Name 	: getEmploySalarySearchList
+	 * Purpose		: To getEmploySalarySearchList 
+	 * @author		: Prashant
+	 * Date			: 02/01/2013
+	 */
+	
+	public ActionForward getEmploySalarySearchList(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		EmployeeForm		empForm				=	(EmployeeForm)form;
+		EmployeeBean		empBean				=	new EmployeeBean();
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		
+		ArrayList<CommonForm> dataList			=	empBean.getEmploySalarySearchList(empForm);
+		
+		if(dataList!= null && dataList.size() > 0)
+		{
+			request.setAttribute("reqSearchList",dataList);
+		}
+		else
+		{
+			request.setAttribute("msgType", "FAIL");
+			request.setAttribute("saveResult", "NO DATA FOUND.");
+		}
+		
+		AttendanceRecordBean	arBean			=	new AttendanceRecordBean();
+		String					sysdate			=	commonMethodBean.getDate();
+		
+		String[]			date				=	sysdate.split("/");
+		int					year				=	Integer.parseInt(date[2]);
+		int	[]				yearArray			=	new int[5];
+		
+		yearArray[0]		=	year-4;
+		yearArray[1]		=	year-3;
+		yearArray[2]		=	year-2;
+		yearArray[3]		=	year-1;
+		yearArray[4]		=	year;
+		
+		ArrayList<CommonForm>	yearList	=	arBean.getYearList(yearArray);
+		if(yearList!= null && yearList.size() > 0)
+		{
+			request.setAttribute("reqYearList", yearList);
+		}
+		
+		ArrayList<CommonForm> desginationList	=	commonMethodBean.getActiveGroupValue("DESIGNATION");
+		if(desginationList!= null && desginationList.size() > 0)
+		{
+			request.setAttribute("reqDesignationList",desginationList);
+		}
+		
+		
+		return mapping.findForward("showEmployeeSalaryDetails");
+	}
+	
+	
+	
+	/**
+	 * Action Name 	: getSalaryDetailsForPopUp
+	 * Purpose		: To getSalaryDetailsForPopUp
+	 * @author		: Prashant
+	 * Date			: 02/01/2013
+	 */
+	public ActionForward getSalaryDetailsForPopUp(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		
+		PrintWriter			writer				=	response.getWriter();
+		EmployeeBean		employeeBean		=	new EmployeeBean();
+		JSONStringer		bankArray			=	new JSONStringer();
+		
+		String				salSlipId			=	request.getParameter("salarySId");
+		
+		ArrayList<CommonForm> dataList			=	employeeBean.getSalaryDetailsForPopUp(salSlipId);
+		
+		try
+		{
+			bankArray.array();
+			
+			if(dataList != null && dataList.size() > 0)
+			{
+				CommonForm	cForm	=	dataList.get(0);	
+					bankArray.object();
+					bankArray.key("bankName").value(cForm.getField1()!=null ? cForm.getField1() : "-" );
+					bankArray.key("refNo").value(cForm.getField2()!=null ?cForm.getField2() : "-");
+					bankArray.key("total_earnings").value(cForm.getField3()!=null ?cForm.getField3():"-");
+					bankArray.key("total_deduction").value(cForm.getField4()!=null ?cForm.getField4():"-");
+					bankArray.key("actualworkingdays").value(cForm.getField5()!=null ?cForm.getField5():"-");
+					bankArray.endObject();
+				
+			}
+			bankArray.endArray();
+			
+			JSONStringer	object	=	new 	JSONStringer();
+			object.object();
+			object.key("DataList").value(bankArray);
+			object.endObject();
+			
+			String  	result	=	object.toString();
+			writer.println(result);
+		}
+		catch (JSONException e) 
+		{
+			System.out.println("Error In EmployeeAction.getSalaryDetailsForPopUp: "+e);
+		}	
+		
+		return mapping.findForward(null);
+	}
+}

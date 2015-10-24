@@ -1,0 +1,488 @@
+package com.inf.dvo.mbm.Bean.Master;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.util.ArrayList;
+import com.inf.dvo.mbm.Bean.CommonMethodBean;
+import com.inf.dvo.mbm.DAO.CommonForm;
+import com.inf.dvo.mbm.DAO.Master.CompanyForm;
+import com.inf.dvo.mbm.DBConnection.DBConnection;
+
+public class CompanyBean 
+{
+	DBConnection	dbConn	=	new DBConnection();
+
+	/**
+	 * Method Name  : saveCompanyMaster
+	 * Purpose		: To saveCompanyMaster
+	 * @author		: Prashant
+	 * Date			: 20/04/2012 
+	 */
+	public String saveCompanyMaster(CompanyForm companyForm, String userName) 
+	{
+		CompanyBean			companyBean			=	new CompanyBean();
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		String				outputString		=	"";
+		Connection			con					=	null;
+		PreparedStatement	pst					=	null;
+		String				query				=	"";
+		
+		String				companyName			=	companyForm.getCompanyName().trim().toUpperCase();
+		String				address1			=	companyForm.getAddr1().trim().toUpperCase();
+		String				address2			=	companyForm.getAddr2()!=null && companyForm.getAddr2().length() > 0 ? companyForm.getAddr2().trim().toUpperCase() : "";
+		String				address3			=	companyForm.getAddr3()!=null && companyForm.getAddr3().length() > 0 ? companyForm.getAddr3().trim().toUpperCase() : "";
+		String				countryId			=	companyForm.getCountryId();
+		String				stateId				=	companyForm.getStateId();
+		String				cityId				=	companyForm.getCityId();
+		String				pincode				=	companyForm.getPincode();
+		String				contactNo			=	companyForm.getContactNo();
+		String				status				=	companyForm.getStatus();
+		
+		boolean				flag				=	true;
+		try
+		{
+			con		=	dbConn.connect();
+			if(flag == true)
+			{
+				if(commonMethodBean.checkDuplicate("company_master","companyname",companyName) == false)
+				{
+					flag			=	false;
+					outputString	=	"FAIL.COMPANY NAME : "+companyName+" IS ALREADY PRESENT.";
+				}
+			}
+			
+			if(status!=null && status.length() > 0 && status.equalsIgnoreCase("ACTIVE") && flag == true)
+			{
+				ArrayList<CommonForm>	activeCompanyList	=	companyBean.getActiveCompanyName();
+				if(activeCompanyList!=null && activeCompanyList.size() > 0)
+				{
+					flag							=	false;
+					CommonForm	cForm				=	activeCompanyList.get(0);
+					String		activeCompanyName	=	cForm.getField2();
+								outputString		=	"FAIL.ONLY ONE COMPANY CAN BE ACTIVE AND COMPANY : "+activeCompanyName+" IS ALREADY PRESENT IN ACTIVE STATE.";
+				}
+			}	
+			if(flag	==	true)
+			{
+				query		=	"	insert into company_master (companyname, address1, address2, address3, countryid, stateid, cityid, pincode, contactno, status, " +
+								"								createdby, createdon, updatedby, updatedon	)" +
+								"	values ( ?, ?, ?,?, ?, ?, ?,?,?, ?, ?, sysdate(), ?, sysdate()	) " ;
+				
+				pst			=	con.prepareStatement(query);
+				pst.setString(1, companyName);
+				pst.setString(2, address1);
+				pst.setString(3, address2);
+				pst.setString(4, address3);
+				pst.setString(5, countryId);
+				pst.setString(6, stateId);
+				pst.setString(7, cityId);
+				pst.setString(8, pincode);
+				pst.setString(9, contactNo);
+				pst.setString(10, status);
+				pst.setString(11, userName);
+				pst.setString(12, userName);
+				
+				int count	=	pst.executeUpdate();
+				if(count > 0)
+				{
+					outputString	=	"PASS.COMPANY NAME : "+companyName+" SAVED SUCCESSFULLY.";
+				}
+			}
+		}
+		catch(Exception e)
+		{
+			outputString = "ERROR";
+			System.out.println("ERROR In CompanyBean.saveCompanyMaster:"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				outputString = "ERROR";
+				System.out.println("Exception While Closing The Connection in CompanyBean.saveCompanyMaster :"+e);
+			}
+		}
+		return outputString;
+	}
+	
+	/**
+	 * Method Name  : getActiveCompanyName
+	 * Purpose		: To getActiveCompanyName
+	 * @author		: Prashant
+	 * Date			: 20/04/2012 
+	 */
+	public ArrayList<CommonForm> getActiveCompanyName() 
+	{
+		ArrayList<CommonForm> dataList	=	new ArrayList<CommonForm>();
+		Connection		con			=	null;
+		Statement		st			=	null;
+		ResultSet		rs			=	null;
+		String			query		=	"";
+		try
+		{
+			query		=	"	select 	companyid, companyname " +
+							"	from	company_master " +
+							"	where	status	=	'ACTIVE'";
+			con			=	dbConn.connect();
+			st			=	con.createStatement();
+			rs			=	st.executeQuery(query);
+			
+			if(rs.next())
+			{
+				CommonForm		cForm		=	new CommonForm();
+				cForm.setField1(rs.getString(1));//companyid
+				cForm.setField2(rs.getString(2));//companyname
+				dataList.add(cForm);
+			}
+		}
+		catch(Exception e)
+		{
+			System.out.println("ERROR In CompanyBean.getActiveCompanyName :"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				System.out.println("Exception While Closing The Connection in CompanyBean.getActiveCompanyName :"+e);
+			}
+		}
+		return dataList;
+	}
+	
+	/**
+	 * Method Name  : getSearchCompanyList
+	 * Purpose		: To getSearchCompanyList
+	 * @author		: Prashant
+	 * Date			: 20/04/2012 
+	 */
+	public ArrayList<CommonForm> getSearchCompanyList(CompanyForm companyForm) 
+	{
+		ArrayList<CommonForm> dataList	=	new ArrayList<CommonForm>();
+		Connection		con			=	null;
+		Statement		st			=	null;
+		ResultSet		rs			=	null;
+		String			companyId	=	companyForm.getCompanyId();
+		String			status		=	companyForm.getStatus();
+		String			query		=	"";
+		int				srNo		=	1;
+		try
+		{
+			query		=	"	select 	com.companyid, com.companyname, com.address1, com.address2, com.address3, com.countryid,cm.country_name, " +
+							"			com.stateid,sm.state_name,com.cityid,cmst.city_name,com.pincode, com.contactno, com.status" +
+							"	from 	company_master com " +
+							"	inner join	country_master	cm	on	cm.countryid	=	com.countryid " ;
+			if(companyId!=null && companyId.length() > 0)
+			{
+			query		+=	"									and	com.companyid	=	'"+companyId+"'" ;
+			}
+			if(status!=null && status.length() > 0)
+			{
+			query		+=	"									and	com.status		=	'"+status+"'" ;
+			}
+			query		+=	"	inner join	state_master	sm	on	com.stateid		=	sm.stateid " +
+							"	inner join	city_master	cmst	on	com.cityid		=	cmst.cityid " +
+							"	order by 	com.companyname ";
+			con			=	dbConn.connect();
+			st			=	con.createStatement();
+			rs			=	st.executeQuery(query);
+			
+			while(rs.next())
+			{
+				CommonForm		cForm		=	new CommonForm();
+				
+				cForm.setField1(""+(srNo++));//SRNO
+				cForm.setField2(rs.getString(1));//companyid
+				cForm.setField3(rs.getString(2));//companyname
+				cForm.setField4(rs.getString(3));//address1
+				cForm.setField5(rs.getString(4)!= null && rs.getString(4).length() > 0 ? rs.getString(4) : "-");//address2
+				cForm.setField6(rs.getString(5)!=null && rs.getString(5).length() > 0 ? rs.getString(5) : "-");//address3
+				cForm.setField7(rs.getString(6));//countryid
+				cForm.setField8(rs.getString(7));//country_name
+				cForm.setField9(rs.getString(8));//stateid
+				cForm.setField10(rs.getString(9));//state_name
+				cForm.setField11(rs.getString(10));//cityid
+				cForm.setField12(rs.getString(11));//city_name
+				cForm.setField13(rs.getString(12));//pincode
+				cForm.setField14(rs.getString(13));//contactno
+				cForm.setField15(rs.getString(14));//status
+				
+				dataList.add(cForm);
+			}
+		}
+		catch(Exception e)
+		{
+			System.out.println("ERROR In CompanyBean.getSearchCompanyList :"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				System.out.println("Exception While Closing The Connection in CompanyBean.getSearchCompanyList :"+e);
+			}
+		}
+		return dataList;
+	}
+	
+	/**
+	 * Method Name  : getDataForModify
+	 * Purpose		: To getDataForModify
+	 * @author		: Prashant
+	 * Date			: 21/04/2012 
+	 */
+	public ArrayList<CommonForm> getDataForModify(String companyId) 
+	{
+		ArrayList<CommonForm> dataList	=	new ArrayList<CommonForm>();
+		Connection		con			=	null;
+		Statement		st			=	null;
+		ResultSet		rs			=	null;
+		String			query		=	"";
+		
+		
+		try
+		{
+			query		=	" select 	com.companyid, com.companyname, com.address1, com.address2, com.address3, com.countryid,cm.country_name, " +
+							"			com.stateid,sm.state_name,com.cityid,cmst.city_name,com.pincode, com.contactno, com.status " +
+							"	from 	company_master com " +
+							"	inner join	country_master	cm	on	cm.countryid	=	com.countryid " +
+							"									and	com.companyid	=	'"+companyId+"'" +
+							"	inner join	state_master	sm	on	com.stateid	=	sm.stateid " +
+							"	inner join	city_master	cmst	on	com.cityid	=	cmst.cityid " ;
+			con			=	dbConn.connect();
+			st			=	con.createStatement();
+			rs			=	st.executeQuery(query);
+			
+			if(rs.next())
+			{
+				CommonForm		cForm		=	new CommonForm();
+				cForm.setField1(rs.getString(1));//companyid
+				cForm.setField2(rs.getString(2));//companyname		
+				cForm.setField3(rs.getString(3));//address1
+				cForm.setField4(rs.getString(4));//address2
+				cForm.setField5(rs.getString(5));//address3
+				cForm.setField6(rs.getString(6));//countryid
+				cForm.setField7(rs.getString(7));//country_name
+				cForm.setField8(rs.getString(8));//stateid
+				cForm.setField9(rs.getString(9));//state_name
+				cForm.setField10(rs.getString(10));//cityid		
+				cForm.setField11(rs.getString(11));//city_name
+				cForm.setField12(rs.getString(12));//pincode
+				cForm.setField13(rs.getString(13));//contactno
+				cForm.setField14(rs.getString(14));//status
+
+				dataList.add(cForm);
+			}
+		}
+		catch(Exception e)
+		{
+			System.out.println("ERROR In CompanyBean.getDataForModify :"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				System.out.println("Exception While Closing The Connection in CompanyBean.getDataForModify :"+e);
+			}
+		}
+		return dataList;
+		
+	}
+	
+	/**
+	 * Method Name  : modifyCompanyMaster
+	 * Purpose		: To modifyCompanyMaster
+	 * @author		: Prashant
+	 * Date			: 21/04/2012 
+	 */
+	public String modifyCompanyMaster(CompanyForm companyForm, String userName)
+	{
+		CompanyBean			companyBean			=	new CompanyBean();
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		String				outputString		=	"";
+		Connection			con					=	null;
+		PreparedStatement	pst					=	null;
+		String				query				=	"";
+		
+		String				companyId			=	companyForm.getCompanyId();
+		String				companyName			=	companyForm.getCompanyName().trim().toUpperCase();
+		String				address1			=	companyForm.getAddr1().trim().toUpperCase();
+		String				address2			=	companyForm.getAddr2()!=null && companyForm.getAddr2().length() > 0 ? companyForm.getAddr2().trim().toUpperCase() : "";
+		String				address3			=	companyForm.getAddr3()!=null && companyForm.getAddr3().length() > 0 ? companyForm.getAddr3().trim().toUpperCase() : "";
+		String				countryId			=	companyForm.getCountryId();
+		String				stateId				=	companyForm.getStateId();
+		String				cityId				=	companyForm.getCityId();
+		String				pincode				=	companyForm.getPincode();
+		String				contactNo			=	companyForm.getContactNo();
+		String				status				=	companyForm.getStatus();
+		
+		boolean				flag				=	true;
+		try
+		{
+			if(flag == true)
+			{
+				if(commonMethodBean.checkDuplicateForModification("company_master", "companyname", companyName, "companyid", companyId) == false)
+				{
+					flag			=	false;
+					outputString	=	"FAIL.COMPANY NAME : "+companyName+" IS ALREADY PRESENT.";
+				}
+			}
+			
+			if(status!=null && status.length() > 0 && status.equalsIgnoreCase("ACTIVE") && flag == true)
+			{
+				ArrayList<CommonForm>	activeCompanyList	=	companyBean.getActiveCompanyNameForModify(status,companyId);
+				if(activeCompanyList!=null && activeCompanyList.size() > 0)
+				{
+					flag							=	false;
+					CommonForm	cForm				=	activeCompanyList.get(0);
+					String		activeCompanyName	=	cForm.getField2();
+								outputString		=	"FAIL.ONLY ONE COMPANY CAN BE ACTIVE AND COMPANY : "+activeCompanyName+" IS ALREADY PRESENT IN ACTIVE STATUS.";
+				}
+			}
+			
+			if(flag == true)
+			{
+				query	=	"	update 	company_master " +
+							"	set		companyname	=	?, " +
+							"			address1	=	?, " +
+							"			address2	=	?, " +
+							"			address3	=	?, " +
+							"			countryid	=	?, " +
+							"			stateid		=	?, " +
+							"			cityid		=	?, " +
+							"			pincode		=	?, " +
+							"			contactno	=	?, " +
+							"			status		=	?, " +
+							"			updatedby	=	?, " +
+							"			updatedon	=	sysdate() " +
+							"	where	companyid	=	? ";
+				
+				con			=	dbConn.connect();
+				pst			=	con.prepareStatement(query);
+				
+				pst.setString(1,companyName);
+				pst.setString(2,address1);
+				pst.setString(3,address2);
+				pst.setString(4,address3);
+				pst.setString(5,countryId);
+				pst.setString(6,stateId);
+				pst.setString(7, cityId);
+				pst.setString(8, pincode);
+				pst.setString(9, contactNo);
+				pst.setString(10, status);
+				pst.setString(11, userName);
+				pst.setString(12, companyId);
+				
+				int	cnt		=	pst.executeUpdate();
+				if(cnt > 0)
+				{
+					outputString	=	"PASS.COMPANY NAME : "+companyName+" MODIFIED SUCCESSFULLY.";
+				}
+				
+			}
+		}
+		catch(Exception e)
+		{
+			outputString = "ERROR";
+			System.out.println("ERROR In CompanyBean.modifyCompanyMaster :"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				outputString = "ERROR";
+				System.out.println("Exception While Closing The Connection in CompanyBean.modifyCompanyMaster :"+e);
+			}
+		}
+		
+		return outputString;
+	}
+
+	private ArrayList<CommonForm> getActiveCompanyNameForModify(String oldStatus, String companyId) 
+	{
+		ArrayList<CommonForm> dataList	=	new ArrayList<CommonForm>();
+		Connection		con			=	null;
+		Statement		st			=	null;
+		ResultSet		rs			=	null;
+		String			query		=	"";
+		try
+		{
+			query		=	"	select	companyid,companyname 	" +
+							"	from	company_master 	" +
+							"	where	status	=	'"+oldStatus+"'	" +
+							"			and		companyid	<>	'"+companyId+"'";
+			con			=	dbConn.connect();
+			st			=	con.createStatement();
+			rs			=	st.executeQuery(query);
+			
+			if(rs.next())
+			{
+				CommonForm		cForm		=	new CommonForm();
+				cForm.setField1(rs.getString(1));//companyid
+				cForm.setField2(rs.getString(2));//companyname
+				dataList.add(cForm);
+			}
+		}
+		catch(Exception e)
+		{
+			System.out.println("ERROR In CompanyBean.getActiveCompanyNameForModify :"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				System.out.println("Exception While Closing The Connection in CompanyBean.getActiveCompanyNameForModify :"+e);
+			}
+		}
+		return dataList;
+	}
+	
+}

@@ -1,0 +1,417 @@
+package com.inf.dvo.mbm.actions.Master;
+
+
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.sql.SQLException;
+import java.util.ArrayList;
+
+import javax.servlet.ServletConfig;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionForward;
+import org.apache.struts.action.ActionMapping;
+import org.apache.struts.upload.FormFile;
+import org.apache.struts.util.MessageResources;
+
+import com.inf.dvo.mbm.Bean.CommonMethodBean;
+import com.inf.dvo.mbm.Bean.Master.UploadDocumentBean;
+import com.inf.dvo.mbm.DAO.CommonForm;
+import com.inf.dvo.mbm.DAO.Master.UploadDocumentForm;
+import com.inf.dvo.mbm.actions.CMGMTDispatchAction;
+
+
+public class UploadDocumentAction extends  CMGMTDispatchAction
+{
+	
+	/**
+	 * Action Name 	: showUploadDocumentListPage
+	 * Purpose		: To showUploadDocumentListPage
+	 * @author		: Prashant
+	 * Date			: 03/05/2012
+	 */
+	public ActionForward showUploadDocumentListPage(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		UploadDocumentForm	uploadDocumentForm	=	(UploadDocumentForm)form;
+		HttpSession			session				=	request.getSession();
+		uploadDocumentForm.reset(mapping, request);
+		
+		ArrayList<CommonForm>   documentTypeList		=	commonMethodBean.getActiveGroupValue("DOCUMENT TYPE");
+		if(documentTypeList!=null && documentTypeList.size() > 0)
+		{
+			request.setAttribute("reqDocumentType", documentTypeList);
+		}
+		
+		String rarId		=	"32";
+		String userProcess	=	(String)session.getAttribute("userProcess");
+		
+		String validLink	=	commonMethodBean.getValidOrNot(userProcess, ","+rarId+",");
+		if(validLink!=null && validLink.equalsIgnoreCase("NOTVALID"))
+		{
+			return mapping.findForward("invalid");
+		}
+		
+		return mapping.findForward("showUploadDocumentListPage");
+	}
+	
+	/**
+	 * Action Name 	: showSearchUploadDocumentList
+	 * Purpose		: To showSearchUploadDocumentList 
+	 * @author		: Prashant
+	 * Date			: 03/05/2012
+	 */
+	
+	public ActionForward showSearchUploadDocumentList(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		CommonMethodBean		commonMethodBean	=	new CommonMethodBean();
+		UploadDocumentForm		uploadDocumentForm	=	(UploadDocumentForm)form;
+		UploadDocumentBean		uploadDocumentBean	=	new UploadDocumentBean();
+		
+		ArrayList<CommonForm> dataList		=	uploadDocumentBean.getUploadedDocumentList(uploadDocumentForm);
+		if(dataList!= null && dataList.size() > 0)
+		{
+			request.setAttribute("reqUploadedDocumentList",dataList);
+		}
+		else
+		{
+			request.setAttribute("msgType", "FAIL");
+			request.setAttribute("saveResult", "NO DATA FOUND.");
+		}
+		
+		ArrayList<CommonForm>   documentTypeList		=	commonMethodBean.getActiveGroupValue("DOCUMENT TYPE");
+		if(documentTypeList!=null && documentTypeList.size() > 0)
+		{
+			request.setAttribute("reqDocumentType", documentTypeList);
+		}
+		
+		return mapping.findForward("showUploadDocumentListPage");
+	}
+	
+	/**
+	 * Action Name 	: showUploadDocumentPage
+	 * Purpose		: To showUploadDocumentPage
+	 * @author		: Prashant
+	 * Date			: 02/05/2012
+	 */
+	
+	public ActionForward showUploadDocumentPage(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		UploadDocumentForm		uploadDocumentForm		=	(UploadDocumentForm)form;
+		CommonMethodBean		commonMethodBean		=	new CommonMethodBean();	
+		uploadDocumentForm.reset(mapping, request);
+		
+		
+		ArrayList<CommonForm>   documentTypeList		=	commonMethodBean.getActiveGroupValue("DOCUMENT TYPE");
+		if(documentTypeList!=null && documentTypeList.size() > 0)
+		{
+			request.setAttribute("reqDocumentType", documentTypeList);
+		}
+		return mapping.findForward("showUploadDocumentMasterPage");
+	}
+	
+	/**
+	 * Action Name 	: UploadDocument
+	 * Purpose		: To UploadDocument
+	 * @author		: Prashant
+	 * Date			: 02/05/2012
+	 */
+	
+	public ActionForward saveUploadedDocument(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		HttpSession				session					=	request.getSession();
+		UploadDocumentForm		uploadDocumentForm		=	(UploadDocumentForm)form;
+		UploadDocumentBean		uploadDocumentBean		=	new UploadDocumentBean();
+		CommonMethodBean		commonMethodBean		=	new CommonMethodBean();
+		
+		String		mappingString	=	"ERROR";
+		String		mode			=	request.getParameter("mode");
+		String		userName		=	(String)session.getAttribute("username");
+		
+		String		empId			=	uploadDocumentForm.getEmpId();
+		String		empCode			=	commonMethodBean.getDataOnOneCondition("employee_master", "employee_code", "employeeid", empId);
+		String		docTitle		=	uploadDocumentForm.getDocumentTitle().trim().toUpperCase();
+		FormFile	uploadFile		=	uploadDocumentForm.getUploadFile();
+		String		fileName		=	uploadFile.getFileName();
+		
+		
+		String					drivePath					=	"";		
+		String					mainFolder					=	"";
+		String					uploadedFilesFolder			=	"";
+		String					fileExtentation				=	"";
+		fileExtentation		=	fileName.substring(fileName.indexOf("."), fileName.length());	
+		//get path and folder from ApplicatinResorce.property
+		try
+		{
+			MessageResources	msg	=	getResources(request);
+			drivePath				=	msg.getMessage("path.origin");
+			mainFolder				=	msg.getMessage("dir.mainfolder");
+		}
+		catch(Exception e)
+		{
+			System.out.println("Exception While Reading Application.Resource File In UploadDocumentAction.saveUploadedDocument : "+e); 
+		}
+		
+		mainFolder	=	drivePath+"/"+mainFolder;
+			commonMethodBean.createFolderStructureFirstTime(mainFolder, empCode);
+			
+			//String getpath	=	commonMethodBean.getDataOnOneCondition("employee_document", "path", "documentid", "2");
+			//getpath			=	mainFolder+getpath;
+			
+			//String filename	=	getpath.substring(getpath.indexOf("/", getpath.lastIndexOf("/")), getpath.length()); 	
+			
+			String		saveResult		=	uploadDocumentBean.saveUploadedDocumentFile(uploadDocumentForm,userName,mainFolder);
+			
+			if(saveResult!= null && saveResult.length() > 0 && !saveResult.equalsIgnoreCase("ERROR"))
+			{
+					String	msgType		=	saveResult.substring(0,4);
+					saveResult			=	saveResult.substring(5,saveResult.length());
+					
+					request.setAttribute("msgType",msgType);
+					request.setAttribute("saveResult",saveResult);
+					
+					if(msgType!= null && msgType.length() > 0 && msgType.equals("PASS"))
+					{
+						if(mode!= null && mode.length() > 0 && mode.equalsIgnoreCase("SAVE"))
+						{
+							mappingString	=	"showUploadDocumentMasterPage";
+							uploadDocumentForm.reset(mapping, request);
+							
+							ArrayList<CommonForm>   documentTypeList		=	commonMethodBean.getActiveGroupValue("DOCUMENT TYPE");
+							if(documentTypeList!=null && documentTypeList.size() > 0)
+							{
+								request.setAttribute("reqDocumentType", documentTypeList);
+							}
+							
+						}
+						else if(mode!= null && mode.length() > 0 && mode.equalsIgnoreCase("SAVEEXIT"))
+						{
+							mappingString	=	"showUploadDocumentListPage";
+							uploadDocumentForm.reset(mapping, request);
+							
+							ArrayList<CommonForm>   documentTypeList		=	commonMethodBean.getActiveGroupValue("DOCUMENT TYPE");
+							if(documentTypeList!=null && documentTypeList.size() > 0)
+							{
+								request.setAttribute("reqDocumentType", documentTypeList);
+							}
+						}
+			
+					}
+					else if(msgType!= null && msgType.length() > 0 && msgType.equals("FAIL"))
+					{
+						mappingString	=	"showUploadDocumentMasterPage";
+						
+						ArrayList<CommonForm>   documentTypeList		=	commonMethodBean.getActiveGroupValue("DOCUMENT TYPE");
+						if(documentTypeList!=null && documentTypeList.size() > 0)
+						{
+							request.setAttribute("reqDocumentType", documentTypeList);
+						}
+					}
+			}	
+		return mapping.findForward(mappingString);
+	}
+	
+	/**
+	 * Action Name 	: openDocument
+	 * Purpose		: To openDocument
+	 * @author		: Prashant
+	 * Date			: 03/05/2012
+	 */
+	
+	public ActionForward openDocument(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		CommonMethodBean	commonMethodBean		=	new CommonMethodBean();
+		PrintWriter			writer					=	response.getWriter();
+		String				outputString			=	"";
+		String				filePath				=	request.getParameter("filePath");
+		
+		String				fileName				=	filePath.substring(filePath.indexOf("/", filePath.lastIndexOf("/")), filePath.length());
+		
+		String				drivePath				=	"";		
+		String				mainFolder				=	"";
+		String				projectTempFolder		=	"";
+		
+		ServletConfig	servletConfig				=	getServlet().getServletConfig();
+		String			contexPath					=	servletConfig.getServletContext().getRealPath("/");	
+		try
+		{
+			MessageResources	msg	=	getResources(request);
+			drivePath				=	msg.getMessage("path.origin");
+			mainFolder				=	msg.getMessage("dir.mainfolder");
+			projectTempFolder		=	msg.getMessage("project.dir.temp");
+		}
+		catch(Exception e)
+		{
+			System.out.println("Exception While Reading Application.Resource File In UploadDocumentAction.openDocument: "+e); 
+		}
+		
+		mainFolder	=	drivePath+"/"+mainFolder;
+		String	sourceFolder	=	mainFolder+filePath;
+		
+		
+		String			destinationFolder			=	contexPath+projectTempFolder;
+		File			destFolder					=	new File(destinationFolder);	
+		
+		if (!destFolder.exists())
+		{
+			destFolder.mkdir();			
+		}
+		
+		String			destinationFile				=	destinationFolder+fileName;
+		
+		if(commonMethodBean.copyfile(sourceFolder, destinationFile))
+		{
+			outputString	=	destinationFile;
+			writer.println("/"+projectTempFolder+fileName);
+		}
+		else
+		{
+			writer.print("ERROR");
+		}	
+		/*if(outputString.equalsIgnoreCase("ERROR"))
+		{
+			if(commonMethodBean.copyfile(destinationFile, destinationFile))
+			{
+				outputString	=	destinationFile;
+				writer.println("/"+projectTempFolder+fileName);
+			}
+		}*/
+		return mapping.findForward(null);
+	}
+	
+	
+	/**
+	 * Action Name 	: deleteDocument
+	 * Purpose		: To deleteDocument
+	 * @author		: Prashant
+	 * Date			: 04/05/2012
+	 */
+	
+	public ActionForward deleteDocument(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		CommonMethodBean		commonMethodBean	=	new CommonMethodBean();
+		UploadDocumentForm		uploadDocumentForm	=	(UploadDocumentForm)form;
+		UploadDocumentBean		uploadDocumentBean	=	new UploadDocumentBean();
+		
+		String		mappingString	=	"showUploadDocumentListPage";
+		
+		String		docId			=	request.getParameter("doc_id");
+		String		docTitle		=	request.getParameter("doc_title");
+		String		path			=	request.getParameter("doc_path");
+		
+		//String		path			=	commonMethodBean.getDataOnOneCondition("employee_document", "path", "documentid", docId);
+		String		drivePath		=	"";		
+		String		mainFolder		=	"";
+		String		tempFolder		=	"";
+		try
+		{
+			MessageResources	msg	=	getResources(request);
+			drivePath				=	msg.getMessage("path.origin");
+			mainFolder				=	msg.getMessage("dir.mainfolder");
+			tempFolder				=	msg.getMessage("project.dir.temp");
+		}
+		catch(Exception e)
+		{
+			System.out.println("Exception While Reading Application.Resource File In UploadDocumentAction.deleteDocument : "+e); 
+		}
+		
+		String	finalPath		=	drivePath+"/"+mainFolder+path;
+		/*NOTE : CODE FOR DELETING A SELECTED FILE FROM SPECIFIED PATH.*/
+		File	sourcFile	=	new File(finalPath);
+		if(sourcFile.exists())
+		{
+			sourcFile.delete();
+		}	
+		/*NOTE: CODE FOR DELETING A FOLDER STRUCTURE IF THAT FOLDER CONTAIN LAST FILE.*/
+		String subDirectorypath	=	finalPath.substring(0, finalPath.lastIndexOf("/"));
+		
+		File subDirectory	=	new File(subDirectorypath);
+		if(subDirectory.exists())
+		{	
+			int dirCount	=	0;
+			for(File file : subDirectory.listFiles())//CODE FOR COUNTING A NUMBER OF FILES IN THAT DIRECTORY/SUB-DIRECTORY.
+			{
+				if(file.isFile())
+				{
+					String checkForThumbFile	=	file.getName();
+					if(checkForThumbFile!=null && checkForThumbFile.length() > 0 && !checkForThumbFile.equalsIgnoreCase("Thumbs.db"))//CHECK FOR FILE NAME IS NOT A THUMBS.
+					{	
+						dirCount++;
+						break;
+					}else if(checkForThumbFile!=null && checkForThumbFile.length() > 0 && checkForThumbFile.equalsIgnoreCase("Thumbs.db"))
+					{
+						file.delete();
+					}
+				}			
+			}	
+			if(dirCount <= 0)
+			{
+				subDirectory.delete();
+			}
+		}	
+		/*NOTE : CODE FOR DETELETING FILE IN WEB APPS FOLDER
+		ServletConfig	servletConfig				=	getServlet().getServletConfig();
+		
+		String		contexPath		=	servletConfig.getServletContext().getRealPath("/");	
+		String		tempFolderPath	=	contexPath+tempFolder;
+		String		getFileName		=	path.substring(path.lastIndexOf("/"),path.length());
+		String		finalPathTemp	=	tempFolderPath+getFileName;
+		File		tempFile		=	new File(finalPathTemp);
+		if(tempFile.exists())
+		{
+			tempFile.delete();
+		}
+		/*END OF CODE FOR DETELETING FILE*/
+		
+		String		saveResult		=	uploadDocumentBean.deleteDocument(docId,docTitle);
+		
+		if(saveResult != null && saveResult.length() > 0 && !saveResult.equalsIgnoreCase("ERROR"))
+		{
+			String	msgType		=	saveResult.substring(0,4);
+			saveResult			=	saveResult.substring(5,saveResult.length());
+			
+			request.setAttribute("msgType",msgType);
+			request.setAttribute("saveResult",saveResult);
+			
+			if(msgType!= null && msgType.length() > 0 && msgType.equals("PASS"))
+			{
+				mappingString	=	"showUploadDocumentListPage";
+				
+				ArrayList<CommonForm>   documentTypeList		=	commonMethodBean.getActiveGroupValue("DOCUMENT TYPE");
+				if(documentTypeList!=null && documentTypeList.size() > 0)
+				{
+					request.setAttribute("reqDocumentType", documentTypeList);
+				}
+				
+				ArrayList<CommonForm> dataList		=	uploadDocumentBean.getUploadedDocumentList(uploadDocumentForm);
+				if(dataList!= null && dataList.size() > 0)
+				{
+					request.setAttribute("reqUploadedDocumentList",dataList);
+				}
+				
+			}
+			else if(msgType!= null && msgType.length() > 0 && msgType.equals("FAIL"))
+			{
+				mappingString	=	"showUploadDocumentListPage";
+				
+				ArrayList<CommonForm>   documentTypeList		=	commonMethodBean.getActiveGroupValue("DOCUMENT TYPE");
+				if(documentTypeList!=null && documentTypeList.size() > 0)
+				{
+					request.setAttribute("reqDocumentType", documentTypeList);
+				}
+				
+				ArrayList<CommonForm> dataList		=	uploadDocumentBean.getUploadedDocumentList(uploadDocumentForm);
+				if(dataList!= null && dataList.size() > 0)
+				{
+					request.setAttribute("reqUploadedDocumentList",dataList);
+				}
+			}
+			
+		}
+		return mapping.findForward(mappingString);
+	}
+}

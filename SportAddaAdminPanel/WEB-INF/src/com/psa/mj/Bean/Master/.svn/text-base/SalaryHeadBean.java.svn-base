@@ -1,0 +1,476 @@
+package com.inf.dvo.mbm.Bean.Master;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.util.ArrayList;
+import com.inf.dvo.mbm.Bean.CommonMethodBean;
+import com.inf.dvo.mbm.DAO.CommonForm;
+import com.inf.dvo.mbm.DAO.Master.SalaryHeadForm;
+import com.inf.dvo.mbm.DBConnection.DBConnection;
+
+public class SalaryHeadBean 
+{
+	DBConnection	dbConn	=	new DBConnection();
+
+	
+	/**
+	 * Method Name  : saveSalaryHeadMaster
+	 * Purpose		: To saveSalaryHeadMaster
+	 * @author		: Prashant
+	 * Date			: 29/03/2012 
+	 */
+
+	public String saveSalaryHeadMaster(SalaryHeadForm salaryForm,String userName) 
+	{
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		String				outputString		=	"";
+		Connection			con					=	null;
+		PreparedStatement	pst					=	null;
+		String				query				=	"";
+		
+		String 				headName			=	salaryForm.getHeadName().trim().toUpperCase();
+		String				headType			=	salaryForm.getHeadType();
+		String				mainHeadTypeId		=	salaryForm.getMainheadNameId()!= null && salaryForm.getMainheadNameId().length() > 0 ? salaryForm.getMainheadNameId() : null;
+		String				percentage			=	salaryForm.getPercentage()!= null && salaryForm.getPercentage().length() > 0 ? salaryForm.getPercentage().trim() : null;
+		String				add_dedcut			=	salaryForm.getAdd_deducate();
+		try
+		{
+			
+			if(commonMethodBean.checkDuplicate("salary_head_master","salaryheadname",headName) == false)
+			{
+				outputString	=	"FAIL.HEAD NAME : "+headName+" IS ALREADY PRESENT.";
+			}
+			else
+			{	
+				con		=	dbConn.connect();
+				query	=	"	insert into salary_head_master ( salaryheadname, salaryheadtype, maintype, add_deduct, percent, createdby, createdon, updatedby, updatedon	)" +
+							"	values ( ?, ?, ?, ?, ?, ?, sysdate(), ?, sysdate() )";
+				pst		=	con.prepareStatement(query);
+				
+				pst.setString(1, headName);
+				pst.setString(2, headType);
+				pst.setString(3, mainHeadTypeId);
+				pst.setString(4, add_dedcut);
+				pst.setString(5, percentage);
+				pst.setString(6, userName);
+				pst.setString(7, userName);
+				
+				int	count	=	pst.executeUpdate();
+				if(count > 0)
+				{
+					outputString	=	"PASS.HEAD NAME : "+headName+" SAVED SUCCESSFULLY.";
+				}
+				pst.close();
+			}
+		}
+		catch(Exception e)
+		{
+			outputString = "ERROR";
+			System.out.println("ERROR In SalaryHeadBean.saveSalaryHeadMaster :"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				outputString = "ERROR";
+				System.out.println("Exception While Closing The Connection in SalaryHeadBean.saveSalaryHeadMaster :"+e);
+			}
+		}
+		return outputString;
+	}
+	
+	/**
+	 * Method Name  : getMainHeadName
+	 * Purpose		: To getMainHeadName
+	 * @author		: Prashant
+	 * Date			: 29/03/2012 
+	 */
+	public ArrayList<CommonForm> getMainHeadName(SalaryHeadForm salaryHeadForm) 
+	{
+		ArrayList<CommonForm>	dataList		=	new ArrayList<CommonForm>();
+		Connection			  	con				=	null;
+		Statement				st				=	null;
+		ResultSet				rs				=	null;
+		String					query			=	"";
+		try
+		{
+			query			+=	"	select	salaryheadid,salaryheadname " +
+								"	from	salary_head_master " +
+								"	where	0=0 " +
+								"			and	salaryheadtype	=	'MAIN'" +
+								"	order by salaryheadname";
+			
+			con				=	dbConn.connect();
+			st				=	con.createStatement();
+			rs				=	st.executeQuery(query);
+			while(rs.next())
+			{
+				CommonForm	cForm	=	new CommonForm();
+				cForm.setField1(rs.getString(1));//salaryheadid
+				cForm.setField2(rs.getString(2));//salaryheadname
+				
+				dataList.add(cForm);
+			}
+		}
+		catch(Exception e)
+		{
+			System.out.println("ERROR In SalaryHeadBean.getMainHeadName :"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{		
+				System.out.println("Exception While Closing The Connection in SalaryHeadBean.getMainHeadName : "+e);
+			}
+		}
+		return dataList;
+	}
+	
+	/**
+	 * Method Name  : getSearchSalaryHeadList
+	 * Purpose		: To getSearchSalaryHeadList
+	 * @author		: Prashant
+	 * Date			: 29/03/2012 
+	 */
+	public ArrayList<CommonForm> getSearchSalaryHeadList(SalaryHeadForm salaryForm) 
+	{
+		ArrayList<CommonForm>	dataList			=	new ArrayList<CommonForm>();
+		CommonMethodBean		commonMethodBean	=	new CommonMethodBean();
+		Connection				con					=	null;
+		Statement				st					=	null;
+		ResultSet				rs					=	null;
+		int						srNo				=	1;
+		String					query				=	"";
+		String					salHeadId			=	salaryForm.getHeadId();
+		String					salHeadType			=	salaryForm.getHeadType();
+		try
+		{
+				query		+=	"	select 	sm.salaryheadid, sm.salaryheadname, sm.salaryheadtype, sm1.salaryheadname maintype, sm.percent, sm.add_deduct " +
+								"	from 	salary_head_master sm " +
+								"	left outer join	salary_head_master sm1		on	sm.maintype			=	sm1.salaryheadid " +
+								"	where	0=0		";
+			if(salHeadId != null && salHeadId.length() > 0)
+			{
+				query		+=	"												and	sm.salaryheadid		=	'"+salHeadId+"'";
+			}
+			if(salHeadType != null && salHeadType.length() > 0 )
+			{
+				query		+=	"												and	sm.salaryheadtype	=	'"+salHeadType+"'" ;
+			}
+				query		+=	"	order by sm.salaryheadname ";
+				
+				con			=	dbConn.connect();
+				st			=	con.createStatement();
+				rs			=	st.executeQuery(query);
+				
+				while(rs.next())
+				{
+					CommonForm	cForm		=	new CommonForm();
+					cForm.setField1(""+(srNo++));
+					cForm.setField2(rs.getString(1));//salaryheadid
+					cForm.setField3(rs.getString(2));//salaryheadname
+					cForm.setField4(rs.getString(3));//salaryheadtype
+					cForm.setField5(rs.getString(4)!= null && rs.getString(4).length() > 0 ? rs.getString(4) : "-");//maintype
+					cForm.setField6(rs.getString(5)!= null && rs.getString(5).length() > 0 ? commonMethodBean.applyFormater(rs.getString(5)) : "-");//percent
+					cForm.setField7(rs.getString(6));//add_deduct
+					
+					dataList.add(cForm);
+					
+				}
+				
+			
+		}
+		catch(Exception e)
+		{
+			System.out.println("ERROR In SalaryHeadBean.getSearchSalaryHeadList : "+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{		
+				System.out.println("Exception While Closing The Connection in SalaryHeadBean.getSearchSalaryHeadList : "+e);
+			}
+		}
+		return	dataList;
+	}
+	
+	/**
+	 * Method Name  : getDataForModify
+	 * Purpose		: To getDataForModify
+	 * @author		: Prashant
+	 * Date			: 29/03/2012 
+	 */
+	public ArrayList<CommonForm> getDataForModify(String headId) 
+	{
+		ArrayList<CommonForm>	dataList			=	new ArrayList<CommonForm>();
+		Connection				con					=	null;
+		Statement				st					=	null;
+		ResultSet				rs					=	null;
+		String					query				=	"";
+		try
+		{
+			query		+=	"	select 	salaryheadid, salaryheadname, salaryheadtype, maintype, percent,add_deduct " +
+							"	from 	salary_head_master" +
+							"	where	salaryheadid	=	'"+headId+"'";
+	
+			con			=	dbConn.connect();
+			st			=	con.createStatement();
+			rs			=	st.executeQuery(query);
+			while(rs.next())
+			{
+				CommonForm	cForm		=	new CommonForm();
+				
+				cForm.setField1(rs.getString(1));//salaryheadid
+				cForm.setField2(rs.getString(2));//salaryheadname
+				cForm.setField3(rs.getString(3));//salaryheadtype
+				cForm.setField4(rs.getString(4));//maintype
+				cForm.setField5(rs.getString(5));//percent
+				cForm.setField6(rs.getString(6));//add_deduct
+				
+				dataList.add(cForm);
+			}	
+			
+		}
+		catch(Exception e)
+		{
+			System.out.println("ERROR In SalaryHeadBean.getDataForModify : "+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{		
+				System.out.println("Exception While Closing The Connection in SalaryHeadBean.getDataForModify : "+e);
+			}
+		}
+		return	dataList;
+	}
+	/**
+	 * Method Name  : getModifySalaryHeadeMaster
+	 * Purpose		: To getModifySalaryHeadeMaster
+	 * @author		: Prashant
+	 * Date			: 29/03/2012 
+	 */
+	public String getModifySalaryHeadeMaster(SalaryHeadForm salaryForm,String userName) 
+	{
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		String				outputString		=	"";
+		Connection			con					=	null;
+		PreparedStatement	pst					=	null;
+		String				query				=	"";
+		/*SalaryHeadBean		salaryBean			=	new SalaryHeadBean();
+		int					forDeleteCount		=	0;
+		int					checkCount			=	0;*/
+		boolean				flag				=	true;
+		String				headId				=	salaryForm.getHeadId();
+		String				headName			=	salaryForm.getHeadName().trim().toUpperCase();
+		String				headType			=	salaryForm.getHeadType();
+		String				mainType			=	salaryForm.getMainheadNameId()!= null && salaryForm.getMainheadNameId().length() > 0 ? salaryForm.getMainheadNameId() : null;
+		String				percentage			=	salaryForm.getPercentage()!= null && salaryForm.getPercentage().length() > 0 ? salaryForm.getPercentage().trim() : null;
+		String				add_dedcut			=	salaryForm.getAdd_deducate();
+		int					forDeleteCount		=	0;
+		try
+		{
+			
+			if(commonMethodBean.checkDuplicateForModification("salary_head_master", "salaryheadname", headName, "salaryheadid", headId) == false)
+			{
+				flag			=	false;
+				outputString	=	"FAIL.HEAD NAME : "+headName+" IS ALREADY PRESENT.";
+			}
+			/*forDeleteCount	=	commonMethodBean.checkForIsProperDelete("salary_head_master", "salaryheadname", "maintype",headId);
+			if(forDeleteCount > 0)
+			{
+				if(ckeckDup	== true)
+				{	
+					flag	=	true;
+				}	
+				else
+				{
+					flag			=	false;
+					if(checkCount > 1)
+					{	
+						salaryForm.setHeadType("MAIN");
+						outputString	=	"FAIL.CANNOT MODIFY : HEAD NAME IS MAIN AND MAIN HEAD NAME ARE PRESENT AGAINST HEAD NAME AND HEAD NAME IS ALREADY PRESENT : "+headName;
+					}
+					else
+					{
+						salaryForm.setHeadType("MAIN");
+						outputString	=	"FAIL.CANNOT MODIFY : HEAD NAME IS MAIN AND MAIN HEAD NAME ARE PRESENT AGAINST HEAD NAME : "+headName;
+					}
+				}	
+			}*/
+			
+			forDeleteCount	=	commonMethodBean.checkForIsProperDelete("salary_head_master", "salaryheadid", "maintype",headId);
+			if(forDeleteCount > 0 && flag == true)
+			{
+				flag			=	false;
+				forDeleteCount	=	0;
+				outputString	=	"FAIL.CANNOT MODIFY : MAIN HEAD NAME : "+headName+" ARE PRESENT AGAINST HEAD NAME.";
+			}	
+			else if(commonMethodBean.checkForIsProperDelete("salary_structure_dtls", "salaryheadid", "salaryheadid",headId) > 0 && flag == true)
+			{
+				flag			=	false;
+				forDeleteCount	=	0;
+				outputString	=	"FAIL.CANNOT MODIFY : MAIN HEAD NAME : "+headName+" ARE PRESENT AGAINST SALARY STRUCTURE.";
+			}
+				
+			if(flag == true)
+			{	
+					query		+=	"	update	salary_head_master " +
+									"	set		salaryheadname	=	?, " +
+									"			salaryheadtype	=	?, " +
+									"			maintype		=	?, " +
+									"			add_deduct		=	?, " +
+									"			percent			=	?, " +
+									"			updatedby		=	?, " +
+									"			updatedon		=	sysdate()" +
+									"	where	salaryheadid	=	? ";	
+					
+					con			=	dbConn.connect();
+					pst			=	con.prepareStatement(query);
+					pst.setString(1, headName);
+					pst.setString(2, headType);
+					pst.setString(3, mainType);
+					pst.setString(4, add_dedcut);
+					pst.setString(5, percentage);
+					pst.setString(6, userName);
+					pst.setString(7, headId);
+					
+					int	cnt		=	pst.executeUpdate();
+					if(cnt > 0)
+					{
+						outputString	=	"PASS.HEAD NAME : "+headName+" MODIFIED SUCCESSFULLY.";
+					}
+			}
+		}
+		catch(Exception e)
+		{
+			outputString = "ERROR";
+			System.out.println("ERROR In SalaryHeadBean.getModifySalaryHeadeMaster :"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				outputString = "ERROR";
+				System.out.println("Exception While Closing The Connection in SalaryHeadBean.getModifySalaryHeadeMaster :"+e);
+			}
+		}
+		return outputString;
+	}
+	
+	
+
+	
+
+	/**
+	 * Method Name  : deleteSalaryHead
+	 * Purpose		: To deleteSalaryHead
+	 * @author		: Prashant
+	 * Date			: 29/03/2012 
+	 * @param maintypeID 
+	 */
+	public String deleteSalaryHead(String headId, String headName, String maintypeID) 
+	{
+		CommonMethodBean	commonMethodBean		=	new CommonMethodBean();
+		String				outputString			=	"";
+		Connection			con						=	null;
+		Statement			st						=	null;
+		String				query					=	"";
+		int 				count					=	0;
+		int					forDeleteCount			=	0;
+		try
+		{
+			forDeleteCount	=	commonMethodBean.checkForIsProperDelete("salary_head_master", "salaryheadid", "maintype",headId);
+			if(forDeleteCount > 0)
+			{
+				outputString	=	"FAIL.CANNOT DELETE : MAIN HEAD NAME ARE PRESENT AGAINST HEAD NAME : "+headName;
+			}	
+			else
+			{	
+				query			+=	"	delete " +
+									"	from	salary_head_master" +
+									"	where	salaryheadid	=	'"+headId+"'";	
+				con				=	dbConn.connect();
+				st				=	con.createStatement();
+				
+				count			=	st.executeUpdate(query);
+				if( count > 0)
+				{
+					outputString	=	"PASS.HEAD NAME : "+headName+" DELETED SUCCESSFULLY.";
+				}
+				else
+				{
+					outputString	=	"FAIL.HEAD NAME : "+headName+" NOT DELETE.";
+				}
+			}	
+				
+		}
+		catch(Exception e)
+		{
+			outputString = "ERROR";
+			System.out.println("ERROR In CountryBean.deleteCountry:"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				outputString = "ERROR";
+				System.out.println("Exception While Closing The Connection in CountryBean.deleteCountry:"+e);
+			}
+		}
+		return outputString;
+	}
+	
+	
+}
+

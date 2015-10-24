@@ -1,0 +1,427 @@
+package com.inf.dvo.mbm.actions.utility;
+
+import com.inf.dvo.mbm.Bean.CommonMethodBean;
+import com.inf.dvo.mbm.Bean.SendMailBean;
+import com.inf.dvo.mbm.Bean.utility.SendRemainderBean;
+import com.inf.dvo.mbm.DAO.CommonForm;
+import com.inf.dvo.mbm.actions.CMGMTDispatchAction;
+import java.io.IOException;
+import java.sql.SQLException;
+import java.util.ArrayList;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionForward;
+import org.apache.struts.action.ActionMapping;
+
+public class SendRemainderAction extends CMGMTDispatchAction
+{
+	/**
+	 * Action Name 	: showSendRemainderPage
+	 * Purpose		: To showSendRemainderPage
+	 * @author		: Prashant
+	 * Date			: 25/04/2012
+	 */
+	public ActionForward showSendRemainderPage(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		SendRemainderBean	sendRemainderBean	=	new SendRemainderBean();
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		String				sysDate				=	commonMethodBean.getDate();
+		String[]			date				=	sysDate.split("/");
+		String				day					=	date[0];
+		String				month				=	date[1];
+		HttpSession			session				=	request.getSession();
+		
+		String				currentMonthName	=	sendRemainderBean.getMonthForInt(Integer.parseInt(month)-1);
+		request.setAttribute("reqCurrentMonthName", currentMonthName);
+		
+		String				nextMonthName		=	sendRemainderBean.getMonthForInt(Integer.parseInt(month));
+		request.setAttribute("reqNextMonthName", nextMonthName);
+		
+		
+		ArrayList<CommonForm> todaysBday		=	new ArrayList<CommonForm>();
+		ArrayList<CommonForm> dobList			=	sendRemainderBean.getActiveEmpolyeeDobList();
+		
+		if(dobList!=null && dobList.size() > 0)
+		{
+			for(int i=0;i<dobList.size();i++)
+			{
+				CommonForm	cForm	=	dobList.get(i);
+				String		dobdate	=	cForm.getField4();
+				if(dobdate!=null && dobdate.length() > 0 && !dobdate.equals(""))
+				{
+					String[]	employeedob		=	dobdate.split("/");
+					String		employeeDay		=	employeedob[0];
+					String		employeeMonth	=	employeedob[1];
+					
+					if(employeeDay!=null && employeeDay.length() > 0 && employeeMonth!=null && employeeMonth.length() > 0)
+					{
+						if(employeeDay.equals(day) && employeeMonth.equals(month))
+						{
+							todaysBday.add(cForm);
+						}
+					}
+				}	
+			}
+		}
+		if(todaysBday!=null && todaysBday.size() > 0)
+		{
+			for(int cnt=0;cnt<todaysBday.size();cnt++)
+			{
+				CommonForm	todaysBayForm	=	todaysBday.get(cnt);
+				todaysBayForm.setField7(""+(cnt+1));
+			}
+			request.setAttribute("reqBirthRemainderList", todaysBday);
+		}
+		else
+		{	
+			request.setAttribute("msgType", "FAIL");
+			request.setAttribute("saveResult", "NO REMINDER FOR TODAY.");
+		}	
+		
+		String rarId		=	"26";
+		String userProcess	=	(String)session.getAttribute("userProcess");
+		
+		String validLink	=	commonMethodBean.getValidOrNot(userProcess, ","+rarId+",");
+		if(validLink!=null && validLink.equalsIgnoreCase("NOTVALID"))
+		{
+			return mapping.findForward("invalid");
+		}
+		
+		return mapping.findForward("showSendRemainderPage");
+	}
+	
+	/**
+	 * Action Name 	: sendRemainderMail
+	 * Purpose		: To sendRemainderMail
+	 * @author		: Prashant
+	 * Date			: 25/04/2012
+	 */
+	public ActionForward sendRemainderMail(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		
+		SendRemainderBean	sendRemainderBean	=	new SendRemainderBean();
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		SendMailBean		sendMailBean		=	new SendMailBean();
+		String				sysDate				=	commonMethodBean.getDate();
+		String[]			date				=	sysDate.split("/");
+		String				day					=	date[0];
+		String				month				=	date[1];
+		ArrayList<CommonForm> todaysBday		=	new ArrayList<CommonForm>();
+		ArrayList<CommonForm> dobList			=	sendRemainderBean.getActiveEmpolyeeDobList();
+		
+		
+		
+		
+		if(dobList!=null && dobList.size() > 0)
+		{
+			for(int i=0;i<dobList.size();i++)
+			{
+				CommonForm	cForm	=	dobList.get(i);
+				String		dobdate	=	cForm.getField4();
+				if(dobdate!=null && dobdate.length() > 0 && !dobdate.equals(""))
+				{
+					String[]	employeedob		=	dobdate.split("/");
+					String		employeeDay		=	employeedob[0];
+					String		employeeMonth	=	employeedob[1];
+					
+					if(employeeDay!=null && employeeDay.length() > 0 && employeeMonth!=null && employeeMonth.length() > 0)
+					{
+						if(employeeDay.equals(day) && employeeMonth.equals(month))
+						{
+							todaysBday.add(cForm);
+						}
+					}
+				}	
+			}
+		}
+		if(todaysBday!=null && todaysBday.size() > 0)
+		{
+			for(int cnt=0;cnt<todaysBday.size();cnt++)
+			{
+				CommonForm	todaysBayForm	=	todaysBday.get(cnt);
+				todaysBayForm.setField7(""+(cnt+1));
+			}
+		}
+		
+		if(todaysBday!=null && todaysBday.size() > 0)
+		{
+			String		companyName				=	commonMethodBean.getDataOnOneCondition("company_master", "companyname", "status", "ACTIVE");
+			String		mailId					=	sendRemainderBean.getMailIdForActiveEmpolyee();
+			String		mailBody				=	"";
+			mailBody							+=	"	<table width='60%' cellpadding='2' cellspacing='2'>	" +
+													"	<tr> " +
+													"	<td width='80%' style='font-family:Arial, Helvetica, sans-serif;font-weight: bold;;font-size:12px;color:#000000;padding:6px;'>Dear All ,</td>	" +
+													"	</tr>	" +
+													"	<tr>	" +
+													"	<td width='80%'>	" +
+													"	<table width='100%'>		" +
+													"	<tr>			" +
+													"	<td width='3%'>&nbsp;</td>			" +
+													"	<td width='97%' style='font-family: Arial, Helvetica, sans-serif;font-size:12px;color:#161616;height:17px;'>"+companyName+" Wishes A Very Happy Birthday To All Below Members </td> 		" +
+													"	</tr>	" +
+													"	</table>	" +
+													"	</td>	" +
+													"   </tr>	" +
+													"	<tr>	" +
+													"	<td width='80%'><table width='100%' border='0' style='font-family:Arial, Helvetica, sans-serif;color:#000000;border: 1px solid #085798;width: 100%;margin: 20px 0 20px 0 !important;'>" +
+													"   <tr style='height:25px;font-size:13px;font-weight:bold;background-color: #D4E3E8;padding-left:3px;'>" +
+													"   <td width='5%' align='center' valign='middle'>#</td>" +
+													"   <td width='45%'>Employee Name </td>" +
+													"   <td width='25%'>Mobile No </td>" +
+													"   <td width='25%'>Email Id</td>" +
+													"   </tr>" ;
+											for(int i=0;i<todaysBday.size();i++)
+											{	
+													CommonForm	cForm	=	todaysBday.get(i);
+			mailBody							+=	"   <tr style='font-family:Arial,Helvetica,sans-serif;font-size:12px;vertical-align:middle;height:15px;padding-left:3px;background-color: #E6F6F6; '>" +
+													"   <td width='5%' align='center' valign='middle'>"+cForm.getField7()+"</td>" +
+													"   <td width='45%'>"+cForm.getField3()+"</td>" +
+													"   <td width='25%'>"+cForm.getField5()+"</td>" +
+													"   <td width='25%'>"+cForm.getField6()+"</td>" +
+													"   </tr> ";
+											}		
+			mailBody							+=	"   </table></td>	" +
+													"	</tr>	" +
+													"	<tr>	" +
+													"	<td width='80%' style='font-family:Arial, Helvetica, sans-serif;font-weight: bold;;font-size:12px;color:#000000;padding:6px;'>Regards ,</td>	" +
+													"	</tr>	" +
+													"	<tr>	" +
+													"	<td width='80%' style='font-family:Arial, Helvetica, sans-serif;font-weight: bold;;font-size:12px;color:#000000;padding:6px;'>"+companyName+"</td>	" +
+													"	</tr>	" +
+													"	</table>";
+			
+			String		subjectLine				=	" Today's BirthDay ";
+			boolean 	debug					=	true;
+			String[] 	to						=	{};
+			String[] 	cc						=	{};
+			String[] 	bcc						=	mailId.split(",");
+			String 		subject					=	subjectLine;
+			String 		text					=	mailBody;
+			String 		attachFile				=	"";
+			
+			if(sendMailBean.sendMailAttach("", "", "", "", "", debug, to, cc, bcc, subject, text, attachFile) == true)
+			{
+				request.setAttribute("msgType", "PASS");
+				request.setAttribute("saveResult", "MESSAGE SEND SUCCESSFULLY.");
+			}
+			else
+			{
+				request.setAttribute("msgType", "FAIL");
+				request.setAttribute("saveResult", "MESSAGE SENDING FAIL.");
+			}
+			
+			request.setAttribute("reqBirthRemainderList", todaysBday);
+		}
+		else
+		{
+			request.setAttribute("msgType", "FAIL");
+			request.setAttribute("saveResult", "NO REMINDER FOR TODAY.");
+		}
+		
+		String				currentMonthName	=	sendRemainderBean.getMonthForInt(Integer.parseInt(month)-1);
+		request.setAttribute("reqCurrentMonthName", currentMonthName);
+		
+		String				nextMonthName		=	sendRemainderBean.getMonthForInt(Integer.parseInt(month));
+		request.setAttribute("reqNextMonthName", nextMonthName);
+		return mapping.findForward("showSendRemainderPage");
+		
+	}
+	
+	/**
+	 * Action Name 	: getCurrentMonthBdayList
+	 * Purpose		: To getCurrentMonthBdayList
+	 * @author		: Prashant
+	 * Date			: 22/08/2012
+	 */
+	public ActionForward getCurrentMonthBdayList(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		SendRemainderBean	sendRemainderBean	=	new SendRemainderBean();
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		String				sysDate				=	commonMethodBean.getDate();
+		String[]			date				=	sysDate.split("/");
+		String				day					=	date[0];
+		String				month				=	date[1];
+		
+		String				currentMonthName	=	sendRemainderBean.getMonthForInt(Integer.parseInt(month)-1);
+		request.setAttribute("reqCurrentMonthName", currentMonthName);
+		
+		String				nextMonthName		=	sendRemainderBean.getMonthForInt(Integer.parseInt(month));
+		request.setAttribute("reqNextMonthName", nextMonthName);
+		
+		
+		ArrayList<CommonForm> todaysBday		=	new ArrayList<CommonForm>();
+		ArrayList<CommonForm> currentMonthBday	=	new ArrayList<CommonForm>();
+		ArrayList<CommonForm> dobList			=	sendRemainderBean.getActiveEmpolyeeDobList();
+		
+		if(dobList!=null && dobList.size() > 0)
+		{
+			for(int i=0;i<dobList.size();i++)
+			{
+				CommonForm	cForm	=	dobList.get(i);
+				String		dobdate	=	cForm.getField4();
+				if(dobdate!=null && dobdate.length() > 0 && !dobdate.equals(""))
+				{
+					String[]	employeedob		=	dobdate.split("/");
+					String		employeeDay		=	employeedob[0];
+					String		employeeMonth	=	employeedob[1];
+					
+					if(employeeDay!=null && employeeDay.length() > 0 && employeeMonth!=null && employeeMonth.length() > 0)
+					{
+						if(employeeDay.equals(day) && employeeMonth.equals(month))
+						{
+							todaysBday.add(cForm);
+						}
+					}
+				}
+				
+				if(dobdate!=null && dobdate.length() > 0 && !dobdate.equals(""))
+				{
+					String[]	employeedob		=	dobdate.split("/");
+					String		employeeMonth	=	employeedob[1];
+					if(employeeMonth!=null && employeeMonth.length() > 0)
+					{
+						if(employeeMonth.equals(month))
+						{
+							currentMonthBday.add(cForm);
+						}
+					}
+				}
+			}
+		}
+		
+		if(todaysBday!=null && todaysBday.size() > 0)
+		{
+			for(int cnt=0;cnt<todaysBday.size();cnt++)
+			{
+				CommonForm	todaysBayForm	=	todaysBday.get(cnt);
+				todaysBayForm.setField7(""+(cnt+1));
+			}
+			request.setAttribute("reqBirthRemainderList", todaysBday);
+		}
+		else
+		{	
+			request.setAttribute("msgType", "FAIL");
+			request.setAttribute("saveResult", "NO REMINDER FOR TODAY.");
+		}	
+		
+		if(currentMonthBday!=null && currentMonthBday.size() > 0)
+		{
+			for(int cnt=0;cnt<currentMonthBday.size();cnt++)
+			{
+				CommonForm	currentMonthBdayForm	=	currentMonthBday.get(cnt);
+				currentMonthBdayForm.setField7(""+(cnt+1));
+			}
+			request.setAttribute("reqCurrentMonthList", currentMonthBday);
+		}
+		else
+		{
+			request.setAttribute("reqBdayReminder", "NO REMINDER FOR "+currentMonthName+".");
+		}
+		return mapping.findForward("showSendRemainderPage");
+	}
+	
+	/**
+	 * Action Name 	: getNextMonthReminderList
+	 * Purpose		: To getNextMonthReminderList
+	 * @author		: Prashant
+	 * Date			: 23/08/2012
+	 */
+	public ActionForward getNextMonthReminderList(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		SendRemainderBean	sendRemainderBean	=	new SendRemainderBean();
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		String				sysDate				=	commonMethodBean.getDate();
+		String[]			date				=	sysDate.split("/");
+		String				day					=	date[0];
+		String				month				=	date[1];
+		
+		String				currentMonthName	=	sendRemainderBean.getMonthForInt(Integer.parseInt(month)-1);
+		request.setAttribute("reqCurrentMonthName", currentMonthName);
+		
+		String				nextMonthName		=	sendRemainderBean.getMonthForInt(Integer.parseInt(month));
+		request.setAttribute("reqNextMonthName", nextMonthName);
+		
+		
+		ArrayList<CommonForm> todaysBday		=	new ArrayList<CommonForm>();
+		ArrayList<CommonForm> nextMonthReminderList	=	new ArrayList<CommonForm>();
+		ArrayList<CommonForm> dobList			=	sendRemainderBean.getActiveEmpolyeeDobList();
+		
+		if(dobList!=null && dobList.size() > 0)
+		{
+			for(int i=0;i<dobList.size();i++)
+			{
+				CommonForm	cForm	=	dobList.get(i);
+				String		dobdate	=	cForm.getField4();
+				if(dobdate!=null && dobdate.length() > 0 && !dobdate.equals(""))
+				{
+					String[]	employeedob		=	dobdate.split("/");
+					String		employeeDay		=	employeedob[0];
+					String		employeeMonth	=	employeedob[1];
+					
+					if(employeeDay!=null && employeeDay.length() > 0 && employeeMonth!=null && employeeMonth.length() > 0)
+					{
+						if(employeeDay.equals(day) && employeeMonth.equals(month))
+						{
+							todaysBday.add(cForm);
+						}
+					}
+				}
+				
+				if(dobdate!=null && dobdate.length() > 0 && !dobdate.equals(""))
+				{
+					String[]	employeedob		=	dobdate.split("/");
+					
+					String		employeeMonth	=	employeedob[1];
+					int			eMonth			=	Integer.parseInt(employeeMonth);
+					employeeMonth				=	""+eMonth;
+					
+					int			sysMonth		=	Integer.parseInt(month)+1;
+					String		sysNextMonth	=	""+sysMonth;
+					
+					if(employeeMonth!=null && employeeMonth.length() > 0 && sysNextMonth!=null && sysNextMonth.length() > 0)
+					{
+						if(employeeMonth.equals(sysNextMonth))
+						{
+							nextMonthReminderList.add(cForm);
+						}
+					}
+				}
+			}
+		}
+		
+		if(todaysBday!=null && todaysBday.size() > 0)
+		{
+			for(int cnt=0;cnt<todaysBday.size();cnt++)
+			{
+				CommonForm	todaysBayForm	=	todaysBday.get(cnt);
+				todaysBayForm.setField7(""+(cnt+1));
+			}
+			request.setAttribute("reqBirthRemainderList", todaysBday);
+		}
+		else
+		{	
+			request.setAttribute("msgType", "FAIL");
+			request.setAttribute("saveResult", "NO REMINDER FOR TODAY.");
+		}	
+		
+		if(nextMonthReminderList!=null && nextMonthReminderList.size() > 0)
+		{
+			for(int cnt=0;cnt<nextMonthReminderList.size();cnt++)
+			{
+				CommonForm	nextMonthReminForm	=	nextMonthReminderList.get(cnt);
+				nextMonthReminForm.setField7(""+(cnt+1));
+			}
+			request.setAttribute("reqNextMonthList", nextMonthReminderList);
+		}
+		else
+		{
+			request.setAttribute("reqNextMonthReminder", "NO REMINDER FOR "+nextMonthName+".");
+		}
+		return mapping.findForward("showSendRemainderPage");
+	}
+	
+}

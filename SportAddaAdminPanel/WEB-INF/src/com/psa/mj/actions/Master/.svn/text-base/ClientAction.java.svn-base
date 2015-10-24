@@ -1,0 +1,531 @@
+package com.inf.dvo.mbm.actions.Master;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.sql.SQLException;
+import java.util.ArrayList;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionForward;
+import org.apache.struts.action.ActionMapping;
+import org.json.JSONStringer;
+
+
+import com.inf.dvo.mbm.Bean.CommonMethodBean;
+import com.inf.dvo.mbm.Bean.Master.BankBean;
+import com.inf.dvo.mbm.Bean.Master.ClientBean;
+import com.inf.dvo.mbm.Bean.Master.CountryBean;
+import com.inf.dvo.mbm.Bean.Master.SalaryStructBean;
+import com.inf.dvo.mbm.DAO.CommonForm;
+import com.inf.dvo.mbm.DAO.Master.BankForm;
+import com.inf.dvo.mbm.DAO.Master.ClientForm;
+import com.inf.dvo.mbm.DAO.Master.CountryForm;
+import com.inf.dvo.mbm.DAO.Master.SalaryStructForm;
+
+import com.inf.dvo.mbm.actions.CMGMTDispatchAction;
+import com.sun.org.apache.bcel.internal.generic.InstructionConstants.Clinit;
+
+public class ClientAction extends  CMGMTDispatchAction{
+	
+	/**
+	 * Action Name 	: showClientListPage
+	 * Purpose		: To showClientListPage
+	 * @author		: Prashant
+	 * Date			: 26/09/2012
+	 */
+	public ActionForward showClientListPage(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		CommonMethodBean		commonMethodBean	=	new CommonMethodBean();
+		ClientForm		clienForm=	(ClientForm)form;
+		clienForm.reset(mapping, request);
+		HttpSession	session		=	request.getSession();
+		session.removeAttribute("sesClientDetails");
+		String rarId		=	"37";
+		String userProcess	=	(String)session.getAttribute("userProcess");		
+		String validLink	=	commonMethodBean.getValidOrNot(userProcess, ","+rarId+",");
+		if(validLink!=null && validLink.equalsIgnoreCase("NOTVALID"))
+		{
+			return mapping.findForward("invalid");
+		}
+		return mapping.findForward("showClientListPage");
+	}
+	
+	/**
+	 * Action Name 	: showClientListPage
+	 * Purpose		: To showClientListPage
+	 * @author		: Prashant
+	 * Date			: 26/09/2012
+	 */
+	
+	public ActionForward showClientMasterPage(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		ClientForm		clienForm=	(ClientForm)form;
+		HttpSession	session		=	request.getSession();
+		request.setAttribute("actions", "add");	
+		clienForm.reset(mapping, request);
+		clienForm.setStatus("ACTIVE");
+		session.removeAttribute("sesClientDetails");
+		return mapping.findForward("showClientMasterPage");
+	}
+	
+	/**
+	 * Action Name 	: showClientListPage
+	 * Purpose		: To saveClientMaster
+	 * @author		: Prashant
+	 * Date			: 27/09/2012
+	 */
+	
+		public ActionForward saveClientMaster(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+		{
+			HttpSession			session				=	request.getSession();
+		
+			ClientBean			clientBean			=	new ClientBean();
+			ClientForm			clientForm			=	(ClientForm)form;
+			
+			String				mappingString		=	"ERROR";
+			String				mode				=	request.getParameter("mode");
+			String				userName			=	(String)session.getAttribute("username");
+			String				defaultPerson		=	request.getParameter("defaultPerson");		
+			
+			String				saveResult			=	clientBean.saveClientMaster(clientForm,userName,session,defaultPerson);
+			
+			if(saveResult!= null && saveResult.length() > 0 && !saveResult.equalsIgnoreCase("ERROR"))
+			{
+					String	msgType		=	saveResult.substring(0,4);
+					saveResult			=	saveResult.substring(5,saveResult.length());
+					
+					request.setAttribute("msgType",msgType);
+					request.setAttribute("saveResult",saveResult);
+					
+					if(msgType!= null && msgType.length() > 0 && msgType.equals("PASS"))
+					{
+						if(mode!= null && mode.length() > 0 && mode.equalsIgnoreCase("SAVE"))
+						{
+							
+							mappingString	=	"showClientMasterPage";
+							session.removeAttribute("sesClientDetails");
+							clientForm.reset(mapping, request);
+							clientForm.setStatus("ACTIVE");
+							request.setAttribute("actions","add");
+						}
+						else if(mode!= null && mode.length() > 0 && mode.equalsIgnoreCase("SAVEEXIT"))
+						{
+							mappingString	=	"showClientListPage";
+							session.removeAttribute("sesClientDetails");
+							clientForm.reset(mapping, request);
+							clientForm.reset(mapping, request);
+						}
+							
+					}
+					else if(msgType!= null && msgType.length() > 0 && msgType.equals("FAIL"))
+					{
+						mappingString	=	"showClientMasterPage";
+						request.setAttribute("actions","add");
+					}
+			}
+			return mapping.findForward(mappingString);
+		}
+	
+	
+	
+	
+	
+	 
+	 
+	 /**
+	 * Action Name 	: addContactDetails
+	 * Purpose		: To Add Client Details in Line Items
+	 * @author		: Prashant
+	 * Date			: 17/09/2012
+	 */
+	public ActionForward addContactDetails(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		ClientBean	clientBean		=	new ClientBean();
+		boolean		flag			=	true;
+		String		sesmsgType			=	"FAIL";
+		String		ackMsg			=	"nomsg";
+		HttpSession	session			=	request.getSession();
+		String		msgFlag			=	request.getParameter("msgFlag");
+		boolean 	duplicateCount	=	false;
+		String		deleteID		=	request.getParameter("deleteId");
+		String		deleteFlag		=	request.getParameter("deleteFlag")!=null ? request.getParameter("deleteFlag") : "";
+		
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		String		personName		=	request.getParameter("personName")!=null && request.getParameter("personName").length()>0 ? request.getParameter("personName").trim().toUpperCase() : "-";
+		String		designation		=	request.getParameter("designation")!= null && request.getParameter("designation").length() > 0 ? request.getParameter("designation").trim().toUpperCase():"-";
+		String		directNumber	=	request.getParameter("directNo")!= null && request.getParameter("directNo").length() > 0 ? request.getParameter("directNo").trim().toUpperCase():"-";
+		String		mobNumber		=	request.getParameter("mobileNo")!= null && request.getParameter("mobileNo").length()>0 ? request.getParameter("mobileNo").trim(): "-";
+		String		landLineNumber	=	request.getParameter("landLineNo")!= null && request.getParameter("landLineNo").length() > 0 ? request.getParameter("landLineNo").trim() :"-" ;
+		String		emailId			=	request.getParameter("emailId")!= null && request.getParameter("emailId").length()>0?request.getParameter("emailId").trim() : "-";
+		String		clientId		=	request.getParameter("clientId")!= null && request.getParameter("clientId").length()>0?request.getParameter("clientId").trim() : "";
+		
+	try
+	{
+		
+		
+		
+		ArrayList<CommonForm> 	sesClientDetails		=	(ArrayList<CommonForm>)session.getAttribute("sesClientDetails");
+		if(sesClientDetails == null)
+		{
+			sesClientDetails	=	new  ArrayList<CommonForm>();
+		}
+		if(msgFlag != null && msgFlag.length() > 0 && msgFlag.equalsIgnoreCase("CLEAR"))
+		{
+			session.removeAttribute("sesClientDetails");
+			sesClientDetails	=	new  ArrayList<CommonForm>();
+			flag 				=	false;
+		}
+		if(deleteFlag!= null && deleteFlag.equalsIgnoreCase("DELETE"))
+		{
+			
+				for(int i=0;i<sesClientDetails.size();i++)
+				{
+					CommonForm		cForm				=	sesClientDetails.get(i);
+					String			sesCount			=	cForm.getField1();
+					if(sesCount!= null && sesCount.equals(deleteID))
+					{
+						sesClientDetails.remove(i);
+						sesmsgType		=	"PASS";
+						ackMsg 		= 	"Contact Details For Person  : "+personName+" Deleted Successfully.";
+						break;
+					}
+				}
+				
+			
+		}
+		else
+		{
+			
+			if(clientId != "" && clientId.length()>0 &&  !clientBean.checkDuplicatePersonName(clientId,personName))
+			{
+				duplicateCount = true;
+				if(duplicateCount == true)
+				{
+
+					flag		=	false;
+					sesmsgType		=	"FAIL";
+					ackMsg		=	"Contact Details For Person : "+personName+" Is Already Present.";
+					
+				}
+			}
+			if(sesClientDetails != null && sesClientDetails.size() > 0)
+			{
+				for(int i = 0; i < sesClientDetails.size(); i++)
+				{
+					CommonForm	commonForm				=	sesClientDetails.get(i);
+					String sesPersonName				=	(commonForm.getField2()!= null ?commonForm.getField2() : "");
+				
+					if(sesPersonName.equals(personName))
+					{
+
+						flag		=	false;
+						sesmsgType		=	"FAIL";
+						ackMsg		=	"Contact Details For Person : "+personName+" Is Already Present.";
+						break;
+					}
+					
+				}
+			}	
+		}
+		if(flag == true && !deleteFlag.equals("DELETE"))
+		{
+			CommonForm	cForm	=	new CommonForm();
+			cForm.setField2(personName);
+			cForm.setField3(designation);
+			cForm.setField4(directNumber);
+			cForm.setField5(mobNumber);
+			cForm.setField6(landLineNumber);
+			cForm.setField7(emailId);
+			
+			
+			sesClientDetails.add(cForm);
+			
+			sesmsgType		=	"PASS";
+			ackMsg		=	"Contact Details For Person : "+personName+" Added Successfully.";
+		}
+		for(int count=0; count<sesClientDetails.size(); count++)
+		{
+			CommonForm	commonForm	=	sesClientDetails.get(count);
+			commonForm.setField1(""+(count+1));
+		}
+		if(sesClientDetails != null && sesClientDetails.size() > 0)
+		{
+			session.setAttribute("sesClientDetails", sesClientDetails);
+		}
+		
+		JSONStringer		clientArray			=	new  JSONStringer();
+		JSONStringer		msgArray			=	new  JSONStringer();
+		PrintWriter			writer				=	response.getWriter();
+		
+		clientArray.array();
+		for(int count=0; count<sesClientDetails.size(); count++)
+		{
+			CommonForm	commonForm	=	sesClientDetails.get(count);
+			
+			clientArray.object();
+			clientArray.key("index").value(commonForm.getField1());
+			clientArray.key("personName").value(commonForm.getField2());
+			clientArray.key("designation").value(commonForm.getField3());
+			clientArray.key("directNumber").value(commonForm.getField4());
+			clientArray.key("mobNumber").value(commonForm.getField5());
+			clientArray.key("landLineNumber").value(commonForm.getField6());
+			clientArray.key("emailId").value(commonForm.getField7());
+			
+			clientArray.endObject();
+		}
+		clientArray.endArray();
+		
+		msgArray.array();
+		msgArray.object();
+			msgArray.key("ackMsg").value(ackMsg);
+			msgArray.key("sesmsgType").value(sesmsgType);
+		msgArray.endObject();
+		msgArray.endArray();
+		
+		JSONStringer		object		=	new  JSONStringer();
+		object.object();
+			object.key("dataList").value(clientArray);
+			object.key("msgList").value(msgArray);
+		object.endObject();
+		
+		String	result		=	object.toString();
+			writer.println(result);
+			
+		}
+		catch(Exception e)
+		{
+			System.out.println("ERROR In SalaryStructAction.addSalaryHead : "+e);
+		}
+		return mapping.findForward(null);
+	}
+	 
+	
+	  
+	/**
+	 * Action Name 	: showSearchClientMasterList
+	 * Purpose		: To showSearchClientMasterList 
+	 * @author		: Prashant
+	 * Date			: 27/09/2012
+	 */
+	
+	public ActionForward showSearchClientMasterList(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		ClientForm	clientForm		=	(ClientForm)form;
+		ClientBean	clientBean		=	new ClientBean();
+		
+		ArrayList<CommonForm> dataList		=	clientBean.getSearchClientList(clientForm);
+		if(dataList!= null && dataList.size() > 0)
+		{
+			request.setAttribute("reqClientMasterList",dataList);
+		}
+		else
+		{
+			request.setAttribute("msgType", "FAIL");
+			request.setAttribute("saveResult", "NO DATA FOUND.");
+		}
+		return mapping.findForward("showClientListPage");
+	}
+
+	/**
+	 * Action Name 	: showClientModifyPage
+	 * Purpose		: To showClientModifyPage
+	 * @author		: Prashant
+	 * Date			: 28/09/2012
+	 */
+	
+	public ActionForward showClientModifyPage(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		ClientForm	clientForm		=	(ClientForm)form;
+		ClientBean	clientBean		=	new ClientBean();
+		
+		String		clientId			=	request.getParameter("client_id")!= null && request.getParameter("client_id").length() > 0 ? request.getParameter("client_id") : "";
+		
+		ArrayList<CommonForm> headerDataList	=	clientBean.getClientHeaderDataForModify (clientId);
+		if(headerDataList!= null && headerDataList.size() > 0)
+		{
+			//bankid, bank_name, bank_shortname, bank_address, status
+			CommonForm	cForm	=	headerDataList.get(0);
+			clientForm.setClientCode(cForm.getField1());
+			clientForm.setClientName(cForm.getField2());
+			clientForm.setAddress1(cForm.getField3());
+			clientForm.setAddress2(cForm.getField4());
+			clientForm.setAddress3(cForm.getField5());
+			clientForm.setCountry(cForm.getField6());
+			clientForm.setState(cForm.getField7());
+			clientForm.setCity(cForm.getField8());
+			clientForm.setStatus(cForm.getField9());
+			clientForm.setClientId(cForm.getField10());
+			clientForm.setCountryId(cForm.getField11());
+			clientForm.setStateId(cForm.getField12());
+			clientForm.setCityId(cForm.getField13());
+
+		}
+		ArrayList<CommonForm> lineItemDataList	=	clientBean.getClientLineItemDataForModify(clientId);
+		if(lineItemDataList!= null && lineItemDataList.size() > 0)
+		{
+			request.setAttribute("reqlineItemDataList", lineItemDataList);
+		}
+		
+		request.setAttribute("actions","edit");
+		
+		return mapping.findForward("showClientMasterPage");
+	}
+	
+	
+	
+	/**
+	 * Action Name 	: deleteAlreadyAddedClient
+	 * Purpose		: To deleteAlreadyAddedClient
+	 * @author		: Prashant
+	 * Date			: 27/09/2012
+	 */
+	
+	public ActionForward deleteAlreadyAddedClient(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		ClientBean	clientBean		=	new ClientBean();
+		
+		String		mappingString	=	"ERROR";
+		String		client_dtls_id	=	request.getParameter("client_dtls_id");	
+		String		personName		=	request.getParameter("person");
+		String		clientId		=	request.getParameter("client_Id");
+		
+		String		saveResult		=	clientBean.deleteAlreadyAddedClient(client_dtls_id,personName,clientId);
+		
+		if(saveResult != null && saveResult.length() > 0 && !saveResult.equalsIgnoreCase("ERROR"))
+		{
+			String	msgType		=	saveResult.substring(0,4);
+			saveResult			=	saveResult.substring(5,saveResult.length());
+			request.setAttribute("msgType",msgType);
+			request.setAttribute("saveResult",saveResult);
+			
+			if(msgType!= null && msgType.length() > 0 && msgType.equals("PASS"))
+			{
+				
+				mappingString	=	"showClientMasterPage";
+				
+			}
+			else if(msgType!= null && msgType.length() > 0 && msgType.equals("FAIL"))
+			{
+				mappingString	=	"showClientMasterPage";
+			
+			}
+			ArrayList<CommonForm> lineItemDataList	=	clientBean.getClientLineItemDataForModify(clientId);
+			if(lineItemDataList!= null && lineItemDataList.size() > 0)
+			{
+				request.setAttribute("reqlineItemDataList", lineItemDataList);
+			}
+			request.setAttribute("actions", "edit");
+			
+		}
+		return mapping.findForward(mappingString);
+	}
+	
+	
+	/**
+	 * Action Name 	: modifyClientMaster
+	 * Purpose		: To modifyClientMaster
+	 * @author		: Prashant
+	 * Date			: 27/09/2012
+	 */
+	
+	public ActionForward modifyClientMaster(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		HttpSession	session		=	request.getSession();
+		
+		ClientForm	clientForm		=	(ClientForm)form;
+		ClientBean	clientBean		=	new ClientBean();
+		String		clientId		=	clientForm.getClientId();
+		
+		String		mappingString	=	"ERROR";
+		String		userName		=	(String)session.getAttribute("username");
+		String		defaultPerson	=	request.getParameter("defaultPerson");
+		ArrayList<CommonForm> lineItemData	=	clientBean.getClientLineItemDataForModify(clientId);
+		String		saveResult		=	clientBean.modifyClientMaster(clientForm,userName,session,lineItemData,defaultPerson);
+		
+		if(saveResult!= null && saveResult.length() > 0 && !saveResult.equalsIgnoreCase("ERROR"))
+		{
+				String	msgType		=	saveResult.substring(0,4);
+				saveResult			=	saveResult.substring(5,saveResult.length());
+				request.setAttribute("msgType",msgType);
+				request.setAttribute("saveResult",saveResult);
+				
+				if(msgType!= null && msgType.length() > 0 && msgType.equals("PASS"))
+				{
+					clientForm.reset(mapping, request);
+					mappingString	=	"showClientListPage";
+					session.removeAttribute("sesClientDetails");
+				}
+				else if(msgType!= null && msgType.length() > 0 && msgType.equals("FAIL"))
+				{
+					mappingString	=	"showClientMasterPage";
+					ArrayList<CommonForm> lineItemDataList	=	clientBean.getClientLineItemDataForModify(clientId);
+					if(lineItemDataList!= null && lineItemDataList.size() > 0)
+					{
+						request.setAttribute("reqlineItemDataList", lineItemDataList);
+					}
+					request.setAttribute("actions","edit");
+				}
+		}
+		return mapping.findForward(mappingString);
+	}
+	
+	
+	
+	/**
+	 * Action Name 	: deleteClientMaster
+	 * Purpose		: To deleteClientMaster
+	 * @author		: Prashant
+	 * Date			: 28/09/2012
+	 */
+	
+	public ActionForward deleteClientMaster(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		ClientBean	clientBean		=	new ClientBean();
+		ClientForm	clientForm		=	(ClientForm)form;
+		String		mappingString	=	"ERROR";
+		
+		String		clientId		=	request.getParameter("client_id");
+		String		clientName		=	request.getParameter("client_name");
+		
+		
+		String		saveResult		=	clientBean.deleteClientMaster(clientName,clientId);
+		
+		if(saveResult != null && saveResult.length() > 0 && !saveResult.equalsIgnoreCase("ERROR"))
+		{
+			String	msgType		=	saveResult.substring(0,4);
+			saveResult			=	saveResult.substring(5,saveResult.length());
+			request.setAttribute("msgType",msgType);
+			request.setAttribute("saveResult",saveResult);
+			
+			if(msgType!= null && msgType.length() > 0 && msgType.equals("PASS"))
+			{
+				
+				mappingString	=	"showClientListPage";
+				clientForm.reset(mapping, request);		
+				ArrayList<CommonForm> dataList		=	clientBean.getSearchClientList(clientForm);
+				if(dataList!= null && dataList.size() > 0)
+				{
+					request.setAttribute("reqClientMasterList",dataList);
+				}
+				
+			}
+			else if(msgType!= null && msgType.length() > 0 && msgType.equals("FAIL"))
+			{
+				ArrayList<CommonForm> dataList		=	clientBean.getSearchClientList(clientForm);
+				if(dataList!= null && dataList.size() > 0)
+				{
+					request.setAttribute("reqClientMasterList",dataList);
+				}
+				
+				mappingString	=	"showClientListPage";
+			}
+			
+		}
+		return mapping.findForward(mappingString);
+	}
+	
+}

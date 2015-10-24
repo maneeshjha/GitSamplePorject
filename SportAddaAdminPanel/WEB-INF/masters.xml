@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE struts-config PUBLIC "-//Apache Software Foundation//DTD Struts Configuration 1.1//EN" "http://jakarta.apache.org/struts/dtds/struts-config_1_1.dtd">
+<struts-config>
+    
+    <!-- ========== Data Source Configuration =============================== -->
+    <data-sources />
+    
+    <!-- ========== Form Bean Definitions ================================== -->
+    <form-beans type="org.apache.struts.action.ActionFormBean">       
+    	<form-bean name = "CommonForm" 								type = "com.psa.mj.DAO.CommonForm" />
+    	<form-bean name	= "RoleForm"								type = "com.psa.mj.DAO.Master.RoleForm" />
+    	<form-bean name	= "CountryForm"								type = "com.psa.mj.DAO.Master.CountryForm" />
+    	<form-bean name	= "CityForm"								type = "com.psa.mj.DAO.Master.CityForm" />
+    	<form-bean name	= "GroupForm"								type = "com.psa.mj.DAO.Master.GroupForm" />
+    	<form-bean name	= "CommonMasterForm"						type = "com.psa.mj.DAO.Master.CommonMasterForm" />
+    	<form-bean name = "StateForm" 								type = "com.psa.mj.DAO.Master.StateForm" />
+    	<form-bean name = "UserForm" 								type = "com.psa.mj.DAO.Master.UserForm" />
+    	<form-bean name = "UtilityForm" 							type = "com.psa.mj.DAO.Master.UtilityForm" />
+    	<form-bean name = "LeaveRequestForm" 						type = "com.psa.mj.DAO.Master.LeaveRequestForm" />
+    	<form-bean name = "NotificationForm" 						type = "com.psa.mj.DAO.Master.NotificationForm" />
+    </form-beans>
+    
+    <!-- ========== Global Exception Definitions ============================== -->
+    <global-exceptions />
+    
+    <!-- ========== Global Forward Definitions =============================== -->
+    <global-forwards type="org.apache.struts.action.ActionForward" >
+    	<forward name =	"invalid" 						path = "/JSP/InvalidAccess.jsp" />
+    </global-forwards>
+    
+    <!-- ========== Action Mapping Definitions =============================== -->
+    <action-mappings type="org.apache.struts.action.ActionMapping">
+        
+	    
+	    <action
+	    	path		= "/roleAction"	
+	    	type		= "com.psa.mj.actions.Master.RoleAction"
+	    	parameter	= "reqCode"
+	    	name		= "RoleForm"
+	    	scope		= "request" 
+			validate	= "false"
+	    	attribute	= "RoleForm" >
+	    	
+	    	<forward name	=	"showRoleMasterPage"		path = "/JSP/RoleMaster.jsp" />
+	    	<forward name	=	"showRoleMasterListPage"	path = "/JSP/RoleList.jsp" />	
+	    	<forward name	=	"ERROR"						path = "/JSP/CommonError.jsp" />
+	    	
+	    </action>
+	    
+	    <action
+            path		= "/commonMethodAction"
+            type		= "com.psa.mj.actions.CommonMethodAction"
+            parameter	= "reqCode"
+            scope		= "request" 
+			validate	= "false">
+            
+			<forward name="ERROR" path="/JSP/commonError.jsp" />
+	    </action>
+	    
+	    <action
+	    	path		= "/countryAction"	
+	    	type		= "com.psa.mj.actions.Master.CountryAction"
+	    	parameter	= "reqCode"
+	    	name		= "CountryForm"
+	    	scope		= "request" 
+			validate	= "false"
+	    	attribute	= "CountryForm" >
+	    	
+	    	<forward name	=	"showCountryMasterPage"		path = "/JSP/CountryMaster.jsp" />
+	    	<forward name	=	"showCountryListPage"		path = "/JSP/CountryList.jsp" />
+	    	<forward name	=	"ERROR"						path = "/JSP/CommonError.jsp" />
+	    </action>
+	    
+	    
+	    <action
+	    	path		= "/cityAction"	
+	    	type		= "com.psa.mj.actions.Master.CityAction"
+	    	parameter	= "reqCode"
+	    	name		= "CityForm"
+	    	scope		= "request" 
+			validate	= "false"
+	    	attribute	= "CityForm" >
+	    	
+	    	<forward name	=	"showCityListPage"				path = "/JSP/CityList.jsp" />
+	    	<forward name	=	"showCityMasterPage"			path = "/JSP/CityMaster.jsp" />
+	    	<forward name	=	"ERROR"							path = "/JSP/CommonError.jsp" />
+	    </action>
+	    
+	    
+	  	<action
+	    	path		= "/groupAction"	
+	    	type		= "com.psa.mj.actions.Master.GroupAction"
+	    	parameter	= "reqCode"
+	    	name		= "GroupForm"
+	    	scope		= "request" 
+			validate	= "false"
+	    	attribute	= "GroupForm">
+	    	
+	    	<forward name	=	"showGroupListPage"				path = "/JSP/GroupList.jsp" />
+	    	<forward name	=	"showGroupMasterPage"			path = "/JSP/GroupMaster.jsp" />
+	    	<forward name	=	"ERROR"							path = "/JSP/CommonError.jsp" />
+	    	
+	    </action>
+	    
+	    <action
+	    	path		= "/commonMasterAction"	
+	    	type		= "com.psa.mj.actions.Master.CommonMasterAction"
+	    	parameter	= "reqCode"
+	    	name		= "CommonMasterForm"
+	    	scope		= "request" 
+			validate	= "false"
+	    	attribute	= "CommonMasterForm">
+	    	
+	    	<forward name	=	"showCommonListPage"			path = "/JSP/CommonList.jsp" />
+	    	<forward name	=	"showCommonMasterPage"			path = "/JSP/CommonMaster.jsp" />
+	    	<forward name	=	"ERROR"							path = "/JSP/CommonError.jsp" />
+	    	
+	    </action>
+	    
+	    
+	    <action
+	    	path		= "/stateAction"	
+	    	type		= "com.psa.mj.actions.Master.StateAction"
+	    	parameter	= "reqCode"
+	    	name		= "StateForm"
+	    	scope		= "request" 
+			validate	= "false"
+	    	attribute	= "StateForm">
+	    	
+	    	<forward name	=	"showStateListPage"				path = "/JSP/StateList.jsp" />
+	    	<forward name	=	"showStateMasterPage"			path = "/JSP/StateMaster.jsp" />
+	    	<forward name	=	"ERROR"							path = "/JSP/CommonError.jsp" />
+	    	
+	    </action>
+	    
+	    
+	    <action
+	    	path		= "/userAction"	
+	    	type		= "com.psa.mj.actions.Master.UserAction"
+	    	parameter	= "reqCode"
+	    	name		= "UserForm"
+	    	scope		= "request" 
+			validate	= "false"
+	    	attribute	= "UserForm">
+	    	
+	    	<forward name	=	"showUserMasterPage"				path = "/JSP/UserMaster.jsp" />
+	    	<forward name	=	"showUserMasterListPage"			path = "/JSP/UserList.jsp" />
+	    	<forward name	=	"ERROR"								path = "/JSP/CommonError.jsp" />
+	    	
+	    </action>
+	    
+	    <action
+	    	path		= "/utilityAction"	
+	    	type		= "com.psa.mj.actions.utility.UtilityAction"
+	    	parameter	= "reqCode"
+	    	name		= "UtilityForm"
+	    	scope		= "request" 
+			validate	= "false"
+	    	attribute	= "UtilityForm">
+	    	
+	    	<forward name	=	"showChangePasswordPage"			path = "/JSP/ChangePassword.jsp" />
+	    	<forward name	=	"showResetPasswordPage"				path = "/JSP/ResetPassword.jsp" />
+	    	<forward name	=	"ERROR"								path = "/JSP/CommonError.jsp" />
+	    	
+	    </action>
+	    
+	
+	      <action
+	    	path		= "/notificationAction"	
+	    	type		= "com.psa.mj.actions.Master.NotificationAction"
+	    	parameter	= "reqCode"
+	    	name		= "NotificationForm"
+	    	scope		= "request" 
+			validate	= "false"
+	    	attribute	= "NotificationForm">
+	    	
+	    	<forward name	=	"showNotificationPage"			path = "/JSP/Notification.jsp" />
+	    	<forward name	=	"ERROR"							path = "/JSP/commonError.jsp" />
+	    	
+	    </action>
+	    
+	    <action
+	    	path		= "/certificateAction"	
+	    	type		= "com.psa.mj.actions.Master.CertificateAction"
+	    	parameter	= "reqCode"
+	    	name		= "CertificateForm"
+	    	scope		= "request" 
+			validate	= "false"
+	    	attribute	= "CertificateForm">
+	    	
+	    	<forward name	=	"showCertificatePage"			path = "/JSP/Certificate.jsp"/>
+	    	<forward name	=	"ERROR"							path = "/JSP/commonError.jsp" />
+	    	
+	    </action>
+	    
+			    
+		</action-mappings>
+    
+    <!-- ========== Controller Configuration ================================ -->
+    <controller />
+</struts-config>
+
+	

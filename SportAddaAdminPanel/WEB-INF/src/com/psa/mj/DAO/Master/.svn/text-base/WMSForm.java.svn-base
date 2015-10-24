@@ -1,0 +1,276 @@
+package com.inf.dvo.mbm.DAO.Master;
+
+import javax.servlet.http.HttpServletRequest;
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionMapping;
+
+
+public class WMSForm extends ActionForm
+{
+
+	private static final long serialVersionUID = 1L;
+	
+	private String	wmsId;
+	private String  workDate; 
+	private String  projectId;
+	private String  moduleName;
+	private String	workDesc;
+	private String	noOfHr;
+	private String	completed;
+	private String	completedRemark;
+	private String	commited;
+	private String 	commitedRemark;
+	private String	userId;
+	private String	chkArray[];
+	private String	fromDate;
+	private String	toDate;
+	private String	status;
+	private	String  clientId;
+	private	String  subject;
+	private String  sendTo;
+	private	String  sendToMail[];
+	private	String  cc;
+	private	String  bcc;
+	public void reset(ActionMapping mapping,HttpServletRequest request)
+	{
+		wmsId			=	null;
+		workDate		=	null;
+		projectId		=	null;
+		moduleName		=	null;
+		workDesc		=	null;
+		noOfHr			=	null;
+		completed		=	null;
+		completedRemark	=	null;
+		commited		=	null;
+		commitedRemark	=	null;
+		userId			=	null;
+		chkArray		=	null;
+		fromDate		=	null;
+		toDate			=	null;
+		status			=	null;
+		clientId		=	null;
+		cc				=	null;
+		bcc				=	null;
+		sendToMail		=	null;
+	}
+
+	
+	
+	
+	public String getCc() {
+		return cc;
+	}
+
+
+
+
+	public void setCc(String cc) {
+		this.cc = cc;
+	}
+
+
+
+
+	public String getBcc() {
+		return bcc;
+	}
+
+
+
+
+	public void setBcc(String bcc) {
+		this.bcc = bcc;
+	}
+
+
+
+
+	public String getSubject() {
+		return subject;
+	}
+
+
+
+
+	public void setSubject(String subject) {
+		this.subject = subject;
+	}
+
+
+
+
+	
+
+
+
+
+	
+
+
+
+
+	public String getSendTo() {
+		return sendTo;
+	}
+
+
+
+
+	public void setSendTo(String sendTo) {
+		this.sendTo = sendTo;
+	}
+
+
+
+
+	public String[] getSendToMail() {
+		return sendToMail;
+	}
+
+
+
+
+	public void setSendToMail(String[] sendToMail) {
+		this.sendToMail = sendToMail;
+	}
+
+
+
+
+	public static long getSerialversionuid() {
+		return serialVersionUID;
+	}
+
+
+
+
+	public String getWmsId() {
+		return wmsId;
+	}
+
+	public void setWmsId(String wmsId) {
+		this.wmsId = wmsId;
+	}
+
+	public String getWorkDate() {
+		return workDate;
+	}
+
+	public void setWorkDate(String workDate) {
+		this.workDate = workDate;
+	}
+
+	public String getProjectId() {
+		return projectId;
+	}
+
+	public void setProjectId(String projectId) {
+		this.projectId = projectId;
+	}
+
+	public String getModuleName() {
+		return moduleName;
+	}
+
+	public void setModuleName(String moduleName) {
+		this.moduleName = moduleName;
+	}
+
+	public String getWorkDesc() {
+		return workDesc;
+	}
+
+	public void setWorkDesc(String workDesc) {
+		this.workDesc = workDesc;
+	}
+
+	public String getNoOfHr() {
+		return noOfHr;
+	}
+
+	public void setNoOfHr(String noOfHr) {
+		this.noOfHr = noOfHr;
+	}
+
+	public String getCompleted() {
+		return completed;
+	}
+
+	public void setCompleted(String completed) {
+		this.completed = completed;
+	}
+
+	public String getCompletedRemark() {
+		return completedRemark;
+	}
+
+	public void setCompletedRemark(String completedRemark) {
+		this.completedRemark = completedRemark;
+	}
+
+	public String getCommited() {
+		return commited;
+	}
+
+	public void setCommited(String commited) {
+		this.commited = commited;
+	}
+
+	public String getCommitedRemark() {
+		return commitedRemark;
+	}
+
+	public void setCommitedRemark(String commitedRemark) {
+		this.commitedRemark = commitedRemark;
+	}
+
+	public String getUserId() {
+		return userId;
+	}
+
+	public void setUserId(String userId) {
+		this.userId = userId;
+	}
+
+	public String[] getChkArray() {
+		return chkArray;
+	}
+
+	public void setChkArray(String[] chkArray) {
+		this.chkArray = chkArray;
+	}
+
+	public String getFromDate() {
+		return fromDate;
+	}
+
+	public void setFromDate(String fromDate) {
+		this.fromDate = fromDate;
+	}
+
+	public String getToDate() {
+		return toDate;
+	}
+
+	public void setToDate(String toDate) {
+		this.toDate = toDate;
+	}
+
+	public String getStatus() {
+		return status;
+	}
+
+	public void setStatus(String status) {
+		this.status = status;
+	}
+
+	public String getClientId() {
+		return clientId;
+	}
+
+	public void setClientId(String clientId) {
+		this.clientId = clientId;
+	}
+	
+	
+}

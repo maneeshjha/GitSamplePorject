@@ -1,0 +1,1325 @@
+package com.inf.dvo.mbm.Bean.Master;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.util.ArrayList;
+import com.inf.dvo.mbm.Bean.CommonMethodBean;
+import com.inf.dvo.mbm.DAO.CommonForm;
+import com.inf.dvo.mbm.DAO.Master.EmployeeForm;
+import com.inf.dvo.mbm.DBConnection.DBConnection;
+
+
+public class EmployeeBean 
+{
+	DBConnection	dbConn	=	new DBConnection();
+	
+	/**
+	 * Method Name  : saveEmployeeMaster
+	 * Purpose		: To saveEmployeeMaster
+	 * @author		: Prashant
+	 * Date			: 16/03/2012
+	 * 
+	 */
+	public String saveEmployeeMaster(EmployeeForm empForm, String userName) 
+	{
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		EmployeeBean		empBean				=	new EmployeeBean();
+		String			outputString			=	"";
+		Connection		con						=	null;
+		PreparedStatement	pst					=	null;
+		String				query				=	"";
+		boolean				flag				=	true;
+		
+		String		empCode		=	empForm.getEmpCode().trim().toUpperCase();
+		String		firstName	=	empForm.getFirstName().trim().toUpperCase();
+		String		middleName	=	empForm.getMiddleName()!= null && empForm.getMiddleName().length() > 0 ? empForm.getMiddleName().trim().toUpperCase():"";
+		String		lastName	=	empForm.getLastName().trim().toUpperCase();
+		String		empName		=	"";
+		empName					+=	firstName+" ";
+		if(middleName!= null && middleName.length() > 0)
+		{	
+			empName	+=	middleName+" ";
+		}	
+		empName		+=	lastName;
+		
+		String		localAddr			=	empForm.getLocalAddr().trim().toUpperCase();
+		String		localCityId			=	empForm.getLocalCityId();
+		String		permanatAddr 		=	empForm.getPermanatAddr().trim().toUpperCase();
+		String		permanatCityId 		=  	empForm.getPeramantCityId();
+		
+		String		contactNo			=	empForm.getContactNo().trim().toUpperCase();
+		String		emergencyCntNo		=	empForm.getEmergencyContNo().trim().toUpperCase();
+		String		emailId				=	empForm.getEmailId().trim().toUpperCase();
+		String		qualificationId		=	empForm.getQualificationId();
+		String		qualificationYear	=	empForm.getQualificationYear();
+		String		experience			=	empForm.getExperince().trim().toUpperCase();
+		String		joiningDate			=	empForm.getJoiningDate();
+		String		departmentId		=	empForm.getDepartementId();
+		String		designationId		=	empForm.getDesignationId();
+		String		dob					=	empForm.getDob()!= null && empForm.getDob().length() > 0 ? empForm.getDob() : null;
+		String		sex					=	empForm.getSex();
+		String		maritalStatus		=	empForm.getMaritalStatus();
+		String		bloodGroup			=	empForm.getBloodGroup();
+		String		pancardNo			=	empForm.getPanCardNo()!= null && empForm.getPanCardNo().length() > 0 ? empForm.getPanCardNo().trim().toUpperCase():"";
+		String		bankId				=	empForm.getBankNameId()!= null && empForm.getBankNameId().length() > 0 ? empForm.getBankNameId() : null;
+		String		barnchId			=	empForm.getBankBranchId()!= null && empForm.getBankBranchId().length() > 0 ? empForm.getBankBranchId() : null;
+		
+		String		bankAccNo			=	empForm.getBankAccountNo()!= null && empForm.getBankAccountNo().length() > 0 ? empForm.getBankAccountNo().trim().toUpperCase(): "";
+		String		bankAccName			=	empForm.getBankAccountName()!= null && empForm.getBankAccountName().length() > 0 ? empForm.getBankAccountName().trim().toUpperCase(): "";
+		String		status				=	empForm.getStatus();
+		String		paidEmp				=	empForm.getPaidEmp();
+		String		postingLocation		=	empForm.getPostingLocation()!= null && empForm.getPostingLocation().length() > 0 ? empForm.getPostingLocation().trim().toUpperCase(): "";
+		String		pfAcNo				=	empForm.getPfAcNo();
+		String		esicAcNo			=	empForm.getEsicAcNo();
+		String		refName				=	empForm.getRefName()!= null && empForm.getRefName().length() > 0 ? empForm.getRefName().trim().toUpperCase(): "";
+		String		refAddr				=	empForm.getRefAddr()!= null && empForm.getRefAddr().length() > 0 ? empForm.getRefAddr().trim().toUpperCase(): "";
+		String		refRelation			=	empForm.getReltionWithEmp() != null && empForm.getReltionWithEmp().length() > 0 ? empForm.getReltionWithEmp().trim().toUpperCase(): "";
+		String		refContNo			=	empForm.getRefPhoneNo() != null && empForm.getRefPhoneNo().length() > 0 ? empForm.getRefPhoneNo().trim().toUpperCase(): "";
+		String		refEmailId			=	empForm.getRefEmailId() != null && empForm.getRefEmailId().length() >0 ? empForm.getRefEmailId().trim().toUpperCase(): "";
+		String		additionalInfo		=	empForm.getAddtionInfo()!= null && empForm.getAddtionInfo().length() > 0 ? empForm.getAddtionInfo().trim().toUpperCase() : "";
+		String		grossSal			=	empForm.getJoiningSal()!= null && empForm.getJoiningSal().length() > 0 ? empForm.getJoiningSal().trim() : null;
+		String		salStructId			=	empForm.getSalStructId()!= null && empForm.getSalStructId().length() > 0 ? empForm.getSalStructId() : null;
+		
+		String		spouseName			=	empForm.getSpouseName()!=null && empForm.getSpouseName().length() > 0 ? empForm.getSpouseName().trim().toUpperCase() : "";
+		String		spouseBirthday		=	empForm.getSpouseBirthday()!=null && empForm.getSpouseBirthday().length() > 0 ? empForm.getSpouseBirthday() : null;
+		String		annivresaryDate		=	empForm.getAnniversaryDate()!=null && empForm.getAnniversaryDate().length() > 0 ? empForm.getAnniversaryDate() : null;
+		
+		String		empCategoryId		=	empForm.getEmpCategoryId();
+		
+		int			emailCount			=	0;
+		int			errorCount			=	0;
+		try
+		{
+			if(commonMethodBean.checkDuplicate("employee_master","employee_code",empCode) == false)
+			{
+				flag			=	false;
+				errorCount		=	1;
+				outputString	=	"FAIL.EMPLOYEE DETAILS : "+empCode+" IS ALREADY PRESENT.";
+			}
+			emailCount	=	empBean.checkDuplicateForEmail("employee_master","email_id",emailId);
+			if(emailCount > 0 )
+			{
+				flag		=	false;
+				if(errorCount > 0)
+				{
+					outputString	=	"FAIL.EMPLOYEE CODE : "+empCode+" AND EMAIL ID : "+emailId+" IS ALREADY PRESENT.";
+				}
+				else
+				{	
+					outputString	=	"FAIL.EMAIL ID  : "+emailId+" IS ALREADY PRESENT.";
+				}	
+			}
+			if(flag == true)
+			{	
+				con		 =	dbConn.connect();
+				query	+=	"	insert into employee_master	(	employee_code, first_name, middle_name, last_name, employee_name, local_address, local_city, " +
+							"									permanant_address, permanant_city, contact_number, emergency_contact, 	email_id, qualification, " +
+							"									qualification_year, experience, joining_date, department, designation, dob, sex, marital_status, " +
+							"									blood_group, pan_no, bankid, branchid, bank_acc_no, bank_acc_name, paid_employee, posting_location, " +
+							"									pf_account_no, esic_account_no, reference_name, reference_address, reference_relation, reference_contactno, " +
+							"									reference_emailid, additional_information, joining_salary, current_salary, salarystructureid, status, " +
+							"									spouse_name,spouse_birthday,anniversary_date, " +
+							"									createdby, createdon, updatedby, updatedon,employee_category " +
+							"								)" +
+							"	values	(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, str_to_date(?,'%d/%m/%Y'), ?, ?, str_to_date(?,'%d/%m/%Y'), ?, ?, ?, ?, ?, ?, " +
+							"			 ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? ,?, ?, str_to_date(?,'%d/%m/%Y'),str_to_date(?,'%d/%m/%Y'), ?, sysdate(), ?, sysdate(),?)";
+				
+				pst		=	con.prepareStatement(query);
+				
+				pst.setString(1, empCode);//employee_code
+				pst.setString(2, firstName);//first_name
+				pst.setString(3, middleName);//middle_name
+				pst.setString(4, lastName);//last_name
+				pst.setString(5, empName);//employee_name
+				pst.setString(6, localAddr);//local_address
+				pst.setString(7, localCityId);//local_city
+				pst.setString(8, permanatAddr);//permanant_address
+				pst.setString(9, permanatCityId);//permanant_city
+				pst.setString(10, contactNo);//contact_number
+				pst.setString(11, emergencyCntNo);//emergency_contact
+				pst.setString(12, emailId);//email_id
+				pst.setString(13, qualificationId);//qualification
+				pst.setString(14, qualificationYear);//qualification_year
+				pst.setString(15, experience);//experience
+				pst.setString(16, joiningDate);//joining_date
+				pst.setString(17, departmentId);//department
+				pst.setString(18, designationId);//designation
+				pst.setString(19, dob);//dob
+				pst.setString(20, sex);//sex
+				pst.setString(21, maritalStatus);//marital_status
+				pst.setString(22, bloodGroup);//blood_group
+				pst.setString(23, pancardNo);//pan_no
+				pst.setString(24, bankId);//bankid
+				pst.setString(25, barnchId);//branchid
+				pst.setString(26, bankAccNo);//bank_acc_no
+				pst.setString(27, bankAccName);//bank_acc_name
+				pst.setString(28, paidEmp);//paid_employee
+				pst.setString(29, postingLocation);//posting_location
+				pst.setString(30, pfAcNo);//pf_account_no
+				pst.setString(31, esicAcNo);//esic_account_no
+				pst.setString(32, refName);//reference_name
+				pst.setString(33, refAddr);//reference_address
+				pst.setString(34, refRelation);//reference_relation
+				pst.setString(35, refContNo);//reference_contactno
+				pst.setString(36, refEmailId);//reference_emailid
+				pst.setString(37, additionalInfo);//additional_information
+				pst.setString(38, grossSal);//Gross Sal(JOINING SAL)
+				pst.setString(39, grossSal);//Gross Sal(CURRENT SAL)
+				pst.setString(40, salStructId);//SALARY STRUCT ID
+				
+				pst.setString(41, status);//status
+				
+				pst.setString(42, spouseName);//spouse_name
+				pst.setString(43, spouseBirthday);//spouse_birthday
+				pst.setString(44, annivresaryDate);//anniversary_date
+				
+				pst.setString(45, userName);//createdby
+				pst.setString(46, userName);//updatedby
+				pst.setString(47, empCategoryId);//empCategoryId
+				
+				
+				int	count	=	pst.executeUpdate();
+				if(count > 0)
+				{
+					outputString	=	"PASS.EMPLOYEE DETAILS : "+empName+"("+empCode+") SAVED SUCCESSFULLY.";
+				}
+				pst.close();
+			}	
+		}
+		catch(Exception e)
+		{
+			System.out.println("ERROR In EmployeeBean.saveEmployeeMaster :"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				System.out.println("Exception While Closing The Connection in EmployeeBean.saveEmployeeMaster :"+e);
+			}
+		}
+		return outputString;
+	}
+	
+	/**
+	 * Method Name  : checkDuplicateForEmail
+	 * Purpose		: To checkDuplicateForEmail
+	 * @author		: Prashant
+	 * Date			: 17/03/2012
+	 * 
+	 */
+	private int checkDuplicateForEmail(String tableName, String field1Name,String field1Value) 
+	{
+		Connection con 	= dbConn.connect();
+		int count		=	0;
+		try	
+		{
+			String query	=	"	select count("+field1Name+")"+
+								"	from	"+tableName+ " " +
+								"	where	"+field1Name+ " = '"+field1Value+"'";
+			Statement 	st	=	con.createStatement();
+			ResultSet	rs	=	st.executeQuery(query);
+			if(rs.next())
+			{
+				count	=	rs.getInt(1);
+			}
+			
+		}catch(Exception e)	
+		{
+			System.out.println("Error in EmployeeBean.checkDuplicateForEmail "+e);
+		}finally 
+		{
+			try
+			{
+				if(con != null)
+					con.close();
+			}catch(Exception s)
+			{
+				System.out.println("Error in closing connection in EmployeeBean.checkDuplicateForEmail "+s);
+			}
+		}		
+		return count;
+	}
+	
+	/**
+	 * Method Name  : getSearchEmployeeList
+	 * Purpose		: To getSearchEmployeeList
+	 * @author		: Prashant
+	 * Date			: 19/03/2012
+	 * 
+	 */
+	public ArrayList<CommonForm> getSearchEmployeeList(EmployeeForm empForm)
+	{
+		ArrayList<CommonForm>	dataList	=	new ArrayList<CommonForm>();
+		CommonMethodBean		commonMethodBean	=	new CommonMethodBean();
+		Connection				con			=	null;
+		Statement				st			=	null;
+		ResultSet				rs			=	null;
+		String					query		=	"";
+		int						srNo		=	1;
+		
+		
+		String		employeeId			=	empForm.getEmpId();
+		String		employeeCode		=	empForm.getEmpCode()!= null && empForm.getEmpCode().length() > 0 ? empForm.getEmpCode().trim().toUpperCase(): "";
+		String		joiningFromDate		=	empForm.getJoiningFromDate();
+		String		joiningToDate		=	empForm.getJoiningToDate();
+		String		departmentId		=	empForm.getDepartementId();
+		String		designationId		=	empForm.getDesignationId();
+		String		bankId				=	empForm.getBankNameId();
+		String		branchId			=	empForm.getBankBranchId();
+		String		status				=	empForm.getStatus();
+		try
+		{
+			query	+=	"	select 	em.employeeid, em.employee_code, em.first_name, em.middle_name, em.last_name, em.employee_name, em.local_address, " +
+						"			em.local_city, cm.city_name,em.permanant_address, em.permanant_city,cmst.city_name, em.contact_number, em.emergency_contact, " +
+						"			em.email_id, em.qualification,gvq.groupvalue_name, em.qualification_year, em.experience, date_format(em.joining_date,'%d/%m/%Y'), " +
+						"			em.department,dm.department_name,em.designation,gvd.groupvalue_name,date_format(em.dob,'%d/%m/%Y'), em.sex, " +
+						"			em.marital_status, em.blood_group, em.pan_no,em.bankid, bm.bank_name, em.branchid,b_bmst.branch_name,em.bank_acc_no," +
+						"			em.paid_employee, em.posting_location, em.pf_account_no, em.esic_account_no,em.reference_name, em.reference_address, " +
+						"			em.reference_relation, em.reference_contactno,em.reference_emailid, em.additional_information,em.status,em.bank_acc_name," +
+						"			em.joining_salary,em.salarystructureid,ssh.structure_name,gvec.groupvalue_name,em.spouse_name,"+
+						"			date_format(em.spouse_birthday,'%d/%m/%Y'),date_format(anniversary_date,'%d/%m/%Y')" +
+						"	from	employee_master	em " +
+						"	inner	join	city_master		cm 				on 	em.local_city		=	cm.cityid ";
+							
+			if(employeeId!= null && employeeId.length() > 0)
+			{
+			query	+=	"													and	em.employeeid		=	'"+employeeId+"'";
+			}
+			if(employeeCode!= null && employeeCode.length() > 0)
+			{
+			query	+=	"													and	em.employee_code	=	'"+employeeCode+"'";
+			}
+			if(joiningFromDate!= null && joiningFromDate.length() > 0)
+			{
+			query	+=	"													and	em.joining_date	>=	str_to_date( '"+joiningFromDate+"','%d/%m/%Y')";
+			}
+			if(joiningToDate!= null && joiningToDate.length() > 0)
+			{
+			query	+=	"													and	em.joining_date	<=	str_to_date( '"+joiningToDate+"','%d/%m/%Y')";
+			}
+			if(departmentId!= null && departmentId.length() > 0)
+			{
+			query	+=	"													and	em.department	=	'"+departmentId+"'";
+			}
+			if(designationId!= null && designationId.length() > 0)
+			{
+			query	+=	"													and	em.designation	=	'"+designationId+"'";
+			}
+			if(bankId!= null && bankId.length() > 0)
+			{
+			query	+=	"													and	em.bankid		=	'"+bankId+"'";
+			}
+			if(branchId!= null && branchId.length() > 0)
+			{
+			query	+=	"													and	em.branchid		=	'"+branchId+"'";
+			}
+			if(status!= null && status.length() > 0)
+			{
+			query	+=	"													and	em.status		=	'"+status+"'";
+			}
+			
+			query	+=	"	inner	join	city_master			cmst		on	em.permanant_city	=	cmst.cityid" +
+						"	inner	join	department_master	dm			on	em.department		=	dm.departmentid	" +
+						"	inner	join	groupvalue 			gvq			on	em.qualification	=	gvq.groupvalueid " +
+						"	inner	join	groupvalue 			gvd			on	em.designation		=	gvd.groupvalueid " +
+						"	inner	join 	groupvalue 			gvec		on	em.employee_category	=	gvec.groupvalueid" +
+						"	left outer	join	salary_structure_header ssh		on	em.salarystructureid	=	ssh.structureid" +
+						"	left outer join	bank_master			bm			on	em.bankid			=	bm.bankid " +
+						"	left outer join	bank_branch_master	b_bmst		on	em.branchid			=	b_bmst.branchid " +
+						"	order	by		em.employee_name ";
+			
+			con		=	dbConn.connect();
+			st		=	con.createStatement();
+			rs		=	st.executeQuery(query);	
+			while(rs.next())
+			{
+				CommonForm cForm	=	new CommonForm();				
+				cForm.setField1(""+(srNo++));//SRNO
+				cForm.setField2(rs.getString(1));//employeeid		
+				cForm.setField3(rs.getString(2));//employee_code
+				cForm.setField4(rs.getString(3));//first_name
+				cForm.setField5(rs.getString(4)!= null && rs.getString(4).length() > 0 ? rs.getString(4) : "-");//middle_name
+				cForm.setField6(rs.getString(5));//last_name
+				cForm.setField7(rs.getString(6));//employee_name
+				cForm.setField8(rs.getString(7));//local_address
+				cForm.setField9(rs.getString(8));//local_city
+				cForm.setField10(rs.getString(9));//local_city_name		
+				cForm.setField11(rs.getString(10));//permanant_address
+				cForm.setField12(rs.getString(11));//permanant_city
+				
+				cForm.setField13(rs.getString(12));//permant_city_name
+				cForm.setField14(rs.getString(13));//contact_number
+				cForm.setField15(rs.getString(14));//emergency_contact
+				
+				cForm.setField16(rs.getString(15));//email_id
+				cForm.setField17(rs.getString(16));//qualification
+				cForm.setField18(rs.getString(17));//qualification_groupvalue_name
+				cForm.setField19(rs.getString(18));//qualification_year
+				cForm.setField20(rs.getString(19));//experience
+				cForm.setField21(rs.getString(20));//joining_date
+				cForm.setField22(rs.getString(21));//department
+				cForm.setField23(rs.getString(22));//department_name
+				cForm.setField24(rs.getString(23));//designation
+				cForm.setField25(rs.getString(24));//designation_groupvalue_name
+				cForm.setField26(rs.getString(25)!= null && rs.getString(25).length() > 0 ? rs.getString(25) : "-");//dob
+				cForm.setField27(rs.getString(26));//sex
+				cForm.setField28(rs.getString(27)!= null && rs.getString(27).length() > 0 ? rs.getString(27) : "-");//marital_status
+				cForm.setField29(rs.getString(28)!= null && rs.getString(28).length() > 0 ? rs.getString(28) : "-");//blood_group
+				cForm.setField30(rs.getString(29)!= null && rs.getString(29).length() > 0 ? rs.getString(29) : "-");//pan_no
+				cForm.setField31(rs.getString(30));//bankid
+				cForm.setField32(rs.getString(31)!= null && rs.getString(31).length() > 0 ? rs.getString(31) : "-");//bank_name
+				cForm.setField33(rs.getString(32));//branchid
+				cForm.setField34(rs.getString(33)!= null && rs.getString(33).length() > 0 ? rs.getString(33) : "-");//branch_name
+				cForm.setField35(rs.getString(34)!= null && rs.getString(34).length() > 0 ? rs.getString(34) : "-");//bank_acc_no
+				
+				cForm.setField36(rs.getString(35));//paid_employee
+				cForm.setField37(rs.getString(36)!= null && rs.getString(36).length() > 0 ? rs.getString(36) : "-" );//posting_location
+				cForm.setField38(rs.getString(37)!= null && rs.getString(37).length() > 0 ? rs.getString(37) : "-");//pf_account_no
+				cForm.setField39(rs.getString(38)!= null && rs.getString(38).length() > 0 ? rs.getString(38) : "-");//esic_account_no
+				
+				cForm.setField40(rs.getString(39)!= null && rs.getString(39).length() > 0 ? rs.getString(39) : "-");//reference_name
+				cForm.setField41(rs.getString(40)!= null && rs.getString(40).length() > 0 ? rs.getString(40) : "-");//reference_address
+				cForm.setField42(rs.getString(41)!= null && rs.getString(41).length() > 0 ? rs.getString(41) : "-");//reference_relation
+				cForm.setField43(rs.getString(42)!= null && rs.getString(42).length() > 0 ? rs.getString(42) : "-");//reference_contactno			
+				cForm.setField44(rs.getString(43)!= null && rs.getString(43).length() > 0 ? rs.getString(43) : "-");//reference_emailid
+				cForm.setField45(rs.getString(44)!= null && rs.getString(44).length() > 0 ? rs.getString(44) : "-");//additional_information
+				cForm.setField46(rs.getString(45));//status
+				cForm.setField47(rs.getString(46)!= null && rs.getString(46).length() > 0 ? rs.getString(46) : "-");//bank_ac_Name
+				cForm.setField48(rs.getString(47)!= null && rs.getString(47).length() > 0 ? commonMethodBean.applyFormater(rs.getString(47)) : "-");//Gross sal
+				cForm.setField49(rs.getString(48));//Salary Struct Id
+				cForm.setField50(rs.getString(49)!= null && rs.getString(49).length() > 0 ? rs.getString(49) : "-");//structure_name
+				cForm.setField51(rs.getString(50)!= null && rs.getString(50).length() > 0 ? rs.getString(50) : "-");//Employee Category
+				cForm.setField52(rs.getString(51)!= null && rs.getString(51).length() > 0 ? rs.getString(51) : "-");//Spouse Name
+				cForm.setField53(rs.getString(52)!= null && rs.getString(52).length() > 0 ? rs.getString(52) : "-");//Spouse BDay
+				cForm.setField54(rs.getString(53)!= null && rs.getString(53).length() > 0 ? rs.getString(53) : "-");//Anniversary Date
+				dataList.add(cForm);
+			}
+			
+		}
+		catch(Exception e)	
+		{
+			System.out.println("Error in EmployeeBean.getSearchEmployeeList "+e);
+		}
+		finally 
+		{
+			try
+			{
+				if(con != null)
+					con.close();
+			}catch(Exception s)
+			{
+				System.out.println("Error in closing connection in EmployeeBean.getSearchEmployeeList "+s);
+			}
+		}
+		return dataList;
+	}
+	
+	/**
+	 * Method Name  : getDataForModify
+	 * Purpose		: To getDataForModify
+	 * @author		: Prashant
+	 * Date			: 19/03/2012
+	 * 
+	 */
+	public ArrayList<CommonForm> getDataForModify(String empId) 
+	{
+		ArrayList<CommonForm>dataList	=	new ArrayList<CommonForm>();
+		Connection		con		=	null;
+		Statement		st		=	null;
+		ResultSet		rs		=	null;
+		String			query	=	"";
+		try
+		{
+			query		+=	"	select 	em.employeeid, em.employee_code, em.first_name, em.middle_name, em.last_name, em.employee_name, em.local_address, " +
+							"			em.local_city,cm.city_name,em.permanant_address, em.permanant_city,cmst.city_name, em.contact_number, em.emergency_contact, " +
+							"			em.email_id, em.qualification, em.qualification_year, em.experience, date_format(em.joining_date,'%d/%m/%Y'), em.department,dm.department_name, " +
+							"			em.designation,em.joining_salary,date_format(em.dob,'%d/%m/%Y'), em.sex, em.marital_status, em.blood_group, em.pan_no, em.current_salary, " +
+							"			em.bankid, em.branchid,em.bank_acc_no, em.bank_acc_name, em.paid_employee, em.posting_location, em.pf_account_no, " +
+							"			em.esic_account_no, em.reference_name, em.reference_address, em.reference_relation, em.reference_contactno, " +
+							"			em.reference_emailid, em.additional_information,em.status,em.joining_salary,em.salarystructureid,ssh.structure_name," +
+							" 			em.spouse_name,date_format(em.spouse_birthday,'%d/%m/%Y'),date_format(em.anniversary_date,'%d/%m/%Y'),em.employee_category " +
+							"	from	employee_master	em" +
+							"	inner	join	city_master		cm 			on 	em.local_city		=	cm.cityid" +
+							"	inner	join 	city_master		cmst		on	em.permanant_city	=	cmst.cityid	" +
+							"	inner	join 	department_master 	dm		on	em.department		=	dm.departmentid " +
+							"												and	em.employeeid		=	'"+empId+"'" +
+							"	left outer	join	salary_structure_header ssh		on	em.salarystructureid	=	ssh.structureid ";
+			con		=	dbConn.connect();
+			st		=	con.createStatement();
+			rs		=	st.executeQuery(query);	
+			while(rs.next())
+			{
+				
+				CommonForm cForm	=	new CommonForm();				
+				cForm.setField1(rs.getString(1));//employeeid
+				cForm.setField2(rs.getString(2));//employee_code		
+				cForm.setField3(rs.getString(3));//first_name
+				cForm.setField4(rs.getString(4));//middle_name
+				cForm.setField5(rs.getString(5));//last_name
+				cForm.setField6(rs.getString(6));//employee_name
+				cForm.setField7(rs.getString(7));//local_address
+				cForm.setField8(rs.getString(8));//local_city
+				cForm.setField9(rs.getString(9));//local_city_name
+				cForm.setField10(rs.getString(10));//permanant_address		
+				cForm.setField11(rs.getString(11));//permanant_city
+				cForm.setField12(rs.getString(12));//permanant_city_name
+				cForm.setField13(rs.getString(13));//contact_number
+				cForm.setField14(rs.getString(14));//emergency_contact
+				cForm.setField15(rs.getString(15));//email_id
+				cForm.setField16(rs.getString(16));//qualification
+				cForm.setField17(rs.getString(17));//qualification_year
+				cForm.setField18(rs.getString(18));//experience
+				cForm.setField19(rs.getString(19));//joining_date
+				cForm.setField20(rs.getString(20));//department
+				cForm.setField21(rs.getString(21));//department_name
+				cForm.setField22(rs.getString(22));//designation
+				cForm.setField23(rs.getString(23));//joining_salary
+				cForm.setField24(rs.getString(24));//dob
+				cForm.setField25(rs.getString(25));//sex
+				cForm.setField26(rs.getString(26));//marital_status
+				cForm.setField27(rs.getString(27));//blood_group
+				cForm.setField28(rs.getString(28));//pan_no
+				cForm.setField29(rs.getString(29));//current_salary
+				cForm.setField30(rs.getString(30));//bankid
+				cForm.setField31(rs.getString(31));//branchid
+				cForm.setField32(rs.getString(32));//bank_acc_no		
+				cForm.setField33(rs.getString(33));//bank_acc_name
+				
+				cForm.setField34(rs.getString(34));//paid_employee
+				cForm.setField35(rs.getString(35));//posting_location
+				cForm.setField36(rs.getString(36));//pf_account_no
+				cForm.setField37(rs.getString(37));//esic_account_no
+				cForm.setField38(rs.getString(38));//reference_name
+				cForm.setField39(rs.getString(39));//reference_address
+				cForm.setField40(rs.getString(40));//reference_relation
+				
+				cForm.setField41(rs.getString(41));//reference_contactno
+				cForm.setField42(rs.getString(42));//reference_emailid		
+				cForm.setField43(rs.getString(43));//additional_information
+				cForm.setField44(rs.getString(44));//status
+
+
+				
+				String	localAddress	=	rs.getString(7);//local_address
+				String	localCityId		=	rs.getString(8);//local_city
+				String	localCityName	=	rs.getString(9);//local_city_name
+				String	permentAddr		=	rs.getString(10);//permanant_address
+				String	permenCityId	=	rs.getString(11);//permanant_city
+				String	permentCityName	=	rs.getString(12);//permaent_city_name
+				if(localAddress!= null && localAddress.length() > 0 && permentAddr!= null && permentAddr.length() > 0)
+				{	
+					if(localAddress.equalsIgnoreCase(permentAddr))
+					{
+						if(localCityName!= null && localCityName.length() > 0 && permentCityName!= null && permentCityName.length() > 0)
+						{
+							if(localCityName.equalsIgnoreCase(permentCityName))
+							{
+								if(localCityId!= null && localCityId.length() > 0 && permenCityId!= null && permenCityId.length() > 0)
+								{
+									if(localCityId.equalsIgnoreCase(permenCityId))
+									{
+										cForm.setField45("1");
+									}
+								}
+							}
+						}
+					}
+				}	
+				cForm.setField46(rs.getString(45));//joining_salary
+				cForm.setField47(rs.getString(46));//salarystructureid
+				cForm.setField48(rs.getString(47));//structure_name
+				
+				cForm.setField49(rs.getString(48));//spouse_name
+				cForm.setField50(rs.getString(49));//spouse_birthday
+				cForm.setField51(rs.getString(50));//anniversary_date
+				cForm.setField52(rs.getString(51));//employee_category
+				dataList.add(cForm);
+			}
+			
+		}
+		catch(Exception e)	
+		{
+			System.out.println("Error in EmployeeBean.getDataForModify "+e);
+		}
+		finally 
+		{
+			try
+			{
+				if(con != null)
+					con.close();
+			}catch(Exception s)
+			{
+				System.out.println("Error in closing connection in EmployeeBean.getDataForModify "+s);
+			}
+		}
+		return dataList;
+	}
+	/**
+	 * Method Name  : getModifyEmployeeMaster
+	 * Purpose		: To getModifyEmployeeMaster
+	 * @author		: Prashant
+	 * Date			: 19/03/2012
+	 * 
+	 */
+	public String getModifyEmployeeMaster(EmployeeForm empForm, String userName) 
+	{
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		String			outputString		=	"";
+		Connection		con					=	null;
+		PreparedStatement	pst				=	null;
+		String			query				=	"";
+		
+		String		empId		=	empForm.getEmpId();
+		
+		String		empCode		=	empForm.getEmpCode().trim().toUpperCase();
+		String		firstName	=	empForm.getFirstName().trim().toUpperCase();
+		String		middleName	=	empForm.getMiddleName()!= null && empForm.getMiddleName().length() > 0 ? empForm.getMiddleName().trim().toUpperCase():"";
+		String		lastName	=	empForm.getLastName().trim().toUpperCase();
+		String		empName		=	"";
+		empName					+=	firstName+" ";
+		if(middleName!= null && middleName.length() > 0)
+		{	
+			empName	+=	middleName+" ";
+		}	
+		empName		+=	lastName;
+		
+		String		localAddr			=	empForm.getLocalAddr().trim().toUpperCase();
+		String		localCityId			=	empForm.getLocalCityId();
+		String		permanatAddr 		=	empForm.getPermanatAddr().trim().toUpperCase();
+		String		permanatCityId 		=  	empForm.getPeramantCityId();
+		
+		String		contactNo			=	empForm.getContactNo().trim().toUpperCase();
+		String		emergencyCntNo		=	empForm.getEmergencyContNo().trim().toUpperCase();
+		String		emailId				=	empForm.getEmailId().trim().toUpperCase();
+		String		qualificationId		=	empForm.getQualificationId();
+		String		qualificationYear	=	empForm.getQualificationYear();
+		String		experience			=	empForm.getExperince().trim().toUpperCase();
+		String		joiningDate			=	empForm.getJoiningDate();
+		String		departmentId		=	empForm.getDepartementId();
+		String		designationId		=	empForm.getDesignationId();
+		
+		String		dob					=	empForm.getDob()!= null && empForm.getDob().length() > 0 ? empForm.getDob() : null;
+		
+		String		sex					=	empForm.getSex();
+		String		maritalStatus		=	empForm.getMaritalStatus();
+		String		bloodGroup			=	empForm.getBloodGroup();
+		String		pancardNo			=	empForm.getPanCardNo()!= null && empForm.getPanCardNo().length() > 0 ? empForm.getPanCardNo().trim().toUpperCase():"";
+		
+		String		bankId				=	empForm.getBankNameId()!= null && empForm.getBankNameId().length() > 0 ? empForm.getBankNameId() : null;
+		String		barnchId			=	empForm.getBankBranchId()!= null && empForm.getBankBranchId().length() > 0 ? empForm.getBankBranchId() : null;
+		String		bankAccNo			=	empForm.getBankAccountNo()!= null && empForm.getBankAccountNo().length() > 0 ? empForm.getBankAccountNo().trim().toUpperCase() : "";
+		String		bankAccName			=	empForm.getBankAccountName()!= null && empForm.getBankAccountName().length() > 0 ? empForm.getBankAccountName().trim().toUpperCase() : "";
+		
+		String		paidEmp				=	empForm.getPaidEmp();
+		String		postingLocation		=	empForm.getPostingLocation()!= null && empForm.getPostingLocation().length() > 0 ? empForm.getPostingLocation().trim().toUpperCase() : "";
+		String		pfAcNo				=	empForm.getPfAcNo()!= null && empForm.getPfAcNo().length() > 0 ? empForm.getPfAcNo().trim().toUpperCase() : "";
+		String		esicAcNo			=	empForm.getEsicAcNo()!= null && empForm.getEsicAcNo().length() > 0 ? empForm.getEsicAcNo().trim().toUpperCase() : "";
+		String		refName				=	empForm.getRefName()!= null && empForm.getRefName().length() > 0 ? empForm.getRefName().trim().toUpperCase() : "";
+		String		refAddr				=	empForm.getRefAddr()!= null && empForm.getRefAddr().length() > 0 ? empForm.getRefAddr().trim().toUpperCase() : "";
+		String		refReltion			=	empForm.getReltionWithEmp()!= null && empForm.getReltionWithEmp().length() > 0 ? empForm.getReltionWithEmp().trim().toUpperCase() : "";
+		String		refContctNo			=	empForm.getRefPhoneNo()!= null && empForm.getRefPhoneNo().length() > 0 ? empForm.getRefPhoneNo().trim().toUpperCase(): "";
+		String		refEmailId			=	empForm.getRefEmailId()!= null && empForm.getRefEmailId().length() > 0 ? empForm.getRefEmailId().trim().toUpperCase() : "";
+		String		additionalInfo		=	empForm.getAddtionInfo()!= null && empForm.getAddtionInfo().length() > 0 ? empForm.getAddtionInfo().trim().toUpperCase() : "";
+		String		status				=	empForm.getStatus();
+		String		grossSal			=	empForm.getJoiningSal()!= null && empForm.getJoiningSal().length() > 0 ? empForm.getJoiningSal().trim() : null;
+		String		salStructId			=	empForm.getSalStructId()!= null && empForm.getSalStructId().length() > 0 ? empForm.getSalStructId() : null;
+		
+		String		spouseName			=	empForm.getSpouseName()!=null && empForm.getSpouseName().length() > 0 ? empForm.getSpouseName().trim().toUpperCase() : "";
+		String		spouseBirthday		=	empForm.getSpouseBirthday()!=null && empForm.getSpouseBirthday().length() > 0 ? empForm.getSpouseBirthday() : null;
+		String		annivresaryDate		=	empForm.getAnniversaryDate()!=null && empForm.getAnniversaryDate().length() > 0 ? empForm.getAnniversaryDate() : null;
+		String		empCategoryId		=	empForm.getEmpCategoryId();
+		
+		boolean		flag				=	true;
+		int			errorCount			=	0;
+		
+		try
+		{
+			if(commonMethodBean.checkDuplicateForModification("employee_master", "employee_code", empCode, "employeeid", empId) == false)
+			{
+				flag			=	false;
+				errorCount		=	1;
+				outputString	=	"FAIL.EMPLOYEE DETAILS : "+empCode+" IS ALREADY PRESENT.";
+			}
+			if(commonMethodBean.checkDuplicateForModification("employee_master", "email_id", emailId, "employeeid", empId) == false)
+			{
+				flag			=	false;
+				if(errorCount > 0)
+				{
+					outputString	=	"FAIL.EMPLOYEE CODE : "+empCode+" AND EMAIL ID : "+emailId+" IS ALREADY PRESENT.";
+				}
+				else
+				{	
+					outputString	=	"FAIL.EMAIL ID  : "+emailId+" IS ALREADY PRESENT.";
+				}	
+			}
+			if(flag	==	true)
+			{	
+					query		+=	"	update	employee_master" +
+									"	set	" +
+									"			employee_code		=	?, " +
+									"			first_name			=	?, " +
+									"			middle_name			=	?, " +
+									"			last_name			=	?, " +
+									"			employee_name		=	?, " +
+									"			local_address		=	?, " +
+									"			local_city			=	?, " +
+									"			permanant_address	=	?, " +
+									"			permanant_city		=	?, " +
+									"			contact_number		=	?, " +
+									"			emergency_contact	=	?, " +
+									"			email_id			=	?, " +
+									"			qualification		=	?, " +
+									"			qualification_year	=	?, " +
+									"			experience			=	?, " +
+									"			joining_date		=	str_to_date(?,'%d/%m/%Y'), " +
+									"			department			=	?, " +
+									"			designation			=	?, " +
+									"			dob					=	str_to_date(?,'%d/%m/%Y'), " +
+									"			sex					=	?, " +
+									"			marital_status		=	?, " +
+									"			blood_group			=	?, " +
+									"			pan_no				=	?, " +
+									"			bankid				=	?, " +
+									"			branchid			=	?, " +
+									"			bank_acc_no			=	?, " +
+									"			bank_acc_name		=	?, " +
+									"			paid_employee		=	?, " +
+									"			posting_location	=	?, " +
+									"			pf_account_no		=	?, " +
+									"			esic_account_no		=	?, " +
+									"			reference_name		=	?, " +
+									"			reference_address	=	?, 	" +
+									"			reference_relation	=	?, " +
+									"			reference_contactno	=	?, " +
+									"			reference_emailid	=	?, " +
+									"			additional_information	=	?, " +
+									"			status				=	?,  " +
+									"			joining_salary		=	?, " +
+									"			current_salary		=	?, " +
+									"			salarystructureid	=	?, " +
+									"			updatedby			=	?, " +
+									"			updatedon			=	sysdate()," +
+									"			spouse_name			=	?," +
+									"			spouse_birthday		=	str_to_date(?,'%d/%m/%Y')," +
+									"			anniversary_date	=	str_to_date(?,'%d/%m/%Y')," +
+									"			employee_category	=	? " +
+									"	where	employeeid			=	? ";
+					
+					con			=	dbConn.connect();
+					pst			=	con.prepareStatement(query);
+					//41
+					pst.setString(1, empCode);
+					pst.setString(2, firstName);
+					pst.setString(3, middleName);
+					pst.setString(4, lastName);
+					pst.setString(5, empName);
+					pst.setString(6, localAddr);
+					pst.setString(7, localCityId);
+					pst.setString(8, permanatAddr);
+					pst.setString(9, permanatCityId);
+					pst.setString(10, contactNo);
+					pst.setString(11, emergencyCntNo);
+					pst.setString(12, emailId);
+					pst.setString(13, qualificationId);
+					pst.setString(14, qualificationYear);
+					pst.setString(15, experience);
+					pst.setString(16, joiningDate);
+					pst.setString(17, departmentId);
+					pst.setString(18, designationId);
+					pst.setString(19, dob);
+					pst.setString(20, sex);
+					pst.setString(21, maritalStatus);
+					pst.setString(22, bloodGroup);
+					pst.setString(23, pancardNo);
+					pst.setString(24, bankId);
+					pst.setString(25, barnchId);
+					pst.setString(26, bankAccNo);
+					pst.setString(27, bankAccName);
+					pst.setString(28, paidEmp);
+					pst.setString(29, postingLocation);
+					pst.setString(30, pfAcNo);
+					pst.setString(31, esicAcNo);
+					pst.setString(32, refName);
+					pst.setString(33, refAddr);
+					pst.setString(34, refReltion);
+					pst.setString(35, refContctNo);
+					pst.setString(36, refEmailId);
+					pst.setString(37, additionalInfo);
+					pst.setString(38, status);
+					pst.setString(39, grossSal);
+					pst.setString(40, grossSal);
+					pst.setString(41, salStructId);
+					pst.setString(42, userName);
+					pst.setString(43, spouseName);
+					pst.setString(44, spouseBirthday);
+					pst.setString(45, annivresaryDate);
+					
+					pst.setString(46, empCategoryId);
+					
+					pst.setString(47, empId);
+					
+					int	cnt		=	pst.executeUpdate();
+					if(cnt > 0)
+					{
+						outputString	=	"PASS.EMPLOYEE DETAILS : "+empName+"("+empCode+") MODIFIED SUCCESSFULLY.";
+						
+						query	=	"	update usermst" +
+									"	set     display_name = ?" +
+									"	where   employeeid = '"+empId+"'";
+						
+						con		=	dbConn.connect();
+						pst		=	con.prepareStatement(query);
+						pst.setString(1, empName);
+						
+						int count	=	pst.executeUpdate();
+						
+					}
+					else
+					{
+						outputString	=	"FAIL.EMPLOYEE DETAILS : "+empName+"("+empCode+") NOT MODIFIED.";
+					}
+			}
+		}
+		catch(Exception e)
+		{
+			outputString = "ERROR";
+			System.out.println("ERROR In DepartmentBean.getModifyCountryMaster:"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				outputString = "ERROR";
+				System.out.println("Exception While Closing The Connection in DepartmentBean.getModifyCountryMaster:"+e);
+			}
+		}
+		return outputString;
+	}
+	
+	/**
+	 * Method Name  : deleteEmployee
+	 * Purpose		: To deleteEmployee
+	 * @author		: Prashant
+	 * Date			: 19/03/2012
+	 * 
+	 */
+	public String deleteEmployee(String employeeId, String employeeName) 
+	{
+		//NOTE:HERE EMPLOYEE NAME IS NOTHING BUT EMPLOYEE CODE BECAUSE UNIQUNESS ON EMPLOYEE CODE AND NOT ON EMPLOYEE NAME
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		String			outputString		=	"";
+		Connection		con					=	null;
+		Statement		st					=	null;
+		String			query				=	"";
+		int 			count				=	0;
+		int				forDeleteCount		=	0;
+		try
+		{
+				
+			forDeleteCount	=	commonMethodBean.checkForIsProperDelete("attendance_sheet_dtls", "attendancedtlsid", "employeeid",employeeId);
+			if(forDeleteCount > 0)
+			{
+				String	empName	=	commonMethodBean.getDataOnOneCondition("employee_master", "employee_name", "employeeid",employeeId);
+				outputString	=	"FAIL.CANNOT DELETE : ATTENDANCE RECORD SHEET  ARE PRESENT AGAINST EMPLOYEE : "+empName;
+			}	
+			else
+			{	
+				query			+=	"	delete " +
+									"	from	employee_master" +
+									"	where	employeeid	=	'"+employeeId+"'";
+				
+				con				=	dbConn.connect();
+				st				=	con.createStatement();
+				count			=	st.executeUpdate(query);
+				if( count > 0)
+				{
+					outputString	=	"PASS.EMPLOYEE NAME : "+employeeName+" DELETED SUCCESSFULLY.";
+				}
+				else
+				{
+					outputString	=	"FAIL.EMPLOYEE NAME : "+employeeName+" NOT DELETE.";
+				}
+			}	
+		}
+		catch(Exception e)
+		{
+			outputString = "ERROR";
+			System.out.println("ERROR In DepartmentBean.deleteDeaprtment:"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				outputString = "ERROR";
+				System.out.println("Exception While Closing The Connection in DepartmentBean.deleteDeaprtment :"+e);
+			}
+		}
+		return outputString;
+	}
+	
+	/**
+	 * Method Name  : getEmployeeDetailsForPopup
+	 * Purpose		: To getEmployeeDetailsForPopup
+	 * @author		: Prashant
+	 * Date			: 19/03/2012
+	 * 
+	 */
+	public ArrayList<CommonForm> getEmployeeDetailsForPopup(String empId) 
+	{
+		ArrayList<CommonForm>	dataList			=	new ArrayList<CommonForm>();
+		CommonMethodBean		commonMethodBean	=	new CommonMethodBean();
+		EmployeeBean			empBean				=	new EmployeeBean();
+		Connection				con					=	null;
+		Statement				st					=	null;
+		ResultSet				rs					=	null;
+		String					query				=	"";
+		try
+		{
+			query	+=	"	select 	em.employeeid, em.employee_code, em.first_name, em.middle_name, em.last_name, em.employee_name, em.local_address, " +
+						"			em.local_city, cm.city_name,em.permanant_address, em.permanant_city,cmst.city_name, em.contact_number, em.emergency_contact, " +
+						"			em.email_id, em.qualification,gvq.groupvalue_name, em.qualification_year, em.experience, date_format(em.joining_date,'%d/%m/%Y'), " +
+						"			em.department,dm.department_name,em.designation,gvd.groupvalue_name,date_format(em.dob,'%d/%m/%Y'), em.sex, " +
+						"			em.marital_status, em.blood_group, em.pan_no,em.bankid, bm.bank_name, em.branchid,b_bmst.branch_name,em.bank_acc_no, " +
+						"			em.bank_acc_name, em.paid_employee, em.posting_location, em.pf_account_no, em.esic_account_no,em.reference_name, " +
+						"			em.reference_address, em.reference_relation, em.reference_contactno,em.reference_emailid, em.additional_information,em.status, " +
+						"			em.joining_salary,em.salarystructureid,ssh.structure_name," +
+						"			em.spouse_name,date_format(em.spouse_birthday,'%d/%m/%Y'),date_format(anniversary_date,'%d/%m/%Y'),gvec.groupvalue_name" +
+						"	from	employee_master	em" +
+						"	inner	join	city_master			cm 			on 	em.local_city		=	cm.cityid" +
+						"													and	em.employeeid		=	'"+empId+"'"+
+						"	inner	join	city_master			cmst		on	em.permanant_city	=	cmst.cityid" +
+						"	inner	join	department_master	dm			on	em.department		=	dm.departmentid	" +
+						"	inner	join	groupvalue 			gvq			on	em.qualification	=	gvq.groupvalueid" +
+						"	inner	join	groupvalue 			gvd			on	em.designation		=	gvd.groupvalueid" +
+						"	inner	join 	groupvalue 			gvec		on	em.employee_category	=	gvec.groupvalueid" +
+						"	left outer	join	salary_structure_header ssh		on	em.salarystructureid	=	ssh.structureid" +
+						"	left outer join	bank_master			bm			on	em.bankid			=	bm.bankid" +
+						"	left outer join	bank_branch_master	b_bmst		on	em.branchid			=	b_bmst.branchid ";
+			con		=	dbConn.connect();
+			st		=	con.createStatement();
+			rs		=	st.executeQuery(query);
+			while(rs.next())
+			{
+				
+				CommonForm cForm	=	new CommonForm();				
+				cForm.setField1(rs.getString(1));//employeeid
+				cForm.setField2(rs.getString(2));//employee_code		
+				cForm.setField3(rs.getString(3));//first_name
+				cForm.setField4(rs.getString(4));//middle_name
+				cForm.setField5(rs.getString(5));//last_name
+				cForm.setField6(rs.getString(6));//employee_name
+				cForm.setField7(rs.getString(7));//local_address
+				cForm.setField8(rs.getString(8));//local_city
+				cForm.setField9(rs.getString(9));//local_city_name
+				cForm.setField10(rs.getString(10));//permanant_address		
+				cForm.setField11(rs.getString(11));//permanant_city
+				cForm.setField12(rs.getString(12));//permanat_city_name
+				cForm.setField13(rs.getString(13));//contact_number
+				cForm.setField14(rs.getString(14));//emergency_contact
+				cForm.setField15(rs.getString(15));//email_id
+				cForm.setField16(rs.getString(16));//qualification
+				cForm.setField17(rs.getString(17));//qualification_groupvalue_name
+				cForm.setField18(rs.getString(18));//qualification_year
+				cForm.setField19(rs.getString(19));//experience
+				cForm.setField20(rs.getString(20));//joining_date
+				cForm.setField21(rs.getString(21));//department
+				cForm.setField22(rs.getString(22));//department_name
+				cForm.setField23(rs.getString(23));//designation
+				cForm.setField24(rs.getString(24));//designation_groupvalue_name 
+				cForm.setField25(rs.getString(25)!= null && rs.getString(25).length() > 0 ? rs.getString(25) : "-");//dob
+				cForm.setField26(rs.getString(26));//sex
+				cForm.setField27(rs.getString(27)!= null && rs.getString(27).length() > 0 ? rs.getString(27) : "-");//marital_status
+				cForm.setField28(rs.getString(28)!= null && rs.getString(28).length() > 0 ? rs.getString(28) : "-");//blood_group
+				cForm.setField29(rs.getString(29)!= null && rs.getString(29).length() > 0 ? rs.getString(29) : "-");//pan_no
+				cForm.setField30(rs.getString(30)!= null && rs.getString(30).length() > 0 ? rs.getString(30) : "-");//bankid
+				cForm.setField31(rs.getString(31)!= null && rs.getString(31).length() > 0 ? rs.getString(31) : "-");//bank_name
+				cForm.setField32(rs.getString(32));//branchid		
+				cForm.setField33(rs.getString(33)!= null && rs.getString(33).length() > 0 ? rs.getString(33) : "-");//branch_name
+				cForm.setField34(rs.getString(34)!= null && rs.getString(34).length() > 0 ? rs.getString(34) : "-");//bank_acc_no
+				cForm.setField35(rs.getString(35)!= null && rs.getString(35).length() > 0 ? rs.getString(35) : "-");//bank_acc_name
+				cForm.setField36(rs.getString(36));//paid_employee
+				cForm.setField37(rs.getString(37)!= null && rs.getString(37).length() > 0 ? rs.getString(37) : "-");//posting_location
+				cForm.setField38(rs.getString(38)!= null && rs.getString(38).length() > 0 ? rs.getString(38) : "-");//pf_account_no
+				cForm.setField39(rs.getString(39)!= null && rs.getString(39).length() > 0 ? rs.getString(39) : "-");//esic_account_no
+				cForm.setField40(rs.getString(40)!= null && rs.getString(40).length() > 0 ? rs.getString(40) : "-");//reference_name
+				
+				cForm.setField41(rs.getString(41)!= null && rs.getString(41).length() > 0 ? rs.getString(41) : "-");//reference_address
+				cForm.setField42(rs.getString(42)!= null && rs.getString(42).length() > 0 ? rs.getString(42) : "-");//reference_relation		
+				cForm.setField43(rs.getString(43)!= null && rs.getString(43).length() > 0 ? rs.getString(43) : "-");//reference_contactno
+				cForm.setField44(rs.getString(44)!= null && rs.getString(44).length() > 0 ? rs.getString(44) : "-");//reference_emailid
+				cForm.setField45(rs.getString(45)!= null && rs.getString(45).length() > 0 ? rs.getString(45) : "-");//additional_information
+				cForm.setField46(rs.getString(46));//status
+				cForm.setField47(rs.getString(47)!= null && rs.getString(47).length() > 0 ? commonMethodBean.applyFormater(rs.getString(47)) : "-");//Gross sal
+				cForm.setField48(rs.getString(48)!= null && rs.getString(48).length() > 0 ? rs.getString(48) : "-");//Gross sal
+				cForm.setField49(rs.getString(49)!= null && rs.getString(49).length() > 0 ? rs.getString(49) : "-");//Gross sal
+				
+				ArrayList<CommonForm> uploadedDocument	=	empBean.getUploadedDocumentList(empId);
+				if(uploadedDocument!=null && uploadedDocument.size() > 0)
+				{
+					cForm.setCommonList(uploadedDocument);
+				}else
+				{
+					uploadedDocument	=	new ArrayList<CommonForm>();
+					cForm.setCommonList(uploadedDocument);
+				}	
+				
+				cForm.setField50(rs.getString(50)!= null && rs.getString(50).length() > 0 ? rs.getString(50) : "-");//spouseName
+				cForm.setField51(rs.getString(51)!= null && rs.getString(51).length() > 0 ? rs.getString(51) : "-");//spouse birthday
+				cForm.setField52(rs.getString(52)!= null && rs.getString(52).length() > 0 ? rs.getString(52) : "-");//anniversary
+				cForm.setField53(rs.getString(53)!= null && rs.getString(53).length() > 0 ? rs.getString(53) : "-");//employee category
+				
+				dataList.add(cForm);
+			}
+		}
+		catch(Exception e)
+		{
+			System.out.println("ERROR In EmployeeBean.getEmployeeDetailsForPopup:"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				
+				System.out.println("Exception While Closing The Connection in EmployeeBean.getEmployeeDetailsForPopup :"+e);
+			}
+		}
+		return dataList;
+	}
+
+	private ArrayList<CommonForm> getUploadedDocumentList(String empId) 
+	{
+		
+		ArrayList<CommonForm>	dataList	=	new ArrayList<CommonForm>();
+		Connection				con			=	null;
+		Statement				st			=	null;
+		ResultSet				rs			=	null;
+		String					query		=	"";
+		int						srNo		=	1;
+		try
+		{
+			query	+=	"	select 	ed.employeeid,ed.documentid,ed.document_title,ed.document_type_id,gv.groupvalue_name, ed.path " +
+						"	from	employee_document	ed " +
+						"	inner	join	employee_master	em	on	ed.employeeid		=	em.employeeid " +
+						"										and	ed.employeeid		=	'"+empId+"'" +
+						"	inner	join	groupvalue	gv	on	ed.document_type_id		=	gv.groupvalueid " +
+						"	order by ed.document_title ";
+			con		=	dbConn.connect();
+			st		=	con.createStatement();
+			rs		=	st.executeQuery(query);
+			while(rs.next())
+			{
+				CommonForm	cForm	=	new CommonForm();
+				cForm.setField1(""+(srNo++));//srNO
+				cForm.setField2(rs.getString(1));//employeeid
+				cForm.setField3(rs.getString(2));//documentid		
+				cForm.setField4(rs.getString(3));//document_title
+				cForm.setField5(rs.getString(4));//document_type_id
+				cForm.setField6(rs.getString(5));//groupvalue_name(Doc type name)
+				cForm.setField7(rs.getString(6));//path
+				
+				dataList.add(cForm);
+			}
+		}
+		catch(Exception e)
+		{
+			System.out.println("ERROR In EmployeeBean.getUploadedDocumentList:"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				
+				System.out.println("Exception While Closing The Connection in EmployeeBean.getUploadedDocumentList :"+e);
+			}
+		}
+		return dataList;
+	}
+	
+	
+	/**
+	 * Method Name  : getEmployeeToSendMailId
+	 * Purpose		: To getEmployeeToSendMailId
+	 * @author		: Prashant
+	 * Date			: 31/10/2012
+	 * 
+	 */
+	public ArrayList<CommonForm> getEmployeeToSendMailId()
+	{		
+		ArrayList<CommonForm>  emailList	=	new ArrayList<CommonForm>();
+		Connection				con			=	null;
+		Statement				st			=	null;
+		ResultSet				rs			=	null;
+		String					query		=	"";
+		try
+		{
+			query		=	"	select 	email_id,employee_name" +
+							"	from 	employee_master" +
+							"	where 	status	=	'ACTIVE'" +
+							"	order	by	employee_name";
+			
+			con		=	dbConn.connect();
+			st		=	con.createStatement();
+			rs		=	st.executeQuery(query);
+			while(rs.next())
+			{
+				CommonForm	cForm	=	new	CommonForm();
+				cForm.setField1(rs.getString(1));
+				cForm.setField2(rs.getString(2));
+				emailList.add(cForm);
+			}
+		}
+		catch(Exception e)
+		{
+			System.out.println("Exception In EmployeeBean.getEmployeeToSendMailId : "+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				System.out.println("Exception While Closing The Connection in EmployeeBean.getEmployeeToSendMailId : "+e);
+			}
+		}
+		return emailList;
+	}
+	
+	
+	/**
+	 * Method Name  : getEmploySalarySearchList
+	 * Purpose		: To getEmploySalarySearchList
+	 * @author		: Prashant
+	 * Date			: 02/01/2013
+	 * 
+	 */
+	public ArrayList<CommonForm> getEmploySalarySearchList(EmployeeForm empForm)
+	{
+		ArrayList<CommonForm>	dataList	=	new ArrayList<CommonForm>();
+		
+		Connection				con			=	null;
+		Statement				st			=	null;
+		ResultSet				rs			=	null;
+		String					query		=	"";
+		int						srNo		=	1;
+		
+		
+		String		employeeId			=	empForm.getEmpId();
+		String		departmentId		=	empForm.getDepartementId();
+		String		designationId		=	empForm.getDesignationId();
+		String		year				=	empForm.getYear();
+		
+		try
+		{
+			query	+=	"	 select		em.employee_name," +
+						"			case when month	= 'January'	then net_salary else '-' end January," +
+						"			case when month	= 'February'	then net_salary else '-' end February," +
+						"			case when month	= 'March' 	then net_salary else '-' end March," +
+						"			case when month	= 'April' 	then net_salary else '-' end April," +
+						"			case when month	= 'May' 	then net_salary else '-' end May," +
+						"			case when month	= 'June' 	then net_salary else '-' end June," +
+						"			case when month	= 'July' 	then net_salary else '-' end July," +
+						"			case when month	= 'August' 	then net_salary else '-' end August," +
+						"			case when month	= 'September' 	then net_salary else '-' end September," +
+						"			case when month	= 'October' 	then net_salary else '-' end October," +
+						"			case when month	= 'November' 	then net_salary else '-' end November," +
+						"			case when month	= 'December' 	then net_salary else '-' end December," +
+						"			case when month	= 'January'	then salaryslipid else '-' end Januaryid," +
+						"			case when month	= 'February'	then salaryslipid else '-' end Februaryid," +
+						"			case when month	= 'March' 	then salaryslipid else '-' end Marchid," +
+						"			case when month	= 'April' 	then salaryslipid else '-' end Aprilid," +
+						"			case when month	= 'May' 	then salaryslipid else '-' end Mayid," +
+						"			case when month	= 'June' 	then salaryslipid else '-' end Juneid," +
+						"			case when month	= 'July' 	then salaryslipid else '-' end Julyid," +
+						"			case when month	= 'August' 	then salaryslipid else '-' end Augustid," +
+						"			case when month	= 'September' 	then salaryslipid else '-' end Septemberid," +
+						"			case when month	= 'October' 	then salaryslipid else '-' end Octoberid," +
+						"			case when month	= 'November' 	then salaryslipid else '-' end Novemberid," +
+						"			case when month	= 'December' 	then salaryslipid else '-' end Decemberid," +
+						"			ssh.departmentname,ssh.designationname	" +
+						"	from		salary_slip_header 	ssh" +
+						"	inner	join	employee_master		em	on	ssh.employeeid	=	em.employeeid" ;
+						if(year!=null && year.length()>0)
+						{
+			query	+=	"							and	ssh.year		=	'"+year+"'	" ;
+						}
+						if(employeeId!=null && employeeId.length()>0)
+						{
+			query	+=	"							and	ssh.employeeid	=	'"+employeeId+"'" ;
+						}
+						if(departmentId!=null && departmentId.length()>0)
+						{
+			query	+=	"							and	em.department	=	'"+departmentId+"'	" ;
+						}
+						if(designationId!=null && designationId.length()>0)
+						{
+			query	+=	"							and	em.designation	=	'"+designationId+"'	" ;
+						}
+			query	+=	"	order 	by	em.employee_name";
+			
+			con		=	dbConn.connect();
+			st		=	con.createStatement();
+			rs		=	st.executeQuery(query);	
+			while(rs.next())
+			{
+				CommonForm cForm	=	new CommonForm();				
+				cForm.setField1(""+(srNo++));//SRNO
+				cForm.setField2(rs.getString(1));//EmployeeName		
+				cForm.setField3(rs.getString(2));//January
+				cForm.setField4(rs.getString(3));//February
+				cForm.setField5(rs.getString(4));//March
+				cForm.setField6(rs.getString(5));//April
+				cForm.setField7(rs.getString(6));//May
+				cForm.setField8(rs.getString(7));//June
+				cForm.setField9(rs.getString(8));//July
+				cForm.setField10(rs.getString(9));//August		
+				cForm.setField11(rs.getString(10));//September
+				cForm.setField12(rs.getString(11));//October
+				cForm.setField13(rs.getString(12));//November
+				cForm.setField14(rs.getString(13));//December
+				
+				cForm.setField15(rs.getString(14));//Januaryid		
+				cForm.setField16(rs.getString(15));//Februaryid
+				cForm.setField17(rs.getString(16));//Marchid
+				cForm.setField18(rs.getString(17));//Aprilid
+				cForm.setField19(rs.getString(18));//Mayid
+				cForm.setField20(rs.getString(19));//Juneid
+				cForm.setField21(rs.getString(20));//Julyid
+				cForm.setField22(rs.getString(21));//Augustid
+				cForm.setField23(rs.getString(22));//Septemberid		
+				cForm.setField24(rs.getString(23));//Octoberid
+				cForm.setField25(rs.getString(24));//Novemberid
+				cForm.setField26(rs.getString(25));//Decemberid
+				cForm.setField27(rs.getString(26));//departmentname
+				cForm.setField28(rs.getString(27));//designationname
+			
+				dataList.add(cForm);
+			}
+			
+		}
+		catch(Exception e)	
+		{
+			System.out.println("Error in EmployeeBean.getEmploySalarySearchList "+e);
+		}
+		finally 
+		{
+			try
+			{
+				if(con != null)
+					con.close();
+			}catch(Exception s)
+			{
+				System.out.println("Error in closing connection in EmployeeBean.getEmploySalarySearchList "+s);
+			}
+		}
+		return dataList;
+	}
+	
+	
+	/**
+	 * Method Name  : getSalaryDetailsForPopUp
+	 * Purpose		: To getSalaryDetailsForPopUp
+	 * @author		: Prashant
+	 * Date			: 02/01/2013 
+	 * @param  
+	 */
+	public ArrayList<CommonForm> getSalaryDetailsForPopUp(String salSlipId) 
+	{
+		
+		ArrayList<CommonForm> 	dataList	=	new ArrayList<CommonForm>();
+		Connection				con			=	null;
+		Statement				st			=	null; 
+		ResultSet				rs			=	null;
+		String					query		=	"";
+				
+		try
+		{
+				query	+=	" 	select  bm.bank_name,ssh.ref_no,total_earnings,ssh.total_deduction,ssh.actualworkingdays " +
+							"        	from salary_slip_header ssh" +
+							"	        inner join bank_master bm on bm.bankid  =   ssh.bankid" +
+							"	where   salaryslipid    =   '"+salSlipId+"'	";
+				con		=	dbConn.connect();
+				st		=	con.createStatement();
+				rs		=	st.executeQuery(query);
+				if(rs.next())
+				{
+					CommonForm	cForm	=	new CommonForm();
+					cForm.setField1(rs.getString(1));//bank_name
+					cForm.setField2(rs.getString(2));//ref_no
+					cForm.setField3(rs.getString(3));//total_earnings
+					cForm.setField4(rs.getString(4));//total_deduction
+					cForm.setField5(rs.getString(5));//actualworkingdays
+					
+					dataList.add(cForm);
+				}
+		}
+		catch (Exception e) 
+		{
+			System.out.println("Exception In EmployeeBean.getSalaryDetailsForPopUp : "+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				System.out.println("Exception While Closing The Connection in EmployeeBean.getSalaryDetailsForPopUp :"+e);
+			}
+		}
+		return	dataList;
+	}
+}
+

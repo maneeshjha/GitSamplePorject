@@ -1,0 +1,485 @@
+package com.inf.dvo.mbm.Bean.Master;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.util.ArrayList;
+
+import com.inf.dvo.mbm.Bean.CommonMethodBean;
+import com.inf.dvo.mbm.DAO.CommonForm;
+import com.inf.dvo.mbm.DAO.Master.RoleForm;
+import com.inf.dvo.mbm.DBConnection.DBConnection;
+
+public class RoleBean 
+{
+	DBConnection	dbConn	=	new DBConnection();
+	
+	/**
+	 * Method Name  : getResponsibilityList
+	 * Purpose		: To getResponsibilityList
+	 * @author		: Prashant
+	 * Date			: 06/03/2012
+	 * @param status 
+	 * @param status 
+	 */
+	public ArrayList<CommonForm> getResponsibilityList(RoleForm roleForm, String status) 
+	{
+		ArrayList<CommonForm> dataList		=	new ArrayList<CommonForm>();
+		Connection		con			=	null;
+		Statement		st			=	null;
+		ResultSet		rs			=	null;
+		String			query		=	"";
+		int				srNo		=	1;
+		
+		try
+		{
+			query	+=	"	select 		responsibilityid, responsibility_name " +
+						"	from  		responsibilitymst "+
+						"	where		responsibilityid > 0	";
+			if(status!= null && status.length() > 0)
+			{
+				query	+=	"			and		status	=	'"+status+"'";
+			}
+			
+			query	+=	"	order by 	groupid,responsibilityid ";
+			
+			con		=	dbConn.connect();
+			st		=	con.createStatement();
+			rs		=	st.executeQuery(query);
+			while(rs.next())
+			{
+				CommonForm	commonForm	=	new CommonForm();
+				commonForm.setField1(""+(srNo++));//SRNO
+				commonForm.setField2(rs.getString(1));//responsibilityid
+				commonForm.setField3(rs.getString(2));//responsibility_name
+				dataList.add(commonForm);
+			}
+			
+		}
+		catch(Exception e)
+		{
+			System.out.println("ERROR In RoleBean.getResponsibilityList:"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				System.out.println("Exception While Closing The Connection in RoleBean.getResponsibilityList:"+e);
+			}
+		}
+		return dataList;
+	}
+	
+	/**
+	 * Method Name  : saveRoleMaster
+	 * Purpose		: To saveRoleMaster
+	 * @author		: Prashant
+	 * Date			: 06/03/2012
+	 * @param  
+	 */
+	public String saveRoleMaster(RoleForm roleForm, String userName) 
+	{
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		String				outputString		=	"";
+		Connection			con					=	null;
+		PreparedStatement	pst				=	null;
+		String				query				=	"";	
+		String				roleName			=	roleForm.getRoleName().trim().toUpperCase();
+		String				descriptor			=	roleForm.getDescription();
+		String				status				=	roleForm.getStatus();
+		String				responsibilityId	=	"";
+		
+		String			[]chkArray	=	roleForm.getResponsibilityArray();
+		int				size		=	chkArray.length;	
+		for(int i=0;i<chkArray.length;i++)
+		{
+			if(size == (i+1))
+			{
+				responsibilityId	+=	chkArray[i];
+			}
+			else
+			{
+				responsibilityId	+=	chkArray[i]+",";
+			}	
+		}
+		try
+		{
+			
+			if(commonMethodBean.checkDuplicate("rolemst","role_name",roleName) == false)
+			{
+				outputString	=	"FAIL.ROLE NAME : "+roleName+" IS ALREADY PRESENT.";
+			}
+			else
+			{	
+				con		=	dbConn.connect();
+				query	+=	"	insert into rolemst " +
+							"	(role_name, role_description, status, responsibility_ids,createdby, createdon, updatedby, updatedon)" +
+							"	values(?,?,?,?,?,sysdate(),?,sysdate()) ";
+				
+				pst		=	con.prepareStatement(query);
+				pst.setString(1,roleName);
+				pst.setString(2,descriptor);
+				pst.setString(3,status);
+				pst.setString(4,responsibilityId);
+				pst.setString(5,userName);		
+				pst.setString(6,userName);			
+				
+				int	count	=	pst.executeUpdate();
+				if(count > 0)
+				{
+					outputString	=	"PASS.ROLE NAME : "+roleName+" SAVED SUCCESSFULLY.";
+				}
+				pst.close();
+			}
+		}
+		catch(Exception e)
+		{
+			outputString = "ERROR";
+			System.out.println("ERROR In RoleBean.saveRoleMaster:"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				outputString = "ERROR";
+				System.out.println("Exception While Closing The Connection in RoleBean.saveRoleMaster:"+e);
+			}
+		}
+		return outputString;
+	}
+	
+	/**
+	 * Method Name  : getSearchRoleList
+	 * Purpose		: To getSearchRoleList
+	 * @author		: Prashant
+	 * Date			: 06/03/2012
+	 * @param  
+	 */
+	public ArrayList<CommonForm> getSearchRoleList(RoleForm roleForm) 
+	{
+		ArrayList<CommonForm> dataList		=	new ArrayList<CommonForm>();
+		Connection		con			=	null;
+		Statement		st			=	null;
+		ResultSet		rs			=	null;
+		String			query		=	"";
+		int				srNo		=	1;
+		String			roleId		=	roleForm.getRoleId();
+		String			status		=	roleForm.getStatus();
+		try
+		{
+				query	+=	"	select 	roleid, role_name, role_description, status, responsibility_ids " +
+							"	from 	rolemst" +
+							"	where	0=0";
+			if(roleId != null && roleId.length() > 0)
+			{
+				query	+=	"			and roleid	=	'"+roleId+"'";
+			}
+			if(status != null && status.length() > 0)
+			{
+				query	+=	"			and status	=	'"+status+"'";
+			}	
+				query	+=	"	order by	role_name ";
+				
+			con		=	dbConn.connect();
+			st		=	con.createStatement();
+			rs		=	st.executeQuery(query);
+			while(rs.next())
+			{
+				CommonForm	cForm	=	new CommonForm();
+				cForm.setField1(""+(srNo++));//SRNO
+				cForm.setField2(rs.getString(1));//roleid
+				cForm.setField3(rs.getString(2));//role_name
+				cForm.setField4(rs.getString(3));//role_description
+				cForm.setField5(rs.getString(4));//status
+				cForm.setField6(rs.getString(5));//responsibility_ids
+				
+				dataList.add(cForm);
+			}
+		}
+		catch(Exception e)
+		{
+			System.out.println("ERROR In RoleBean.getSearchRoleList:"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				System.out.println("Exception While Closing The Connection in RoleBean.getSearchRoleList:"+e);
+			}
+		}
+		return dataList;
+	}
+
+	/**
+	 * Method Name  : getModifyRoleMaster
+	 * Purpose		: To getModifyRoleMaster
+	 * @author		: Prashant
+	 * Date			: 06/03/2012
+	 * @param  
+	 */
+	public String getModifyRoleMaster(RoleForm roleForm, String userName) 
+	{
+		CommonMethodBean	commonMethodBean=	new CommonMethodBean();
+		//RoleBean		roleBean			=	new RoleBean();
+		String			outputString		=	"";
+		Connection		con					=	null;
+		PreparedStatement	pst				=	null;
+		String			query				=	"";
+		String			roleId				=	roleForm.getRoleId();
+		String			roleName			=	roleForm.getRoleName().trim().toUpperCase();
+		String			description			=	roleForm.getDescription().trim();
+		String			status				=	roleForm.getStatus();
+		String			responsibilityId	=	"";
+		String 			old_Status			=	"";
+		int 			userCount			=	-1;
+		
+		String			[]chkArray	=	roleForm.getResponsibilityArray();
+		int				size		=	chkArray.length;	
+		int				count		=	0;
+		boolean			flag		=	true;
+		for(int i=0;i<chkArray.length;i++)
+		{
+			if(size == (i+1))
+			{
+				responsibilityId	+=	chkArray[i];
+			}
+			else
+			{
+				responsibilityId	+=	chkArray[i]+",";
+			}
+		}	
+		try
+		{
+			if(commonMethodBean.checkDuplicateForModification("rolemst", "role_name", roleName, "roleid", roleId) == false)
+			{
+				flag			=	false;
+				outputString	=	"FAIL.ROLE NAME : "+roleName+" IS ALREADY PRESENT.";
+			}
+			if(flag == true)
+			{
+				count		=	commonMethodBean.checkForIsProperDelete("usermst", "userid", "roleid",roleId);
+				old_Status 	=	commonMethodBean.getDataOnOneCondition("rolemst", "status", "roleid", roleId);
+				if(count > 0 && old_Status.equals("ACTIVE") && status.equals("INACTIVE"))
+				{
+					flag			=	false;
+					outputString	=	"FAIL.CANNOT MODIFY : USER ARE PRESENT AGAINST ROLE NAME : "+roleName;
+				}
+			}	
+			if(flag == true)
+			{	
+					query	+=	"	update 	rolemst" +
+								"	set		role_name			=	?," +
+								"			role_description 	=	?," +
+								"			status				=	?," +
+								"			responsibility_ids	=	?," +
+								"			updatedby			=	?," +
+								"			updatedon			=	sysdate()" +
+								"	where	roleid				=	?";
+					
+					con		=	dbConn.connect();
+					pst		=	con.prepareStatement(query);
+					pst.setString(1,roleName);
+					pst.setString(2,description);
+					pst.setString(3,status);
+					pst.setString(4,responsibilityId);
+					pst.setString(5,userName);
+					pst.setString(6,roleId);
+					
+					int	cnt		=	pst.executeUpdate();
+					if(cnt > 0 && (getRoleAssignedToUser(roleId))==true)
+					{
+						pst		=	null;
+						query	=	"	update  usermst 	  " +
+									" 	set 	rarid		= ? " +
+									"	where 	roleid	    = ? ";				
+						pst		=	con.prepareStatement(query);
+
+						pst.setString(1, responsibilityId);
+						pst.setString(2, roleId);
+						userCount		=	pst.executeUpdate();
+						
+						if(userCount > 0)
+						{
+							outputString	=	"PASS.ROLE NAME : "+roleName+" MODIFIED SUCCESSFULLY.";
+						}
+						else
+						{
+							outputString	=	"FAIL.ROLE NAME : "+roleName+" CANNOT MODIFIED.";
+						}
+					}
+					else
+					{
+						outputString	=	"FAIL.ROLE NAME : "+roleName+" CANNOT MODIFIED.";
+					}
+			}
+			
+		}
+		catch(Exception e)
+		{
+			outputString = "ERROR";
+			System.out.println("ERROR In RoleBean.getModifyRoleMaster:"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				outputString = "ERROR";
+				System.out.println("Exception While Closing The Connection in RoleBean.getModifyRoleMaster:"+e);
+			}
+		}
+		return outputString;
+	}
+	/**
+	 * Method Name  : getDataForModify
+	 * Purpose		: To getDataForModify
+	 * @author		: Prashant
+	 * Date			: 06/03/2012
+	 * @param  
+	 */
+	public ArrayList<CommonForm> getDataForModify(String roleId)
+	{
+		ArrayList<CommonForm> dataList		=	new ArrayList<CommonForm>();
+		Connection		con			=	null;
+		Statement		st			=	null;
+		ResultSet		rs			=	null;
+		String			query		=	"";
+		try
+		{
+			query		+=	"	select 	roleid, role_name, role_description, status, responsibility_ids " +
+							"	from 	rolemst" ;
+			if(roleId!= null && roleId.length() > 0)
+			{	
+				query	+=	"	where   roleid		=	'"+roleId+"'";
+			}
+			
+			con		=	dbConn.connect();
+			st		=	con.createStatement();
+			rs		=	st.executeQuery(query);
+			while(rs.next())
+			{
+				CommonForm	cForm	=	new CommonForm();
+				
+				cForm.setField1(rs.getString(1));//roleid
+				cForm.setField2(rs.getString(2));//role_name
+				cForm.setField3(rs.getString(3));//role_description
+				cForm.setField4(rs.getString(4));//status
+				cForm.setField5(rs.getString(5));//responsibility_ids
+				
+				dataList.add(cForm);
+			}	
+			
+		}
+		catch (Exception e) 
+		{
+			System.out.println("ERROR In RoleBean.getDataForModify:"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				System.out.println("Exception While Closing The Connection in RoleBean.getDataForModify :"+e);
+			}
+		}
+		return dataList;
+	}
+	
+	
+	
+	/**
+	 * Method Name : getRoleAssignedToUser
+	 * Purpose	   : To Get Role Assigned To User
+	 * Author	   : Gaurav
+	 * Date		   : 13/08/2012
+	 * */
+	public boolean getRoleAssignedToUser(String roleId)
+	{
+		Connection				con						=	null;
+		Statement				st						=	null;
+		ResultSet				rs						=	null;
+		String					query					=	"";
+		boolean					flag					=	false;
+		try
+		{
+			query		=		"	select userid " +
+								"	from usermst";
+			if(roleId != null && roleId.length() > 0)
+			{
+			query		+=		"	where	roleid	= '"+roleId+"'";
+			}
+			con			=	dbConn.connect();
+			st			=	con.createStatement();
+			rs			=	st.executeQuery(query);
+			if(rs.next())
+			{
+				flag	=	true;
+			}
+			else
+			{
+				flag	=	false;
+			}
+					
+		}
+		catch(Exception e)
+		{
+			System.out.println("ERROR In RoleBean.getRoleAssignedToUser:"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{				
+				System.out.println("Exception While Closing The Connection in RoleBean.getRoleAssignedToUser:"+e);
+			}
+		}
+		return flag;
+	}
+
+}

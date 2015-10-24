@@ -1,0 +1,151 @@
+package com.inf.dvo.mbm.actions.Master;
+
+import java.util.ArrayList;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionForward;
+import org.apache.struts.action.ActionMapping;
+
+import com.inf.dvo.mbm.Bean.CommonMethodBean;
+import com.inf.dvo.mbm.Bean.SendMailBean;
+import com.inf.dvo.mbm.Bean.Master.NonSalaryPaymentBean;
+import com.inf.dvo.mbm.DAO.CommonForm;
+import com.inf.dvo.mbm.DAO.Master.NonSalaryPaymentForm;
+import com.inf.dvo.mbm.actions.CMGMTDispatchAction;
+
+public class NonSalaryPaymentAction  extends  CMGMTDispatchAction{
+	
+	/**
+	 * Action Name 	: show NonSalaryPaymentPage
+	 * Purpose		: To show NonSalaryPaymentPage
+	 * @author		: Sourabh
+	 * Date			: 07/08/2013
+	 */
+	public ActionForward showNonSalaryPaymentPage(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)
+	{
+		HttpSession				session				=	request.getSession();
+		NonSalaryPaymentForm nonSalaryPaymentForm	=	(NonSalaryPaymentForm) form;
+		CommonMethodBean		commonMethodBean	=	new CommonMethodBean();
+		String 						  todaysDate	=	commonMethodBean.getDate();
+		nonSalaryPaymentForm.reset(mapping, request);
+		nonSalaryPaymentForm.setCurrentDate(commonMethodBean.getDate());
+		nonSalaryPaymentForm.setPaymentType("Credited");		
+		request.setAttribute("curDate",todaysDate);
+		
+		String rarId		=	"43";
+		String userProcess	=	(String)session.getAttribute("userProcess");
+		
+		String validLink	=	commonMethodBean.getValidOrNot(userProcess, ","+rarId+",");
+		if(validLink!=null && validLink.equalsIgnoreCase("NOTVALID"))
+		{
+			return mapping.findForward("invalid");
+		}
+		
+		return mapping.findForward("showNonSalaryPaymentPage");
+	}
+	
+
+	/**
+	 * Action Name 	: saveNonSalaryPaymentPage
+	 * Purpose		: To Save NonSalaryPayment
+	 * @author		: Sourabh
+	 * Date			: 07/08/2013
+	 */
+	public ActionForward saveNonSalaryPayment(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)
+	{
+		
+		HttpSession					session				=	request.getSession();
+		NonSalaryPaymentForm 	nonSalaryPaymentForm	=	(NonSalaryPaymentForm) form;
+		CommonMethodBean			commonMethodBean	=	new CommonMethodBean();
+		NonSalaryPaymentBean 	nonSalaryPaymentBean	=	new NonSalaryPaymentBean(); 
+		String 						  	  todaysDate	=	commonMethodBean.getDate();
+		String								userName	=	(String)session.getAttribute("username");
+		String							  saveResult	=	nonSalaryPaymentBean.saveNonSalaryPayment(nonSalaryPaymentForm, userName);
+		String						   mappingString	=	"ERROR";
+		
+		if(saveResult!= null && saveResult.length() > 0 && !saveResult.equalsIgnoreCase("ERROR"))
+		{		
+			String	msgType		=	saveResult.substring(0,4);
+			saveResult			=	saveResult.substring(5,saveResult.length());
+			
+			
+			
+			if(msgType!= null && msgType.length() > 0 && msgType.equals("PASS"))
+			{	
+					request.setAttribute("msgType",msgType);
+					request.setAttribute("saveResult",saveResult);				
+					mappingString	=	"showNonSalaryPaymentPage";
+					nonSalaryPaymentForm.reset(mapping, request);					
+					nonSalaryPaymentForm.setCurrentDate(commonMethodBean.getDate());
+					nonSalaryPaymentForm.setPaymentType("Credited");
+					
+			}
+			else if(msgType!= null && msgType.length() > 0 && msgType.equals("FAIL"))
+			{
+				mappingString	=	"showNonSalaryPaymentPage";
+				nonSalaryPaymentForm.setCurrentDate(commonMethodBean.getDate());
+			}
+			
+		}
+		request.setAttribute("curDate",todaysDate);
+		
+		return mapping.findForward(mappingString);
+	}
+	
+	/**
+	 * Action Name 	: show NonSalaryPaymentListPage
+	 * Purpose		: To show NonSalaryPaymentListPage
+	 * @author		: Sourabh
+	 * Date			: 07/08/2013
+	 */
+	public ActionForward showNonSalaryPaymentListPage(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)
+	{
+		HttpSession				session				=	request.getSession();
+		NonSalaryPaymentForm nonSalaryPaymentForm	=	(NonSalaryPaymentForm) form;
+		CommonMethodBean		commonMethodBean	=	new CommonMethodBean();
+		nonSalaryPaymentForm.reset(mapping, request);
+		
+		nonSalaryPaymentForm.setFromDate(commonMethodBean.getDate());
+		nonSalaryPaymentForm.setToDate(commonMethodBean.getDate());		
+		
+		String rarId		=	"44";
+		String userProcess	=	(String)session.getAttribute("userProcess");
+		
+		String validLink	=	commonMethodBean.getValidOrNot(userProcess, ","+rarId+",");
+		if(validLink!=null && validLink.equalsIgnoreCase("NOTVALID"))
+		{
+			return mapping.findForward("invalid");
+		}
+		
+		return mapping.findForward("showNonSalaryPaymentListPage");
+	}
+	
+
+	/**
+	 * Action Name 	: show NonSalaryPaymentList
+	 * Purpose		: To show NonSalaryPaymentList
+	 * @author		: Sourabh
+	 * Date			: 07/08/2013
+	 */
+	public ActionForward showNonSalaryPaymentList(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)
+	{
+		
+		NonSalaryPaymentForm 	nonSalaryPaymentForm	=	(NonSalaryPaymentForm) form;
+		NonSalaryPaymentBean 	nonSalaryPaymentBean	=	new NonSalaryPaymentBean();
+		ArrayList<CommonForm> dataList					=	nonSalaryPaymentBean.getNonSalaryPaymentList(nonSalaryPaymentForm);
+		if(dataList!= null && dataList.size() > 0)
+		{
+			request.setAttribute("reqNonSalaryPaymentList",dataList);
+		}
+		else
+		{
+			request.setAttribute("msgType", "FAIL");
+			request.setAttribute("saveResult", "NO DATA FOUND.");
+		}		
+		return mapping.findForward("showNonSalaryPaymentListPage");
+	}
+}

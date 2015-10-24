@@ -1,0 +1,251 @@
+package com.inf.dvo.mbm.Bean.Master;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.util.ArrayList;
+import com.inf.dvo.mbm.DAO.CommonForm;
+import com.inf.dvo.mbm.DAO.Master.EmployeeReleavingForm;
+import com.inf.dvo.mbm.DBConnection.DBConnection;
+
+public class EmployeeReleavingBean 
+{
+	DBConnection	dbConn	=	new DBConnection();
+	
+	/**
+	 * Method Name  : getEmployeeDetails
+	 * Purpose		: To getEmployeeDetails
+	 * @author		: Prashant
+	 * Date			: 01/05/2012
+	 * @param  
+	 */	
+	public ArrayList<CommonForm> getEmployeeDetails(String empId) 
+	{
+		ArrayList<CommonForm> dataList		=	new ArrayList<CommonForm>();
+		Connection		con					=	null;
+		Statement		st					=	null;
+		ResultSet		rs					=	null;
+		String			query				=	"";
+		try
+		{
+			
+			query	+=	"	select 	em.employeeid, em.employee_code,em.employee_name, date_format(em.joining_date,'%d/%m/%Y') joininig_date, " +
+						"			em.department,dm.department_name, em.designation,gvd.groupvalue_name,em.posting_location,em.contact_number, " +
+						"			em.email_id, em.joining_salary,em.salarystructureid,ssh.structure_name,em.reference_name " +
+						"	from	employee_master	em " +
+						"	inner	join	city_master			cm 			on 	em.local_city			=	cm.cityid" +
+						"													and	em.employeeid			=	'"+empId+"'" +
+						"	inner	join	department_master	dm			on	em.department			=	dm.departmentid	" +
+						"	inner	join	groupvalue 			gvd			on	em.designation			=	gvd.groupvalueid " +
+						"	left outer join	salary_structure_header ssh		on	em.salarystructureid	=	ssh.structureid ";
+			
+			con		=	dbConn.connect();
+			st		=	con.createStatement();
+			rs		=	st.executeQuery(query);
+			if(rs.next())
+			{
+				
+				CommonForm	cForm	=	new CommonForm();
+				cForm.setField1(rs.getString(1));//employeeid
+				cForm.setField2(rs.getString(2));//employee_code		
+				cForm.setField3(rs.getString(3));//employee_name
+				cForm.setField4(rs.getString(4));//joininig_date
+				cForm.setField5(rs.getString(5));//departmentID
+				cForm.setField6(rs.getString(6));//department_name
+				cForm.setField7(rs.getString(7));//designation
+				cForm.setField8(rs.getString(8));//groupvalue_name(Designation Name)
+				cForm.setField9(rs.getString(9));//posting_location
+				cForm.setField10(rs.getString(10));//contact_number		
+				cForm.setField11(rs.getString(11));//email_id
+				cForm.setField12(rs.getString(12));//joining_salary
+				cForm.setField13(rs.getString(13));//salarystructureid
+				cForm.setField14(rs.getString(14));//structure_name
+				cForm.setField15(rs.getString(15));//reference_name
+
+				dataList.add(cForm);
+			}
+		}
+		catch(Exception e)
+		{
+			System.out.println("ERROR In EmployeeReleavingBean.getEmployeeDetails :"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				System.out.println("Exception While Closing The Connection in EmployeeReleavingBean.getEmployeeDetails :"+e);
+			}
+		}
+		return dataList;
+	}
+	
+	/**
+	 * Method Name  : saveReleavingEntry
+	 * Purpose		: To saveReleavingEntry
+	 * @author		: Prashant
+	 * Date			: 01/05/2012
+	 * @param  
+	 */	
+	public String saveReleavingEntry(EmployeeReleavingForm employeeReleavingForm, String userName) 
+	{
+		String				outputString		=	"ERROR";
+		Connection			con					=	null;
+		PreparedStatement	pst					=	null;
+		String				query				=	"";
+		String				empId				=	employeeReleavingForm.getEmpId();
+		String				empName				=	employeeReleavingForm.getEmpName();
+		String				releavingDate		=	employeeReleavingForm.getRelievingDate();
+		String				releavingReason		=	employeeReleavingForm.getReleavingReason().trim().toUpperCase();
+		String				status				=	"RESIGNED";
+		try
+		{
+		
+			con		=	dbConn.connect();
+			query	+=	" 	update 	employee_master " +
+						"	set		resignation_date	=	str_to_date(?,'%d/%m/%Y'), " +
+						"			resignation_reason	=	?, " +
+						"			status				=	?, " +
+						"			updatedby			=	?, " +
+						"			updatedon			=	sysdate()" +
+						"	where	employeeid			=	? ";
+			
+			pst		=	con.prepareStatement(query);
+			pst.setString(1, releavingDate);
+			pst.setString(2, releavingReason);
+			pst.setString(3, status);
+			pst.setString(4, userName);
+			pst.setString(5, empId);
+			int	count	=	pst.executeUpdate();
+			if(count > 0)
+			{
+				outputString	=	"PASS.EMPLOYEE RELIEVING : "+empName+" SAVED SUCCESSFULLY.";
+			}
+			pst.close();
+		}
+		catch(Exception e)
+		{
+			outputString = "ERROR";
+			System.out.println("ERROR In EmployeeReleavingBean.saveReleavingEntry :"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				outputString = "ERROR";
+				System.out.println("Exception While Closing The Connection in EmployeeReleavingBean.saveReleavingEntry :"+e);
+			}
+		}
+		return outputString ;
+	}
+	
+	/**
+	 * Method Name  : getEmployeeReleavingSearchList
+	 * Purpose		: To getEmployeeReleavingSearchList
+	 * @author		: Prashant
+	 * Date			: 01/05/2012
+	 * @param  
+	 */	
+	public ArrayList<CommonForm> getEmployeeReleavingSearchList(EmployeeReleavingForm empReleavingFrom) 
+	{
+		ArrayList<CommonForm> dataList		=	new ArrayList<CommonForm>();
+		Connection		con					=	null;
+		Statement		st					=	null;
+		ResultSet		rs					=	null;
+		int				srNo				=	1;
+		String			query				=	"";
+		String			empId				=	empReleavingFrom.getEmpId();
+		String			fromDate			=	empReleavingFrom.getReleavingFromDate();
+		String			toDate				=	empReleavingFrom.getReleavingToDate();
+		try
+		{
+			query	+=	" 	select 	em.employeeid, em.employee_code,em.employee_name, date_format(em.joining_date,'%d/%m/%Y') joininig_date, " +
+						"			em.department,dm.department_name, em.designation,gvd.groupvalue_name,em.posting_location,em.contact_number, " +
+						"			em.email_id, em.joining_salary,em.salarystructureid,ssh.structure_name,em.reference_name," +
+						"			date_format(em.resignation_date,'%d/%m/%Y'),em.status,em.resignation_reason " +
+						"	from	employee_master	em " +
+						"	inner	join	department_master	dm		on	em.department		=	dm.departmentid	" ;
+			if(empId!=null && empId.length() > 0)
+			{
+			query	+=	"										and		em.employeeid			=	'"+empId+"'" ;
+			}
+			if(fromDate!=null && fromDate.length() > 0)
+			{
+			query	+=	"										and		em.resignation_date		>=	str_to_date('"+fromDate+"','%d/%m/%Y')";
+			}
+			if(toDate!=null && toDate.length() > 0)
+			{
+			query	+=	"										and		em.resignation_date		<=	str_to_date('"+toDate+"','%d/%m/%Y')";
+			}
+			query	+=	"										and		em.status				=	'RESIGNED'" +
+						"	inner	join	groupvalue 		gvd		on	em.designation			=	gvd.groupvalueid " +
+						"	left outer join	salary_structure_header ssh		on	em.salarystructureid	=	ssh.structureid " +
+						"	order by em.employee_name ";
+			
+			con		=	dbConn.connect();
+			st		=	con.createStatement();
+			rs		=	st.executeQuery(query);
+			while(rs.next())
+			{
+				CommonForm cForm	=	new CommonForm();
+				cForm.setField1(""+(srNo++));//srNo
+				cForm.setField2(rs.getString(1));//employeeid		
+				cForm.setField3(rs.getString(2));//employee_code
+				cForm.setField4(rs.getString(3));//employee_name
+				cForm.setField5(rs.getString(4));//joininig_date
+				cForm.setField6(rs.getString(5));//department
+				cForm.setField7(rs.getString(6));//department_name
+				cForm.setField8(rs.getString(7));//designation
+				cForm.setField9(rs.getString(8));//groupvalue_name(Designation Name)
+				cForm.setField10(rs.getString(9));//posting_location		
+				cForm.setField11(rs.getString(10));//contact_number
+				cForm.setField12(rs.getString(11));//email_id
+				cForm.setField13(rs.getString(12));//joining_salary
+				cForm.setField14(rs.getString(13));//salarystructureid
+				cForm.setField15(rs.getString(14));//structure_name
+				cForm.setField16(rs.getString(15));//reference_name
+				cForm.setField17(rs.getString(16)!=null && rs.getString(16).length() > 0 ? rs.getString(16) : "-");//resignation_date
+				cForm.setField18(rs.getString(17));//status
+				cForm.setField19(rs.getString(18)!=null && rs.getString(18).length() > 0 ? rs.getString(18) : "-");//Reason
+				dataList.add(cForm);
+			}
+		}
+		catch(Exception e)
+		{
+			System.out.println("ERROR In EmployeeReleavingBean.getEmployeeReleavingSearchList :"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				System.out.println("Exception While Closing The Connection in EmployeeReleavingBean.getEmployeeReleavingSearchList :"+e);
+			}
+		}
+		return dataList;
+	}
+
+}

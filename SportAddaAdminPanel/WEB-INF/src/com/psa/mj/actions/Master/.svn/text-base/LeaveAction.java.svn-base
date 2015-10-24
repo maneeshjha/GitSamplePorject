@@ -1,0 +1,267 @@
+package com.inf.dvo.mbm.actions.Master;
+
+import java.io.IOException;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionForward;
+import org.apache.struts.action.ActionMapping;
+
+import com.inf.dvo.mbm.Bean.CommonMethodBean;
+import com.inf.dvo.mbm.Bean.Master.LeaveBean;
+import com.inf.dvo.mbm.DAO.CommonForm;
+import com.inf.dvo.mbm.DAO.Master.LeaveForm;
+import com.inf.dvo.mbm.actions.CMGMTDispatchAction;
+
+
+public class LeaveAction extends  CMGMTDispatchAction
+{
+	
+	/**
+	 * Action Name 	: showLeaveMasterList
+	 * Purpose		: To showLeaveMasterList
+	 * @author		: Prashant
+	 * Date			: 12/03/2012
+	 */
+	public ActionForward showLeaveMasterList(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		HttpSession				session				=	request.getSession();
+		CommonMethodBean		commonMethodBean	=	new CommonMethodBean();
+		LeaveForm				leaveForm			=	(LeaveForm)form;
+		leaveForm.reset(mapping, request);
+		String rarId		=	"8";
+		String userProcess	=	(String)session.getAttribute("userProcess");		
+		String validLink	=	commonMethodBean.getValidOrNot(userProcess, ","+rarId+",");
+		if(validLink!=null && validLink.equalsIgnoreCase("NOTVALID"))
+		{
+			return mapping.findForward("invalid");
+		}
+		return mapping.findForward("showLeaveListPage");
+	}
+	
+	/**
+	 * Action Name 	: showSearchLeaveMasterList
+	 * Purpose		: To showSearchLeaveMasterList 
+	 * @author		: Prashant
+	 * Date			: 12/03/2012
+	 */
+	
+	public ActionForward showSearchLeaveMasterList(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		LeaveForm	leaveFrom		=	(LeaveForm)form;
+		LeaveBean	leaveBean		=	new LeaveBean();
+		ArrayList<CommonForm> dataList		=	leaveBean.getSearchLeaveList(leaveFrom);
+		
+		if(dataList!= null && dataList.size() > 0)
+		{
+			request.setAttribute("reqLeaveMasterList",dataList);
+		}
+		else
+		{
+			request.setAttribute("msgType", "FAIL");
+			request.setAttribute("saveResult", "NO DATA FOUND.");
+		}
+		return mapping.findForward("showLeaveListPage");
+	}
+	
+	/**
+	 * Action Name 	: showLeaveMasterPage
+	 * Purpose		: To showLeaveMasterPage
+	 * @author		: Prashant
+	 * Date			: 12/03/2012
+	 */
+	
+	public ActionForward showLeaveMasterPage(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		LeaveForm	leaveForm	=	(LeaveForm)form;
+		leaveForm.reset(mapping, request);
+		
+		leaveForm.setStatus("ACTIVE");
+		request.setAttribute("actions","add");
+		return mapping.findForward("showLeaveMasterPage");
+	}
+	
+	/**
+	 * Action Name 	: saveLeaveMaster
+	 * Purpose		: To saveLeaveMaster
+	 * @author		: Prashant
+	 * Date			: 12/03/2012
+	 */
+	
+	public ActionForward saveLeaveMaster(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		HttpSession	session		=	request.getSession();
+		
+		LeaveForm	leaveForm	=	(LeaveForm)form;
+		LeaveBean	leaveBean	=	new LeaveBean();
+		
+		String		mappingString	=	"ERROR";
+		String		mode			=	request.getParameter("mode");
+		String		userName		=	(String)session.getAttribute("username");
+		
+		String		saveResult		=	leaveBean.saveLeaveMaster(leaveForm,userName);
+		
+		if(saveResult!= null && saveResult.length() > 0 && !saveResult.equalsIgnoreCase("ERROR"))
+		{
+				String	msgType		=	saveResult.substring(0,4);
+				saveResult			=	saveResult.substring(5,saveResult.length());
+				
+				request.setAttribute("msgType",msgType);
+				request.setAttribute("saveResult",saveResult);
+				
+				if(msgType!= null && msgType.length() > 0 && msgType.equals("PASS"))
+				{
+					if(mode!= null && mode.length() > 0 && mode.equalsIgnoreCase("SAVE"))
+					{
+						mappingString	=	"showLeaveMasterPage";
+						leaveForm.reset(mapping, request);
+						leaveForm.setStatus("ACTIVE");
+						request.setAttribute("actions","add");
+					}
+					else if(mode!= null && mode.length() > 0 && mode.equalsIgnoreCase("SAVEEXIT"))
+					{
+						mappingString	=	"showLeaveListPage";
+						leaveForm.reset(mapping, request);
+						request.setAttribute("actions","add");
+					}
+						
+				}
+				else if(msgType!= null && msgType.length() > 0 && msgType.equals("FAIL"))
+				{
+					mappingString	=	"showLeaveMasterPage";
+					request.setAttribute("actions","add");
+				}
+		}
+		return mapping.findForward(mappingString);
+	}
+	
+	
+	/**
+	 * Action Name 	: showModifyLeaveMaster
+	 * Purpose		: To showModifyLeaveMaster
+	 * @author		: Prashant
+	 * Date			: 12/03/2012
+	 */
+	
+	public ActionForward showModifyLeaveMaster(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		LeaveForm	leaveForm	=	(LeaveForm)form;
+		LeaveBean	leaveBean	=	new LeaveBean();
+		
+		String		leaveId		=	request.getParameter("leave_id")!= null && request.getParameter("leave_id").length() > 0 ? request.getParameter("leave_id") : "";
+		
+		ArrayList<CommonForm> modifyData	=	leaveBean.getDataForModify(leaveId);
+		if(modifyData!= null && modifyData.size() > 0)
+		{
+			CommonForm	cForm	=	modifyData.get(0);
+			leaveForm.setLeaveId(cForm.getField1());//leavemasterid
+			leaveForm.setLeaveTypeName(cForm.getField2());//leavetype
+			leaveForm.setNoOfLeave(cForm.getField3());//noofleaves
+			leaveForm.setLeaveDesc(cForm.getField4());//leavetype_desc
+			leaveForm.setStatus(cForm.getField5());//status
+		}
+		
+		request.setAttribute("actions","edit");
+		
+		return mapping.findForward("showLeaveMasterPage");
+	}
+	
+	/**
+	 * Action Name 	: modifyLeaveMaster
+	 * Purpose		: To modifyLeaveMaster
+	 * @author		: Prashant
+	 * Date			: 12/03/2012
+	 */
+	
+	public ActionForward modifyLeaveMaster(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		HttpSession	session		=	request.getSession();
+		LeaveForm	leaveFrom	=	(LeaveForm)form;
+		LeaveBean	leaveBean	=	new LeaveBean();
+		
+		String		mappingString	=	"ERROR";
+		String		userName		=	(String)session.getAttribute("username");
+		
+		String		saveResult		=	leaveBean.getModifyLeaveTypeMaster(leaveFrom,userName);
+		
+		if(saveResult!= null && saveResult.length() > 0 && !saveResult.equalsIgnoreCase("ERROR"))
+		{
+				String	msgType		=	saveResult.substring(0,4);
+				saveResult			=	saveResult.substring(5,saveResult.length());
+				request.setAttribute("msgType",msgType);
+				request.setAttribute("saveResult",saveResult);
+				
+				if(msgType!= null && msgType.length() > 0 && msgType.equals("PASS"))
+				{
+					leaveFrom.reset(mapping, request);
+					mappingString	=	"showLeaveListPage";
+				}
+				else if(msgType!= null && msgType.length() > 0 && msgType.equals("FAIL"))
+				{
+					mappingString	=	"showLeaveMasterPage";
+					request.setAttribute("actions","edit");
+				}
+		}
+		return mapping.findForward(mappingString);
+	}
+	
+	/**
+	 * Action Name 	: deleteLeave
+	 * Purpose		: To deleteLeave
+	 * @author		: Prashant
+	 * Date			: 12/03/2012
+	 */
+	
+	public ActionForward deleteLeave(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		LeaveForm	leaveForm		=	(LeaveForm)form;
+		LeaveBean	leaveBean		=	new LeaveBean();
+		
+		String		mappingString	=	"ERROR";
+		
+		String		leaveId			=	request.getParameter("leave_id");
+		String		leaveType		=	request.getParameter("leave_type");
+		
+		String		saveResult		=	leaveBean.deleteLeave(leaveId,leaveType);
+		
+		if(saveResult != null && saveResult.length() > 0 && !saveResult.equalsIgnoreCase("ERROR"))
+		{
+			String	msgType		=	saveResult.substring(0,4);
+			saveResult			=	saveResult.substring(5,saveResult.length());
+			
+			request.setAttribute("msgType",msgType);
+			request.setAttribute("saveResult",saveResult);
+			
+			if(msgType!= null && msgType.length() > 0 && msgType.equals("PASS"))
+			{
+				//leaveForm.reset(mapping, request);
+				mappingString	=	"showLeaveListPage";
+				
+				ArrayList<CommonForm> dataList		=	leaveBean.getSearchLeaveList(leaveForm);
+				if(dataList!= null && dataList.size() > 0)
+				{
+					request.setAttribute("reqLeaveMasterList",dataList);
+				}
+			}
+			else if(msgType!= null && msgType.length() > 0 && msgType.equals("FAIL"))
+			{
+				mappingString	=	"showLeaveListPage";
+				
+				ArrayList<CommonForm> dataList		=	leaveBean.getSearchLeaveList(leaveForm);
+				
+				if(dataList!= null && dataList.size() > 0)
+				{
+					request.setAttribute("reqLeaveMasterList",dataList);
+				}
+				
+				
+			}
+			
+		}
+		return mapping.findForward(mappingString);
+	}
+	
+}

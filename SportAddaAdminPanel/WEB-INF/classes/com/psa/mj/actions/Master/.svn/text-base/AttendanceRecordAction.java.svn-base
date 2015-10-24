@@ -1,0 +1,1314 @@
+package com.inf.dvo.mbm.actions.Master;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.PrintWriter;
+import java.sql.SQLException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import org.apache.poi.hssf.usermodel.HSSFCell;
+import org.apache.poi.hssf.usermodel.HSSFRow;
+import org.apache.poi.hssf.usermodel.HSSFSheet;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.poifs.filesystem.POIFSFileSystem;
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionForward;
+import org.apache.struts.action.ActionMapping;
+import org.apache.struts.upload.FormFile;
+
+import com.inf.dvo.mbm.Bean.CommonMethodBean;
+import com.inf.dvo.mbm.Bean.Master.AttendanceRecordBean;
+import com.inf.dvo.mbm.DAO.CommonForm;
+import com.inf.dvo.mbm.DAO.Master.AttendanceRecordForm;
+import com.inf.dvo.mbm.actions.CMGMTDispatchAction;
+
+
+public class AttendanceRecordAction extends  CMGMTDispatchAction
+{
+	
+	/**
+	 * Action Name 	: showAttendanceRecordPage
+	 * Purpose		: To showAttendanceRecordPage
+	 * @author		: Prashant
+	 * Date			: 12/04/2012
+	 */
+	
+	public ActionForward showAttendanceRecordPage(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		
+		AttendanceRecordForm	arForm				=	(AttendanceRecordForm)form;
+		AttendanceRecordBean	arBean				=	new AttendanceRecordBean();
+		CommonMethodBean		commonMethodBean	=	new CommonMethodBean();
+		HttpSession				session				=	request.getSession();
+		arForm.reset(mapping, request);
+		
+		String		sysdate		=		commonMethodBean.getDate();
+		String[]	date		=		sysdate.split("/");
+		
+		int			monthId		=		Integer.parseInt(date[1])-1;
+		int			year		=		Integer.parseInt(date[2]);
+		
+		arForm.setCurrentYear(""+year);
+		
+		String[]	monthArray	=		new String[12];	
+		
+		String	monthName		=	arBean.getMonthForInt((monthId));
+		
+		if(monthName != null && monthName.length() > 0 && !monthName.equals("invalid"))
+		{
+			
+			int dispMonth   =   5;
+			int arrayCnt    =   0;
+			for(int i=dispMonth - 1;i >= 0;i--)
+			{
+			    monthId		=		Integer.parseInt(date[1])-1;
+			    monthId		=		monthId -   i;
+			    if(monthId < 0)
+			    {
+			        monthId		=		12  +   monthId;
+			    }
+			    monthName               =	arBean.getMonthForInt(monthId);
+			    monthArray[arrayCnt]	=	monthName;
+			    arrayCnt++;
+			}
+			
+			/*for(int i=1;i< 3;i++)
+			{
+				boolean		flag	=	true;
+				monthId		=		Integer.parseInt(date[1])-1;
+				if(monthId	== 0)
+				{
+					flag	=	false;
+					if(i == 1)
+					{
+						monthId			=	10;
+						monthName		=	arBean.getMonthForInt(monthId);
+						monthArray[i-1]	=	monthName;
+					}
+					else
+					{
+						monthId			=	11;
+						monthName		=	arBean.getMonthForInt(monthId);
+						monthArray[i-1]	=	monthName;
+					}
+				}	
+				if(monthId	== 1)
+				{
+					if(i==1)
+					{
+						flag			=	false;
+						monthId			=	11;
+						monthName		=	arBean.getMonthForInt(monthId);
+						monthArray[i-1]	=	monthName;
+					}
+				}
+				if(flag	==	true)
+				{	
+					monthId			=	Integer.parseInt(date[1])-1;
+					if(i==1)
+					{	
+						monthId			=	monthId	-(i+1);//monthId - 2
+					}
+					else
+					{
+						monthId			=	monthId -(i-1);//monthId - 1
+					}
+					monthName		=	arBean.getMonthForInt(monthId);
+					monthArray[i-1]	=	monthName;
+					monthId			=	0;
+				}
+			}
+			monthId					=	Integer.parseInt(date[1])-1;
+			monthName				=	arBean.getMonthForInt(monthId);
+			monthArray[2]			=	monthName;
+			arForm.setCurrentMonth(""+monthName);*/
+			
+			/*for(int i=1;i< 3;i++)
+			{
+				boolean	flag	=	true;
+				monthId		=		Integer.parseInt(date[1])-1;
+				if(monthId	== 11)
+				{
+					//monthId		=		Integer.parseInt(date[1])-1;
+					//monthId			=	monthId+i;
+					flag	=	false;
+					if(i==1)
+					{	
+						monthId			=	0;
+						monthName		=	arBean.getMonthForInt(monthId);
+						monthArray[i+3]	=	monthName;
+					}
+					else
+					{
+						monthId			=	1;
+						monthName		=	arBean.getMonthForInt(monthId);
+						monthArray[i+3]	=	monthName;
+					}
+				}
+				if(monthId == 10)
+				{
+					if(i==2)
+					{
+						flag	=	false;
+						monthId			=	0;
+						monthName		=	arBean.getMonthForInt(monthId);
+						monthArray[i+3]	=	monthName;
+					}
+				}
+				if(flag	==	true)
+				{	
+					monthId		=		Integer.parseInt(date[1])-1;
+					monthId			=	monthId+i;
+					monthName		=	arBean.getMonthForInt(monthId);
+					monthArray[i+3]	=	monthName;
+				}	
+			}*/
+			
+			ArrayList<CommonForm> monthList		=	arBean.getMonthList(monthArray);
+			if(monthList!= null && monthList.size() > 0)
+			{
+				request.setAttribute("reqMonthList", monthList);
+				monthId					=	Integer.parseInt(date[1])-1;
+				if(monthId == 0)
+				{
+					monthId					=	11;
+					monthName				=	arBean.getMonthForInt(monthId);
+				}
+				else
+				{	
+					monthId					=	Integer.parseInt(date[1])-2;
+					monthName				=	arBean.getMonthForInt(monthId);
+				}
+				arForm.setMonth(monthName);
+			}
+		}
+		
+		int	[]	yearArray	=	new int[3];
+		yearArray[0]		=	year-2;
+		yearArray[1]		=	year-1;
+		yearArray[2]		=	year;
+		//yearArray[3]		=	year+1;
+		//yearArray[4]		=	year+2;
+		
+		ArrayList<CommonForm> yearList	=	arBean.getYearList(yearArray);
+		if(yearList!= null && yearList.size() > 0)
+		{
+			request.setAttribute("reqYearList", yearList);
+			String month	=	arForm.getMonth();
+			if(month!= null && month.length() > 0 && month.equalsIgnoreCase("December"))
+			{
+				arForm.setYear(""+(year-1));
+			}
+			else
+			{
+				arForm.setYear(""+year);
+			}	
+		}
+		
+		int [] daysInMonths = 	{31,28,31,30,31,30,31,31,30,31,30,31,29};
+		monthId				=	Integer.parseInt(date[1])-1;
+		int noOfDays		=	0;
+		year	=	Integer.parseInt(date[2]);
+		boolean		yearFlag	=	true;
+		if((year % 4 == 0 && year % 100 != 0)||(year % 400 == 0))
+		{
+			if((monthId-1) == 1)
+			{
+				yearFlag		=	false;
+				noOfDays		=	daysInMonths[12];
+			}
+		}
+		if(monthId == 0)
+		{
+			yearFlag		=	false;
+			noOfDays		=	daysInMonths[0];
+		}
+		if(yearFlag == true)
+		{	
+			 noOfDays		=	daysInMonths[monthId-1];
+		}	
+		arForm.setWorkingDay(""+noOfDays);
+		
+		String rarId		=	"21";
+		String userProcess	=	(String)session.getAttribute("userProcess");
+		
+		String validLink	=	commonMethodBean.getValidOrNot(userProcess, ","+rarId+",");
+		if(validLink!=null && validLink.equalsIgnoreCase("NOTVALID"))
+		{
+			return mapping.findForward("invalid");
+		}
+		
+		//request.setAttribute("actions","add");
+		return mapping.findForward("showAttendanceRecordPage");
+	}
+	
+	
+	/**
+	 * Action Name 	: showEmployeeListPopUp
+	 * Purpose		: To showEmployeeListPopUp
+	 * @author		: Prashant
+	 * Date			: 12/04/2012
+	 */
+	
+	public ActionForward showEmployeeListPopUp(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		AttendanceRecordBean	arBean		=	new AttendanceRecordBean();
+		String					workingDays	=	request.getParameter("wrkDays");
+		ArrayList<CommonForm>	empList		=	arBean.getEmployeeListForLeaves("ACTIVE",workingDays);
+		if(empList!= null && empList.size() > 0)
+		{
+			request.setAttribute("reqEmployeeList", empList);
+		}
+		return mapping.findForward("showEmployeeListPopUp");
+	}
+	
+	/**
+	 * Action Name 	: getUploadFile
+	 * Purpose		: To getUploadFile
+	 * @author		: Prashant
+	 * Date			: 12/04/2012
+	 */
+	
+	public ActionForward getUploadFileAndSaveRecord(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		HttpSession				session			=	request.getSession();
+		String					mappingString	=	"ERROR";
+		AttendanceRecordForm	arForm			=	(AttendanceRecordForm)form;
+		AttendanceRecordBean	arBean			=	new AttendanceRecordBean();	
+		ArrayList<CommonForm> 	problemList 	= 	new ArrayList<CommonForm>();
+		FormFile				uploadFile		=	arForm.getUploadFile();
+		String 				 	exitFlag		=	"false";
+		String 				  	msg				=	"";
+		String					workingDay		=	arForm.getWorkingDay();
+		CommonMethodBean		commonMethdBean	=	new CommonMethodBean();
+		
+		String value1 = ""; //Employee ID
+		String value2 = ""; //NO OF DAYS
+		String value3 =	"";//Employee Name
+		try {
+
+			InputStream 	is 		= 	uploadFile.getInputStream();
+			POIFSFileSystem fs 		= 	new POIFSFileSystem(is);
+			HSSFWorkbook 	wb 		= 	new HSSFWorkbook(fs);
+			//int 			nsheet	=	wb.getNumberOfSheets();
+			HSSFSheet 		sheet 	= 	wb.getSheetAt(0); // First Sheet of ExcelFile
+			HSSFRow 		row;
+			HSSFCell 		cell;
+
+			long rows 	= 0;
+			int cols 	= 0; // No of columns
+			int tmp 	= 0;
+
+			rows 		= sheet.getLastRowNum(); // No of rows
+			if (rows > 0) 
+			{
+				row = sheet.getRow(0);
+				if (row != null) 
+				{
+					tmp = sheet.getRow(0).getPhysicalNumberOfCells();
+					if (tmp > cols)
+					{
+						cols = tmp; // To Set No Of Column
+					}
+				}
+			}
+			if(rows == 0)
+			{
+				exitFlag = "true";	
+				request.setAttribute("msgType","FAIL");
+				request.setAttribute("saveResult","ATTENDANCE DETAILS ARE NOT PROVIDED.");
+			}
+			ArrayList<CommonForm> dataList = new ArrayList<CommonForm>();
+			/*NOTE: BASIC VALIDATION OF FILE
+			 * 1: CHECK FOR MANDATORY
+			 * 2: EMPLOYEE NAME AND EMPLOYEE ID MUST BE MATCH
+			 * 3: NO OF DAYS MUST BE LESS THAN OR EQUAL TO CURRENT/SELECTED MONTH DAYS.
+			 */
+			for (int r = 0; r < rows; r++) 
+			{
+			
+				row = sheet.getRow(r + 1);
+				Double	noOfDays	=	0.0;
+				Double	workDay		=	0.0;
+				value1 = ""; //Employee ID
+				value2 = ""; //NO OF DAYS
+				value3 = "";
+				exitFlag			=	"false";
+				CommonForm cform = new CommonForm();
+				if (row != null)
+				{
+					cell = row.getCell((short) 0);// Employee ID
+					if (cell == null)
+					{	
+						exitFlag = "true";	
+						CommonForm pForm = new CommonForm();	
+						msg = " Row No : "+(r+2)+"  Employee ID Not Provided.";
+						pForm.setField1(msg);
+						/*pForm.setField4(value1);
+						pForm.setField3(value3);*/
+						problemList.add(pForm);
+						//break;
+					}else
+					{
+						value1 = commonMethdBean.getExcelCellValue(cell, "string"); // Employee ID
+						if (value1.equals(""))
+						{	
+							exitFlag = "true";	
+							CommonForm pForm = new CommonForm();	
+							msg = " Row No : "+(r+2)+"  Employee ID Not Provided.";
+							pForm.setField1(msg);
+							/*pForm.setField4(value1);
+							pForm.setField3(value3);*/
+							problemList.add(pForm);
+							//break;
+						}
+						
+						cform.setField1(value1);// EmpID
+					}
+					/*-------------------------------------------------------------------*/
+					
+					cell = row.getCell((short) 1);//
+					if(cell	== null)
+					{	
+						exitFlag = "true";	
+						CommonForm pForm = new CommonForm();	
+						msg = " Row No : "+(r+2)+"  Employee Name Not Provided.";
+						pForm.setField1(msg);
+						problemList.add(pForm);
+					}
+					else
+					{	
+						value3			=	commonMethdBean.getExcelCellValue(cell, "string");
+						if(value3.equals(""))
+						{
+							exitFlag = "true";	
+							CommonForm pForm = new CommonForm();	
+							msg = " Row No : "+(r+2)+"  Employee Name Not Provided.";
+							pForm.setField1(msg);
+							problemList.add(pForm);
+						}
+						if(!value1.equals("") && value3!= null && !value3.equals(""))
+						{
+							String	empolyeeName	=	commonMethdBean.getDataOnOneCondition("employee_master", "employee_name", "employeeid",value1);
+							if(!empolyeeName.equalsIgnoreCase(value3.trim()))
+							{
+								exitFlag = "true";	
+								CommonForm pForm = new CommonForm();	
+								msg = " Row No : "+(r+2)+"  Employee Name Not Match With Employee Id.";
+								pForm.setField1(msg);
+								pForm.setField4(value1);
+								pForm.setField3(value3);
+								problemList.add(pForm);
+							}
+							else
+							{
+								cform.setField3(value3);
+							}
+							
+						}
+					}
+							
+					/*-------------------------------------------------------------------*/
+					cell = row.getCell((short) 4);// NO OF DAYS
+					if (cell == null)
+					{	
+						exitFlag = "true";	
+						CommonForm pForm = new CommonForm();	
+						msg = " Row No : "+(r+2)+"  Actual Working Days Not Provided.";
+						pForm.setField1(msg);	
+						/*pForm.setField4(value1);
+						pForm.setField3(value3);*/
+						problemList.add(pForm);
+						//break;
+					}else
+					{
+						try
+						{
+							value2 = commonMethdBean.getExcelCellValue(cell,"double"); // NO OF DAYS
+							noOfDays	=	Double.valueOf(value2);
+							if (value2.equals(""))
+							{	
+								exitFlag = "true";	
+								CommonForm pForm = new CommonForm();	
+								msg = " Row No : "+(r+2)+"  Actual Working Days Not Provided.";
+								pForm.setField1(msg);
+								/*pForm.setField4(value1);
+								pForm.setField3(value3);*/
+								problemList.add(pForm);
+								//break;
+							}
+							else if(noOfDays < 0 )
+							{
+								exitFlag = "true";	
+								CommonForm pForm = new CommonForm();	
+								msg = " Row No : "+(r+2)+"  No Of Days Should Be Greater Than Zero.";
+								pForm.setField1(msg);
+								problemList.add(pForm);
+							}
+							cform.setField2(value2);// NO OF DAYS
+						}
+						catch(Exception e)
+						{
+							exitFlag = "true";	
+							CommonForm pForm = new CommonForm();	
+							msg = " Row No : "+(r+2)+"  Actual Working Days Must Be Numeric Value.";
+							pForm.setField1(msg);
+							/*pForm.setField4(value1);
+							pForm.setField3(value3);*/
+							problemList.add(pForm);
+						}
+					}
+					
+					if(value2!= null && value2.length() > 0 && workingDay!= null && workingDay.length() > 0 && !value2.equals(""))
+					{
+						if(exitFlag!=null && !exitFlag.equalsIgnoreCase("true"))
+						{	
+							try
+							{
+								cell = row.getCell((short) 4);
+								noOfDays	=	Double.valueOf(value2);
+								workDay		=	Double.valueOf(workingDay);
+								if(noOfDays > workDay && cell!=null)
+								{
+									exitFlag = "true";	
+									CommonForm pForm = new CommonForm();	
+									msg = " Row No : "+(r+2)+" Total No Of Acutal Working Days Of Employee Exceed Than Total No Of Working Days In Month." ;// No Of Days : "+NOD+" Should Be Less Than Or Equal To Working Day : "+workingDay+" .";
+									pForm.setField1(msg);
+									/*pForm.setField4(value1);
+									pForm.setField3(value3);*/
+									problemList.add(pForm);
+								}
+							}
+							catch(Exception e)
+							{
+								exitFlag = "true";	
+								CommonForm pForm = new CommonForm();	
+								msg = " Row No : "+(r+2)+"  Actual Working Days Must Be Numeric Value.";
+								pForm.setField1(msg);
+								/*pForm.setField4(value1);
+								pForm.setField3(value3);*/
+								problemList.add(pForm);
+							}
+						}
+					}	
+				}
+				if(exitFlag!=null && exitFlag.equals("false") && row != null)
+				{
+					dataList.add(cform);
+				}
+				
+			}
+			if(problemList!= null && problemList.size() > 0)
+			{
+				for(int cnt=0;cnt<problemList.size();cnt++)
+				{
+					CommonForm	pForm	=	problemList.get(cnt);
+					pForm.setField2(""+(cnt+1));
+				}
+				exitFlag				=	"true";
+				request.setAttribute("reqproblemList", problemList);
+			}	
+			
+			/*CODE FOR WHICH EMPLOYEE RECORD IS INSERT AND WHICH IS NOT*/
+			
+			/*NOTE: BUSINESS VALIDATION
+			 * 1: ALL ACTIVE RECORD IS INSERTED IN ATTENDANCES SHEET.
+			 * 2: IF INACTIVE RECORD IS PRESENT IN EXCEL THEN NOT SHOW PROBLEMATIC MESSAGE.
+			 * */
+			
+			if(problemList!= null && problemList.size()== 0)
+			{	
+				ArrayList<CommonForm> recordList	=	new ArrayList<CommonForm>();
+				ArrayList<CommonForm> employeeList	=	arBean.getEmployeeList("");
+				if(employeeList!= null && employeeList.size() > 0 && dataList.size() > 0 && dataList!= null)
+				{
+					String		empMsg	=	"";
+					for(int i=0;i<employeeList.size();i++)
+					{
+						CommonForm 	empForm		=	employeeList.get(i);
+						String		empName		=	empForm.getField3();
+						String		empId		=	empForm.getField2();
+						String		status		=	empForm.getField10();
+						boolean		recordFlag	=	false;
+						boolean		statusFlag	=	false;
+						boolean		resignedFlag	=	false;
+						if(dataList!= null && dataList.size() > 0)
+						{
+								
+							for(int j=0;j<dataList.size();j++)
+							{	
+								CommonForm	cForm		=	dataList.get(j);
+								String		excelEmpId	=	cForm.getField1();
+								String		excelEmpName=	cForm.getField3()!=null && cForm.getField3().length() > 0 ? cForm.getField3() : "";
+								if(excelEmpId!=null && excelEmpId.length() > 0 &&  excelEmpId.equals(empId) && excelEmpName.equals(empName))
+								{
+									if(status!= null && status.length() > 0 && status.equalsIgnoreCase("ACTIVE"))
+									{	
+										recordFlag	=	true;
+										break;
+									}	
+								}
+								if( excelEmpId!=null && excelEmpId.length() > 0 && excelEmpId.equals(empId) && excelEmpName.equals(empName) && status!= null && status.length() > 0 && !status.equalsIgnoreCase("ACTIVE"))
+								{
+									statusFlag	=	true;
+									break;
+								}
+								/*if( excelEmpId!=null && excelEmpId.length() > 0 && excelEmpId.equals(empId) && excelEmpName.equals(empName) && status!= null && status.length() > 0 && status.equalsIgnoreCase("RESIGNED"))
+								{
+									resignedFlag	=	true;
+									break;
+								}*/
+									
+							}//end of for loop datalist	
+								
+							if(recordFlag == false && status!= null && status.length() > 0 && status.equalsIgnoreCase("ACTIVE"))
+							{
+								exitFlag				=	"true";
+								CommonForm	eForm		=	new CommonForm();	
+								empMsg	=	" Attendance Record Details Is Not Uploaded Against Employee Name : "+empName+".";
+								eForm.setField1(empMsg);
+								recordList.add(eForm);
+								
+							}	
+							if(statusFlag == true && status!= null && status.length() > 0 && !status.equalsIgnoreCase("ACTIVE"))
+							{
+								exitFlag				=	"true";
+								CommonForm	eForm		=	new CommonForm();	
+								if(status!= null && status.length() > 0 && status.equalsIgnoreCase("INACTIVE"))
+								{	
+									empMsg	=	" Attendance Record Details Is Uploaded Against Employee Name : "+empName+" Which Is Inactive Kindly Remove From Excel Sheet.";
+								}
+								else if(status!= null && status.length() > 0 && status.equalsIgnoreCase("RESIGNED"))
+								{
+									empMsg	=	" Attendance Record Details Is Uploaded Against Employee Name : "+empName+" Which Is Resigned Kindly Remove From Excel Sheet.";
+								}
+								else if(status!= null && status.length() > 0 && !status.equalsIgnoreCase("RESIGNED") && !status.equalsIgnoreCase("INACTIVE"))
+								{
+									empMsg	=	" Attendance Record Details Is Uploaded Against Employee Name : "+empName+" Which Is Not In Active State Kindly Remove From Excel Sheet.";
+								}
+								eForm.setField1(empMsg);
+								recordList.add(eForm);
+							}
+							if(resignedFlag == true)
+							{
+								exitFlag				=	"true";
+								CommonForm	eForm		=	new CommonForm();	
+								empMsg	=	" Attendance Record Details Is Uploaded Against Employee Name : "+empName+" Which Is Resigned Kindly Remove From Excel Sheet.";
+								eForm.setField1(empMsg);
+								recordList.add(eForm);
+							}
+							
+						}//end of if loop of datalist
+					}//end of for loop of emplist
+					
+					if(recordList!= null && recordList.size() > 0)
+					{
+						for(int cnt=0;cnt<recordList.size();cnt++)
+						{
+							CommonForm	eForm	=	recordList.get(cnt);
+							eForm.setField2(""+(cnt+1));
+						}
+						exitFlag				=	"true";
+						request.setAttribute("reqUploadedEmployeeList", recordList);
+					}
+				}//end of if loop of emplist
+			}	
+			/*END OF CODE FOR WHICH EMPLOYEE RECORD IS INSERT AND WHICH IS NOT*/
+			
+			
+			if(exitFlag != null && exitFlag.equals("false"))
+			{
+				//DO INSERTION
+				String		mode			=	request.getParameter("mode");
+				String		userName		=	(String)session.getAttribute("username");
+				String		saveResult		=	arBean.saveAttendanceRecord(arForm,dataList,userName,mode);
+				
+				if(saveResult!= null && saveResult.length() > 0 && !saveResult.equalsIgnoreCase("ERROR"))
+				{
+					String	msgType		=	saveResult.substring(0, 4);
+					saveResult			=	saveResult.substring(5, saveResult.length());
+					
+					request.setAttribute("msgType",msgType);
+					request.setAttribute("saveResult",saveResult);
+					
+					if(msgType!= null && msgType.length() > 0 && msgType.equals("PASS"))
+					{
+						arForm.reset(mapping, request);
+						mappingString	=	"showAttendanceRecordPage";
+						
+						CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+						String		sysdate		=		commonMethodBean.getDate();
+						String[]	date		=		sysdate.split("/");
+						
+						int			monthId		=		Integer.parseInt(date[1])-1;
+						int			year		=		Integer.parseInt(date[2]);
+						
+						String[]	monthArray	=		new String[12];	
+						
+						String	monthName		=	arBean.getMonthForInt((monthId));
+						
+						if(monthName != null && monthName.length() > 0 && !monthName.equals("invalid"))
+						{
+							for(int i=1;i< 3;i++)
+							{
+								boolean		flag	=	true;
+								monthId		=		Integer.parseInt(date[1])-1;
+								if(monthId	== 0)
+								{
+									flag	=	false;
+									if(i == 1)
+									{
+										monthId			=	10;
+										monthName		=	arBean.getMonthForInt(monthId);
+										monthArray[i-1]	=	monthName;
+									}
+									else
+									{
+										monthId			=	11;
+										monthName		=	arBean.getMonthForInt(monthId);
+										monthArray[i-1]	=	monthName;
+									}
+								}	
+								if(monthId	== 1)
+								{
+									if(i==1)
+									{
+										flag			=	false;
+										monthId			=	11;
+										monthName		=	arBean.getMonthForInt(monthId);
+										monthArray[i-1]	=	monthName;
+									}
+								}
+								if(flag	==	true)
+								{	
+									monthId			=	Integer.parseInt(date[1])-1;
+									if(i==1)
+									{	
+										monthId			=	monthId	-(i+1);//monthId - 2
+									}
+									else
+									{
+										monthId			=	monthId -(i-1);//monthId - 1
+									}
+									monthName		=	arBean.getMonthForInt(monthId);
+									monthArray[i-1]	=	monthName;
+									monthId			=	0;
+								}
+							}
+							monthId					=	Integer.parseInt(date[1])-1;
+							monthName				=	arBean.getMonthForInt(monthId);
+							monthArray[2]			=	monthName;
+							
+							/*for(int i=1;i< 3;i++)
+							{
+								boolean	flag	=	true;
+								monthId		=		Integer.parseInt(date[1])-1;
+								if(monthId	== 11)
+								{
+									//monthId		=		Integer.parseInt(date[1])-1;
+									//monthId			=	monthId+i;
+									flag	=	false;
+									if(i==1)
+									{	
+										monthId			=	0;
+										monthName		=	arBean.getMonthForInt(monthId);
+										monthArray[i+3]	=	monthName;
+									}
+									else
+									{
+										monthId			=	1;
+										monthName		=	arBean.getMonthForInt(monthId);
+										monthArray[i+3]	=	monthName;
+									}
+								}
+								if(monthId == 10)
+								{
+									if(i==2)
+									{
+										flag	=	false;
+										monthId			=	0;
+										monthName		=	arBean.getMonthForInt(monthId);
+										monthArray[i+3]	=	monthName;
+									}
+								}
+								if(flag	==	true)
+								{	
+									monthId		=		Integer.parseInt(date[1])-1;
+									monthId			=	monthId+i;
+									monthName		=	arBean.getMonthForInt(monthId);
+									monthArray[i+3]	=	monthName;
+								}	
+							}*/
+							
+							ArrayList<CommonForm> monthList		=	arBean.getMonthList(monthArray);
+							if(monthList!= null && monthList.size() > 0)
+							{
+								request.setAttribute("reqMonthList", monthList);
+								monthId					=	Integer.parseInt(date[1])-1;
+								if(monthId == 0)
+								{
+									monthId					=	11;
+									monthName				=	arBean.getMonthForInt(monthId);
+								}
+								else
+								{	
+									monthId					=	Integer.parseInt(date[1])-2;
+									monthName				=	arBean.getMonthForInt(monthId);
+								}
+								arForm.setMonth(monthName);
+							}
+						}
+						
+						int	[]	yearArray	=	new int[3];
+						yearArray[0]		=	year-2;
+						yearArray[1]		=	year-1;
+						yearArray[2]		=	year;
+						//yearArray[3]		=	year+1;
+						//yearArray[4]		=	year+2;
+						
+						ArrayList<CommonForm> yearList	=	arBean.getYearList(yearArray);
+						if(yearList!= null && yearList.size() > 0)
+						{
+							request.setAttribute("reqYearList", yearList);
+							String month	=	arForm.getMonth();
+							if(month!= null && month.length() > 0 && month.equalsIgnoreCase("December"))
+							{
+								arForm.setYear(""+(year-1));
+							}
+							else
+							{
+								arForm.setYear(""+year);
+							}	
+						}
+						
+						int [] daysInMonths = 	{31,28,31,30,31,30,31,31,30,31,30,31,29};
+						monthId				=	Integer.parseInt(date[1])-1;
+						int noOfDays		=	0;
+						year	=	Integer.parseInt(date[2]);
+						boolean		yearFlag	=	true;
+						if((year % 4 == 0 && year % 100 != 0)||(year % 400 == 0))
+						{
+							if((monthId-1) == 1)
+							{
+								yearFlag		=	false;
+								noOfDays		=	daysInMonths[12];
+							}
+						}
+						if(monthId == 0)
+						{
+							yearFlag		=	false;
+							noOfDays		=	daysInMonths[0];
+						}
+						if(yearFlag == true)
+						{	
+							 noOfDays		=	daysInMonths[monthId-1];
+						}	
+						arForm.setWorkingDay(""+noOfDays);
+					}
+					
+					
+				}
+		
+			}
+			
+			/* code for set month,year and no of days in month in fail case
+			 * */
+			if(exitFlag!= null && exitFlag.equals("true"))
+			{
+				mappingString	=	"showAttendanceRecordPage";	
+				CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+				String		sysdate		=		commonMethodBean.getDate();
+				String[]	date		=		sysdate.split("/");
+				
+				int			monthId		=		Integer.parseInt(date[1])-1;
+				int			year		=		Integer.parseInt(date[2]);
+				
+				String[]	monthArray	=		new String[12];	
+				
+				String	monthName		=	arBean.getMonthForInt((monthId));
+				
+				if(monthName != null && monthName.length() > 0 && !monthName.equals("invalid"))
+				{
+					for(int i=1;i< 3;i++)
+					{
+						boolean		flag	=	true;
+						monthId		=		Integer.parseInt(date[1])-1;
+						if(monthId	== 0)
+						{
+							flag	=	false;
+							if(i == 1)
+							{
+								monthId			=	10;
+								monthName		=	arBean.getMonthForInt(monthId);
+								monthArray[i-1]	=	monthName;
+							}
+							else
+							{
+								monthId			=	11;
+								monthName		=	arBean.getMonthForInt(monthId);
+								monthArray[i-1]	=	monthName;
+							}
+						}	
+						if(monthId	== 1)
+						{
+							if(i==1)
+							{
+								flag			=	false;
+								monthId			=	11;
+								monthName		=	arBean.getMonthForInt(monthId);
+								monthArray[i-1]	=	monthName;
+							}
+						}
+						if(flag	==	true)
+						{	
+							monthId			=	Integer.parseInt(date[1])-1;
+							if(i==1)
+							{	
+								monthId			=	monthId	-(i+1);//monthId - 2
+							}
+							else
+							{
+								monthId			=	monthId -(i-1);//monthId - 1
+							}
+							monthName		=	arBean.getMonthForInt(monthId);
+							monthArray[i-1]	=	monthName;
+							monthId			=	0;
+						}
+					}
+					monthId					=	Integer.parseInt(date[1])-1;
+					monthName				=	arBean.getMonthForInt(monthId);
+					monthArray[2]			=	monthName;
+					
+					/*for(int i=1;i< 3;i++)
+					{
+						boolean	flag	=	true;
+						monthId		=		Integer.parseInt(date[1])-1;
+						if(monthId	== 11)
+						{
+							//monthId		=		Integer.parseInt(date[1])-1;
+							//monthId			=	monthId+i;
+							flag	=	false;
+							if(i==1)
+							{	
+								monthId			=	0;
+								monthName		=	arBean.getMonthForInt(monthId);
+								monthArray[i+3]	=	monthName;
+							}
+							else
+							{
+								monthId			=	1;
+								monthName		=	arBean.getMonthForInt(monthId);
+								monthArray[i+3]	=	monthName;
+							}
+						}
+						if(monthId == 10)
+						{
+							if(i==2)
+							{
+								flag	=	false;
+								monthId			=	0;
+								monthName		=	arBean.getMonthForInt(monthId);
+								monthArray[i+3]	=	monthName;
+							}
+						}
+						if(flag	==	true)
+						{	
+							monthId		=		Integer.parseInt(date[1])-1;
+							monthId			=	monthId+i;
+							monthName		=	arBean.getMonthForInt(monthId);
+							monthArray[i+3]	=	monthName;
+						}	
+					}*/
+					
+					ArrayList<CommonForm> monthList		=	arBean.getMonthList(monthArray);
+					if(monthList!= null && monthList.size() > 0)
+					{
+						request.setAttribute("reqMonthList", monthList);
+						/*monthId					=	Integer.parseInt(date[1])-1;
+						if(monthId == 0)
+						{
+							monthId					=	11;
+							monthName				=	arBean.getMonthForInt(monthId);
+						}
+						else
+						{	
+							monthId					=	Integer.parseInt(date[1])-2;
+							monthName				=	arBean.getMonthForInt(monthId);
+						}*/
+						
+						arForm.setMonth(arForm.getMonth());
+					}
+				}
+				
+				int	[]	yearArray	=	new int[3];
+				yearArray[0]		=	year-2;
+				yearArray[1]		=	year-1;
+				yearArray[2]		=	year;
+				//yearArray[3]		=	year+1;
+				//yearArray[4]		=	year+2;
+				
+				ArrayList<CommonForm> yearList	=	arBean.getYearList(yearArray);
+				if(yearList!= null && yearList.size() > 0)
+				{
+					request.setAttribute("reqYearList", yearList);
+					/*String month	=	arForm.getMonth();
+					if(month!= null && month.length() > 0 && month.equalsIgnoreCase("December"))
+					{
+						arForm.setYear(""+(year-1));
+					}
+					else
+					{
+						arForm.setYear(""+year);
+					}*/
+					arForm.setYear(arForm.getYear());
+				}
+				
+				/*int [] daysInMonths = 	{31,28,31,30,31,30,31,31,30,31,30,31,29};
+				monthId				=	Integer.parseInt(date[1])-1;
+				int noOfDays		=	0;
+				year	=	Integer.parseInt(date[2]);
+				boolean		yearFlag	=	true;
+				if((year % 4 == 0 && year % 100 != 0)||(year % 400 == 0))
+				{
+					if((monthId-1) == 1)
+					{
+						yearFlag		=	false;
+						noOfDays		=	daysInMonths[12];
+					}
+				}
+				if(monthId == 0)
+				{
+					yearFlag		=	false;
+					noOfDays		=	daysInMonths[0];
+				}
+				if(yearFlag == true)
+				{	
+					 noOfDays		=	daysInMonths[monthId-1];
+				}	*/
+				//arForm.setWorkingDay(""+noOfDays);
+				
+				/*end */
+			}	
+				
+		}
+		catch (Exception e)
+		{
+			System.out.println("ERROR While Uploading File In AttendanceRecordAction.getUploadFile : "+e); 
+		}
+		
+		return mapping.findForward(mappingString);
+	}
+	
+	/**
+	 * Action Name 	: overwriteAttendanceRecordYesNO
+	 * Purpose		: To overwriteAttendanceRecordYesNO
+	 * @author		: Prashant
+	 * Date			: 13/04/2012
+	 */
+	public ActionForward overwriteAttendanceRecordYesNO(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		PrintWriter				writer			=	response.getWriter();
+		String					resultString	=	"";
+		String					month			=	request.getParameter("month");
+		String					year			=	request.getParameter("year");
+		AttendanceRecordBean	arBean			=	new AttendanceRecordBean();
+		int						count			=	0;
+		count		=	arBean.getCountOfMonthWiseYear(month,year);
+		if(count > 0)
+		{
+			resultString	=	"YES";
+		}
+		else
+		{
+			resultString	=	"NO";
+		}
+		writer.print(resultString);
+		return mapping.findForward(null);
+	}
+	
+	/**
+	 * Action Name 	: monthWiseYearChange
+	 * Purpose		: To monthWiseYearChange
+	 * @author		: Prashant
+	 * Date			: 13/04/2012
+	 */
+	public ActionForward monthWiseYearChange(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		PrintWriter			writer				=	response.getWriter();
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		String				outputString		=	"";
+		String				statusWiseYearSet	=	request.getParameter("status");
+		String				sysdate				=	commonMethodBean.getDate();
+		String[]			date				=	sysdate.split("/");
+		int					year				=	Integer.parseInt(date[2]);
+		int	[]	yearArray	=	new int[3];
+		yearArray[0]		=	year-2;
+		yearArray[1]		=	year-1;
+		yearArray[2]		=	year;
+		
+		/*if(yearArray!= null && yearArray.length > 0)
+		{
+				outputString	+=	" <select id='month' styleClass='listbox' onchange='return noOfDaysInMonth()'>";
+			for(int i=0;i<yearArray.length;i++)
+			{
+				outputString	+=	"<option value='"+yearArray[i]+"'>"+yearArray[i]+"</option> ";
+			}
+				outputString	+=	" </select> ";
+		}*/
+		if(statusWiseYearSet!= null && statusWiseYearSet.length() > 0 && statusWiseYearSet.equalsIgnoreCase("next"))
+		{
+			outputString	=	""+yearArray[2];
+		}
+		if(statusWiseYearSet!= null && statusWiseYearSet.length() > 0 && statusWiseYearSet.equalsIgnoreCase("previous"))
+		{
+			outputString	=	""+yearArray[1];
+		}
+		writer.print(outputString);
+		return mapping.findForward(null);
+	}
+	
+	/**
+	 * Action Name 	: getFieldDescription
+	 * Purpose		: To getFieldDescription
+	 * @author		: Prashant
+	 * Date			: 13/04/2012
+	 */
+	public ActionForward getFieldDescription(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		return mapping.findForward("showExcelFieldDescription");
+	}
+	
+	/**
+	 * Action Name 	: showUploadAttendanceRecord
+	 * Purpose		: To showUploadAttendanceRecord
+	 * @author		: Prashant
+	 * Date			: 14/04/2012
+	 */
+	public ActionForward showUploadAttendanceRecord(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		CommonMethodBean		commonMethodBean	=	new CommonMethodBean();
+		//AttendanceRecordForm	arForm				=	(AttendanceRecordForm)form;
+		AttendanceRecordBean	arBean				=	new AttendanceRecordBean();
+		HttpSession				session				=	request.getSession();
+		
+		String				sysdate				=	commonMethodBean.getDate();
+		String[]			date				=	sysdate.split("/");
+		int					year				=	Integer.parseInt(date[2]);
+		int	[]				yearArray			=	new int[5];
+		
+		yearArray[0]		=	year-4;
+		yearArray[1]		=	year-3;
+		yearArray[2]		=	year-2;
+		yearArray[3]		=	year-1;
+		yearArray[4]		=	year;
+		
+		ArrayList<CommonForm>	yearList	=	arBean.getYearList(yearArray);
+		if(yearList!= null && yearList.size() > 0)
+		{
+			request.setAttribute("reqYearList", yearList);
+			//arForm.setYear(""+yearArray[4]);
+		}
+		
+		String rarId		=	"22";
+		String userProcess	=	(String)session.getAttribute("userProcess");
+		
+		String validLink	=	commonMethodBean.getValidOrNot(userProcess, ","+rarId+",");
+		if(validLink!=null && validLink.equalsIgnoreCase("NOTVALID"))
+		{
+			return mapping.findForward("invalid");
+		}
+		
+		return mapping.findForward("showUploadAttendanceRecord");
+	}
+	
+
+	/**
+	 * Action Name 	: getUploadedAttendanceList
+	 * Purpose		: To getUploadedAttendanceList
+	 * @author		: Prashant
+	 * Date			: 14/04/2012
+	 */
+	public ActionForward getUploadedAttendanceList(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		CommonMethodBean		commonMethodBean	=	new CommonMethodBean();
+		AttendanceRecordForm	arForm				=	(AttendanceRecordForm)form;
+		AttendanceRecordBean	arBean				=	new AttendanceRecordBean();
+		
+		ArrayList<CommonForm>	dataList			=	arBean.getUploadedAttendanceList(arForm);
+		if(dataList!= null && dataList.size() > 0)
+		{
+			request.setAttribute("reqUploaedARList", dataList);
+		}
+		else
+		{
+			request.setAttribute("msgType", "FAIL");
+			request.setAttribute("saveResult", "NO DATA FOUND.");
+		}
+		
+		String				sysdate				=	commonMethodBean.getDate();
+		String	[]			date				=	sysdate.split("/");
+		int					year				=	Integer.parseInt(date[2]);
+		int		[]			yearArray			=	new int[5];
+							yearArray[0]		=	year-4;
+							yearArray[1]		=	year-3;
+							yearArray[2]		=	year-2;
+							yearArray[3]		=	year-1;
+							yearArray[4]		=	year;
+		
+		ArrayList<CommonForm>	yearList	=	arBean.getYearList(yearArray);
+		if(yearList!= null && yearList.size() > 0)
+		{
+			request.setAttribute("reqYearList", yearList);
+		}
+		
+		return mapping.findForward("showUploadAttendanceRecord");
+	}
+	
+	/**
+	 * Action Name 	: checkForMonthandYearValidation
+	 * Purpose		: To checkForMonthandYearValidation
+	 * @author		: Prashant
+	 * Date			: 14/04/2012
+	 */
+	public ActionForward checkForMonthandYearValidation(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		PrintWriter			writer				=	response.getWriter();
+		String				outputString		=	"";
+		String				sysdate				=	commonMethodBean.getDate();
+		String	[]			date				=	sysdate.split("/");
+		int					currentMonth		=	Integer.parseInt(date[1]);
+		int					currentYear			=	Integer.parseInt(date[2]);
+		
+		String	[]	monthArray		=	{"","January","February","March","April","May","June","July","August","September","October","November","December"};
+		String		reqMonthName	=	request.getParameter("month");
+		String		reqYearValue	=	request.getParameter("year");
+		int			selectdYear		=	Integer.parseInt(reqYearValue);
+		int			selectedMonthId	=	0;
+		
+		/*boolean		yearflag		=	false;
+		boolean		monthFlag		=	false;
+		if(currentYear >= selectdYear)
+		{	
+			if(monthArray!= null && monthArray.length > 0)
+			{
+				for(int i=0;i<monthArray.length ;i++)
+				{
+					if(reqMonthName!= null && reqMonthName.length() > 0 && reqMonthName.equals(monthArray[i]))
+					{
+						selectedMonthId		=	i;
+						break;
+					}
+				}
+				if((selectedMonthId == 12 || selectedMonthId == 11))
+				{
+					//selectedMonthId	=	0;
+				}
+			}	
+			if(currentMonth >= selectedMonthId)
+			{
+				monthFlag	=	true;
+				if(selectedMonthId == 0)
+				{
+					if(currentYear > selectdYear)
+					{
+						yearflag	=	true;
+					}
+				}
+				else
+				{
+					if(currentYear >= selectdYear)
+					{
+						yearflag	=	true;
+					}
+				}
+				
+			}
+		}
+		if(yearflag == false || monthFlag == false)
+		{
+			outputString	=	"FAIL";
+		}
+		if(yearflag == true && monthFlag == true)
+		{
+			outputString	=	"PASS";
+		}
+		*/	
+		
+		boolean		flag		=	false;
+		if(monthArray!= null && monthArray.length > 0)
+		{
+			for(int i=0;i<monthArray.length ;i++)
+			{
+				if(reqMonthName!= null && reqMonthName.length() > 0 && reqMonthName.equals(monthArray[i]))
+				{
+					selectedMonthId		=	i;
+					break;
+				}
+			}						
+		}
+		
+		String	currentDate		=	"01"+"/"+currentMonth+"/"+currentYear;
+		String	selectedDate	=	"01"+"/"+selectedMonthId+"/"+selectdYear;
+		
+		try
+		{
+			DateFormat formatter 		= new SimpleDateFormat("dd/MM/yyyy");
+			java.util.Date d1	 	= 	formatter.parse(currentDate);
+			java.util.Date d2		=	formatter.parse(selectedDate);
+			if(d1.compareTo(d2) > 0)
+			{
+				flag	=	true;
+			}
+		}
+		catch(Exception e)
+		{
+			System.out.println("Exception In AttendanceRecordAction.checkForMonthandYearValidation : "+e);
+		}
+		if(flag)
+		{
+			outputString	=	"PASS";
+		}
+		else
+		{
+			outputString	=	"FAIL";
+		}
+		writer.print(outputString);
+		
+		return	mapping.findForward(null);
+	}
+	
+	/**
+	 * Action Name 	: checkSalarySlipGeneration
+	 * Purpose		: To checkSalarySlipGeneration
+	 * @author		: Prashant
+	 * Date			: 04/05/2012
+	 */
+	public ActionForward checkSalarySlipGeneration(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		AttendanceRecordBean	attendanceRecordBean	=	new AttendanceRecordBean();
+		PrintWriter				writer					=	response.getWriter();
+		String					outputString			=	"";
+		String					month					=	request.getParameter("month");
+		String					year					=	request.getParameter("year");
+		
+		int		count					=	attendanceRecordBean.checkSalarySlipGeneration(month,year);
+		if(count > 0)
+		{
+			outputString	=	"FAIL";
+		}
+		else
+		{
+			outputString	=	"PASS";
+		}
+		writer.print(outputString);
+		
+		return	mapping.findForward(null);
+	}
+}

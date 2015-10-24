@@ -1,0 +1,280 @@
+package com.inf.dvo.mbm.actions.Master;
+
+import java.io.IOException;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionForward;
+import org.apache.struts.action.ActionMapping;
+
+import com.inf.dvo.mbm.Bean.CommonMethodBean;
+import com.inf.dvo.mbm.Bean.Master.DepartmentBean;
+import com.inf.dvo.mbm.DAO.CommonForm;
+import com.inf.dvo.mbm.DAO.Master.DepartmentForm;
+import com.inf.dvo.mbm.actions.CMGMTDispatchAction;
+
+
+public class DepartmentAction extends  CMGMTDispatchAction
+{
+	
+	/**
+	 * Action Name 	: showDepartmentMasterList
+	 * Purpose		: To showDepartmentMasterList
+	 * @author		: Prashant
+	 * Date			: 09/03/2012
+	 */
+	public ActionForward showDepartmentMasterList(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		HttpSession				session				=	request.getSession();
+		CommonMethodBean		commonMethodBean	=	new CommonMethodBean();
+		DepartmentForm	departmentForm	=	(DepartmentForm)form;
+		departmentForm.reset(mapping, request);
+		
+		String rarId		=	"7";
+		String userProcess	=	(String)session.getAttribute("userProcess");		
+		String validLink	=	commonMethodBean.getValidOrNot(userProcess, ","+rarId+",");
+		if(validLink!=null && validLink.equalsIgnoreCase("NOTVALID"))
+		{
+			return mapping.findForward("invalid");
+		}
+		return mapping.findForward("showDepartmentMasterList");
+	}
+	
+	/**
+	 * Action Name 	: showSearchDepartmentMasterList
+	 * Purpose		: To showSearchDepartmentMasterList 
+	 * @author		: Prashant
+	 * Date			: 09/03/2012
+	 */
+	
+	public ActionForward showSearchDepartmentMasterList(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		DepartmentForm	departmentForm	=	(DepartmentForm)form;
+		DepartmentBean	deptBean		=	new DepartmentBean();
+		
+		ArrayList<CommonForm> dataList		=	deptBean.getSearchDepartmentList(departmentForm);
+		
+		if(dataList!= null && dataList.size() > 0)
+		{
+			request.setAttribute("reqDepartmentMasterList",dataList);
+		}
+		else
+		{
+			request.setAttribute("msgType", "FAIL");
+			request.setAttribute("saveResult", "NO DATA FOUND.");
+		}
+		
+		return mapping.findForward("showDepartmentMasterList");
+	}
+	
+	/**
+	 * Action Name 	: showDepartmentMasterPage
+	 * Purpose		: To showDepartmentMasterPage
+	 * @author		: Prashant
+	 * Date			: 09/03/2012
+	 */
+	
+	public ActionForward showDepartmentMasterPage(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		DepartmentForm	departmentForm	=	(DepartmentForm)form;
+		departmentForm.reset(mapping, request);
+		
+		departmentForm.setStatus("ACTIVE");
+		
+		request.setAttribute("actions","add");
+		
+		return mapping.findForward("showDepartmentMasterPage");
+	}
+	
+	/**
+	 * Action Name 	: saveDepartmentMaster
+	 * Purpose		: To saveDepartmentMaster
+	 * @author		: Prashant
+	 * Date			: 09/03/2012
+	 */
+	
+	public ActionForward saveDepartmentMaster(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		HttpSession	session		=	request.getSession();
+		
+		DepartmentForm	departmentForm	=	(DepartmentForm)form;
+		DepartmentBean	departBean		=	new DepartmentBean();
+		
+		String		mappingString	=	"ERROR";
+		
+		String		mode			=	request.getParameter("mode");
+		
+		String		userName		=	(String)session.getAttribute("username");
+		
+		String		saveResult		=	departBean.saveDepartmentMaster(departmentForm,userName);
+		
+		if(saveResult!= null && saveResult.length() > 0 && !saveResult.equalsIgnoreCase("ERROR"))
+		{
+				String	msgType		=	saveResult.substring(0,4);
+				saveResult			=	saveResult.substring(5,saveResult.length());
+				
+				request.setAttribute("msgType",msgType);
+				request.setAttribute("saveResult",saveResult);
+				
+				if(msgType!= null && msgType.length() > 0 && msgType.equals("PASS"))
+				{
+					if(mode!= null && mode.length() > 0 && mode.equalsIgnoreCase("SAVE"))
+					{
+						mappingString	=	"showDepartmentMasterPage";
+						departmentForm.reset(mapping, request);
+						
+						departmentForm.setStatus("ACTIVE");
+						
+						request.setAttribute("actions","add");
+					}
+					
+					else if(mode!= null && mode.length() > 0 && mode.equalsIgnoreCase("SAVEEXIT"))
+					{
+						mappingString	=	"showDepartmentMasterList";
+						
+						departmentForm.reset(mapping, request);
+						
+						request.setAttribute("actions","add");
+					}
+						
+				}
+				else if(msgType!= null && msgType.length() > 0 && msgType.equals("FAIL"))
+				{
+					mappingString	=	"showDepartmentMasterPage";
+					request.setAttribute("actions","add");
+				}
+		}
+		return mapping.findForward(mappingString);
+	}
+	
+	
+	/**
+	 * Action Name 	: showModifyDepartmentMaster
+	 * Purpose		: To showModifyDepartmentMaster
+	 * @author		: Prashant
+	 * Date			: 07/03/2012
+	 */
+	
+	public ActionForward showModifyDepartmentMaster(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		DepartmentForm	departmentForm	=	(DepartmentForm)form;
+		DepartmentBean	departBean		=	new DepartmentBean();
+		
+		String		departmentId	=	request.getParameter("department_id")!= null && request.getParameter("department_id").length() > 0 ? request.getParameter("department_id") : "";
+		
+		ArrayList<CommonForm> modifyData	=	departBean.getDataForModify(departmentId);
+		
+		if(modifyData!= null && modifyData.size() > 0)
+		{
+			CommonForm	cForm	=	modifyData.get(0);
+			departmentForm.setDepartmentId(cForm.getField1());
+			departmentForm.setDepartmentName(cForm.getField2());
+			departmentForm.setDepartmentDesc(cForm.getField3());
+			departmentForm.setStatus(cForm.getField4());
+			
+		}
+		
+		request.setAttribute("actions","edit");
+		
+		return mapping.findForward("showDepartmentMasterPage");
+	}
+	
+	/**
+	 * Action Name 	: modifyDepartmentMaster
+	 * Purpose		: To modifyDepartmentMaster
+	 * @author		: Prashant
+	 * Date			: 09/03/2012
+	 */
+	
+	public ActionForward modifyDepartmentMaster(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		HttpSession	session		=	request.getSession();
+		
+		DepartmentForm	departmentForm	=	(DepartmentForm)form;
+		DepartmentBean	departBean		=	new DepartmentBean();
+
+		
+		String		mappingString	=	"ERROR";
+		String		userName		=	(String)session.getAttribute("username");
+		
+		String		saveResult		=	departBean.getModifyDepartmentMaster(departmentForm,userName);
+		
+		if(saveResult!= null && saveResult.length() > 0 && !saveResult.equalsIgnoreCase("ERROR"))
+		{
+				String	msgType		=	saveResult.substring(0,4);
+				saveResult			=	saveResult.substring(5,saveResult.length());
+				request.setAttribute("msgType",msgType);
+				request.setAttribute("saveResult",saveResult);
+				
+				if(msgType!= null && msgType.length() > 0 && msgType.equals("PASS"))
+				{
+					departmentForm.reset(mapping, request);
+					mappingString	=	"showDepartmentMasterList";
+				}
+				
+				else if(msgType!= null && msgType.length() > 0 && msgType.equals("FAIL"))
+				{
+					mappingString	=	"showDepartmentMasterPage";
+					request.setAttribute("actions","edit");
+				}
+		}
+		return mapping.findForward(mappingString);
+	}
+	
+	/**
+	 * Action Name 	: deleteDepartment
+	 * Purpose		: To deleteDepartment
+	 * @author		: Prashant
+	 * Date			: 09/03/2012
+	 */
+	
+	public ActionForward deleteDepartment(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		DepartmentForm	departmentForm	=	(DepartmentForm)form;
+		DepartmentBean	departBean		=	new DepartmentBean();
+		
+		String		mappingString	=	"ERROR";
+		String		departmentId		=	request.getParameter("department_id");
+		String		departmentName		=	request.getParameter("department_name");
+		
+		String		saveResult		=	departBean.deleteDeaprtment(departmentId,departmentName);
+		
+		if(saveResult != null && saveResult.length() > 0 && !saveResult.equalsIgnoreCase("ERROR"))
+		{
+			String	msgType		=	saveResult.substring(0,4);
+			saveResult			=	saveResult.substring(5,saveResult.length());
+			
+			request.setAttribute("msgType",msgType);
+			request.setAttribute("saveResult",saveResult);
+			
+			if(msgType!= null && msgType.length() > 0 && msgType.equals("PASS"))
+			{
+				//departmentForm.reset(mapping, request);
+				mappingString	=	"showDepartmentMasterList";
+				
+				ArrayList<CommonForm> dataList		=	departBean.getSearchDepartmentList(departmentForm);
+				if(dataList!= null && dataList.size() > 0)
+				{
+					request.setAttribute("reqDepartmentMasterList",dataList);
+				}
+			}
+			else if(msgType!= null && msgType.length() > 0 && msgType.equals("FAIL"))
+			{
+				mappingString	=	"showDepartmentMasterList";
+				
+				ArrayList<CommonForm> dataList		=	departBean.getSearchDepartmentList(departmentForm);
+				if(dataList!= null && dataList.size() > 0)
+				{
+					request.setAttribute("reqDepartmentMasterList",dataList);
+				}
+				
+			}
+			
+		}
+		return mapping.findForward(mappingString);
+	}
+	
+}

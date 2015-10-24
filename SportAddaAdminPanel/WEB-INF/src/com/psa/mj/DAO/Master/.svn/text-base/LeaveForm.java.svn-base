@@ -1,0 +1,68 @@
+package com.inf.dvo.mbm.DAO.Master;
+
+import javax.servlet.http.HttpServletRequest;
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionMapping;
+
+
+public class LeaveForm extends ActionForm
+{
+
+	private static final long serialVersionUID = 1L;
+	private String	leaveId;
+	private	String	leaveTypeName;
+	private	String	noOfLeave;
+	private String	leaveDesc;
+	private String	status;
+	
+	public void reset(ActionMapping mapping,HttpServletRequest request)
+	{
+		leaveId			=	null;
+		leaveTypeName	=	null;
+		noOfLeave		=	null;
+		leaveDesc		=	null;
+		status			=	null;
+	}
+
+	public String getLeaveId() {
+		return leaveId;
+	}
+
+	public void setLeaveId(String leaveId) {
+		this.leaveId = leaveId;
+	}
+
+	public String getLeaveTypeName() {
+		return leaveTypeName;
+	}
+
+	public void setLeaveTypeName(String leaveTypeName) {
+		this.leaveTypeName = leaveTypeName;
+	}
+
+	public String getNoOfLeave() {
+		return noOfLeave;
+	}
+
+	public void setNoOfLeave(String noOfLeave) {
+		this.noOfLeave = noOfLeave;
+	}
+
+	public String getLeaveDesc() {
+		return leaveDesc;
+	}
+
+	public void setLeaveDesc(String leaveDesc) {
+		this.leaveDesc = leaveDesc;
+	}
+
+	public String getStatus() {
+		return status;
+	}
+
+	public void setStatus(String status) {
+		this.status = status;
+	}
+	
+	
+}

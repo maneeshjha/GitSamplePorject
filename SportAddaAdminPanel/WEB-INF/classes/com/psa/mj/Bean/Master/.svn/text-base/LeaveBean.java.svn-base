@@ -1,0 +1,346 @@
+package com.inf.dvo.mbm.Bean.Master;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.util.ArrayList;
+import com.inf.dvo.mbm.Bean.CommonMethodBean;
+import com.inf.dvo.mbm.DAO.CommonForm;
+import com.inf.dvo.mbm.DAO.Master.LeaveForm;
+import com.inf.dvo.mbm.DBConnection.DBConnection;
+
+public class LeaveBean 
+{
+	DBConnection	dbConn	=	new DBConnection();
+
+	/**
+	 * Method Name  : saveLeaveMaster
+	 * Purpose		: To saveLeaveMaster
+	 * @author		: Prashant
+	 * Date			: 12/03/2012 
+	 */
+	public String saveLeaveMaster(LeaveForm leaveForm, String userName) 
+	{
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		String			outputString			=	"";
+		Connection		con						=	null;
+		PreparedStatement	pst					=	null;
+		String				query				=	"";
+		String				leaveType			=	leaveForm.getLeaveTypeName().trim().toUpperCase();
+		String				noOfLeave			=	leaveForm.getNoOfLeave().trim();
+		String				leaveDesc			=	leaveForm.getLeaveDesc().trim().toUpperCase();
+		String				status				=	leaveForm.getStatus();
+		try
+		{
+			
+			if(commonMethodBean.checkDuplicate("leavetype_master","leavetype",leaveType) == false)
+			{
+				
+				outputString	=	"FAIL.LEAVE TYPE NAME : "+leaveType+" IS ALREADY PRESENT.";
+			}
+			else
+			{	
+				con		=	dbConn.connect();
+				query	+=	"	insert into leavetype_master (leavetype, noofleaves, leavetype_desc, status, createdby, createdon, updatedby, updatedon)" +
+							"	values	(?, ?, ?, ?, ?, sysdate(), ?, sysdate()	)";
+				pst		=	con.prepareStatement(query);
+				pst.setString(1,leaveType);
+				pst.setString(2,noOfLeave);
+				pst.setString(3,leaveDesc);
+				pst.setString(4,status);
+				pst.setString(5,userName);
+				pst.setString(6,userName);
+				
+				int	count	=	pst.executeUpdate();
+				if(count > 0)
+				{
+					outputString	=	"PASS.LEAVE TYPE NAME : "+leaveType+" SAVED SUCCESSFULLY.";
+				}
+				pst.close();
+			}
+		}
+		catch(Exception e)
+		{
+			outputString = "ERROR";
+			System.out.println("ERROR In LeaveBean.saveLeaveMaster: "+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				outputString = "ERROR";
+				System.out.println("Exception While Closing The Connection in LeaveBean.saveLeaveMaster: "+e);
+			}
+		}
+		return outputString;
+	}
+	
+	/**
+	 * Method Name  : getSearchLeaveList
+	 * Purpose		: To getSearchLeaveList
+	 * @author		: Prashant
+	 * Date			: 12/03/2012 
+	 */
+	public ArrayList<CommonForm> getSearchLeaveList(LeaveForm leaveFrom)
+	{
+		ArrayList<CommonForm> dataList		=	new ArrayList<CommonForm>();
+		//CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		Connection		con			=	null;
+		Statement		st			=	null;
+		ResultSet		rs			=	null;
+		String			query		=	"";
+		int				srNo		=	1;
+		String			leaveMasterId	=	leaveFrom.getLeaveId();
+		String			status			=	leaveFrom.getStatus();	
+		try
+		{
+			query	+=	"	select 	leavemasterid, leavetype, noofleaves, leavetype_desc, status " +
+						"	from 	leavetype_master " +
+						"	where	0=0 ";
+			if(leaveMasterId!= null && leaveMasterId.length() > 0)
+			{
+			query	+=	"			and	leavemasterid	=	'" +leaveMasterId+ "'";
+			}
+			if(status!= null && status.length() > 0)
+			{	
+			query	+=	"			and	status		=	'"+status+"'";
+			}
+			
+			query	+=	"	order by leavetype ";
+			
+			con		=	dbConn.connect();
+			st		=	con.createStatement();
+			rs		=	st.executeQuery(query);
+			
+			while(rs.next())
+			{
+				CommonForm	cForm	=	new CommonForm();
+				cForm.setField1(""+(srNo++));//SRNO
+				cForm.setField2(rs.getString(1));//leavemasterid
+				cForm.setField3(rs.getString(2));//leavetype
+				cForm.setField4(rs.getString(3));//noofleaves
+				cForm.setField5(rs.getString(4)!= null && rs.getString(4).length() > 0 ? rs.getString(4) : "-");//leavetype_desc
+				cForm.setField6(rs.getString(5));//status
+				
+				dataList.add(cForm);
+			}
+		}
+		catch(Exception e)
+		{
+			System.out.println("ERROR In LeaveBean.getSearchLeaveList : "+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				System.out.println("Exception While Closing The Connection in LeaveBean.getSearchLeaveList: "+e);
+			}
+		}
+		return dataList;
+	}
+	/**
+	 * Method Name  : getDataForModify
+	 * Purpose		: To getDataForModify
+	 * @author		: Prashant
+	 * Date			: 12/03/2012 
+	 */
+	public ArrayList<CommonForm> getDataForModify(String leaveId)
+	{
+		ArrayList<CommonForm> dataList	=	new ArrayList<CommonForm>();
+		Connection	con		=	null;
+		Statement	st		=	null;
+		ResultSet	rs		=	null;
+		String		query	=	"";
+		try
+		{
+			query	+=	"	select 	leavemasterid, leavetype, noofleaves, leavetype_desc, status 	 " +
+						"	from 	leavetype_master" +
+						"	where   leavemasterid	=	'"+leaveId+"'";
+							
+			con		=	dbConn.connect();
+			st		=	con.createStatement();
+			rs		=	st.executeQuery(query);
+			while(rs.next())
+			{
+				CommonForm	cForm	=	new CommonForm();
+				cForm.setField1(rs.getString(1));//leavemasterid
+				cForm.setField2(rs.getString(2));//leavetype
+				cForm.setField3(rs.getString(3));//noofleaves
+				cForm.setField4(rs.getString(4)!= null && rs.getString(4).length() > 0 ? rs.getString(4) : "");//leavetype_desc
+				cForm.setField5(rs.getString(5));//status
+				
+				dataList.add(cForm);
+			}
+		}
+		catch(Exception e)
+		{
+			System.out.println("ERROR In LeaveBean.getDataForModify : "+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				System.out.println("Exception While Closing The Connection in LeaveBean.getDataForModify : "+e);
+			}
+		}
+		return dataList;
+	}
+
+	/**
+	 * Method Name  : getModifyLeaveTypeMaster
+	 * Purpose		: To getModifyLeaveTypeMaster
+	 * @author		: Prashant
+	 * Date			: 12/03/2012 
+	 */
+	public String getModifyLeaveTypeMaster(LeaveForm leaveFrom, String userName) 
+	{
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		String				outputString		=	"";
+		Connection			con					=	null;
+		PreparedStatement	pst				=	null;
+		String			query				=	"";
+		
+		String			leaveId				=	leaveFrom.getLeaveId();
+		String			leaveType			=	leaveFrom.getLeaveTypeName().trim().toUpperCase();
+		String			noOfLeave			=	leaveFrom.getNoOfLeave().trim();
+		String			leaveDesc			=	leaveFrom.getLeaveDesc().trim().toUpperCase();
+		String			status				=	leaveFrom.getStatus();
+		try
+		{
+			if(commonMethodBean.checkDuplicateForModification("leavetype_master", "leavetype", leaveType, "leavemasterid", leaveId) == false)
+			{
+				outputString	=	"FAIL.LEAVE TYPE : "+leaveType+" IS ALREADY PRESENT.";
+			}	
+			else
+			{	
+					query		+=	"	update  leavetype_master " +
+									"	set		leavetype		=	?, " +
+									"			noofleaves		=	?, " +
+									"			leavetype_desc	=	?, " +
+									"			status			=	?, " +
+									"			updatedby		=	?, " +
+									"			updatedon		=	sysdate()" +
+									"	where	leavemasterid	=	?  ";
+					
+					con			=	dbConn.connect();
+					pst			=	con.prepareStatement(query);
+					
+					pst.setString(1,leaveType);
+					pst.setString(2,noOfLeave);
+					pst.setString(3,leaveDesc);
+					pst.setString(4,status);
+					pst.setString(5,userName);
+					pst.setString(6,leaveId);
+					
+					int	cnt		=	pst.executeUpdate();
+					if(cnt > 0)
+					{
+						outputString	=	"PASS.LEAVE TYPE : "+leaveType+" MODIFIED SUCCESSFULLY.";
+					}
+			}
+		}
+		catch(Exception e)
+		{
+			outputString = "ERROR";
+			System.out.println("ERROR In LeaveBean.getModifyLeaveTypeMaster :"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				outputString = "ERROR";
+				System.out.println("Exception While Closing The Connection in LeaveBean.getModifyLeaveTypeMaster :"+e);
+			}
+		}
+		return outputString;
+	}
+	
+	/**
+	 * Method Name  : deleteLeave
+	 * Purpose		: To deleteLeave
+	 * @author		: Prashant
+	 * Date			: 12/03/2012 
+	 */
+	public String deleteLeave(String leaveId, String leaveType) 
+	{
+		String			outputString		=	"";
+		Connection		con					=	null;
+		Statement		st					=	null;
+		String			query				=	"";
+		int 			count				=	0;
+		
+		try
+		{
+			query			+=	"	delete " +
+								"	from 	leavetype_master" +
+								"	where	leavemasterid	=	'"+leaveId+"'";
+			
+			con				=	dbConn.connect();
+			st				=	con.createStatement();
+			count			=	st.executeUpdate(query);
+			if( count > 0)
+			{
+				outputString	=	"PASS.LEAVE TYPE : "+leaveType+" DELETED SUCCESSFULLY.";
+			}
+			else
+			{
+				outputString	=	"FAIL.LEAVE TYPE : "+leaveType+" NOT DELETE.";
+			}
+		}
+		catch(Exception e)
+		{
+			outputString = "ERROR";
+			System.out.println("ERROR In LeaveBean.getModifyLeaveTypeMaster :"+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				outputString = "ERROR";
+				System.out.println("Exception While Closing The Connection in LeaveBean.getModifyLeaveTypeMaster :"+e);
+			}
+		}
+		return outputString;
+	}
+}

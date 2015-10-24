@@ -1,0 +1,90 @@
+package com.inf.dvo.mbm.DAO.Master;
+
+import javax.servlet.http.HttpServletRequest;
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionMapping;
+import org.apache.struts.upload.FormFile;
+
+
+public class UploadDocumentForm extends ActionForm
+{
+
+	private static final long serialVersionUID = 1L;
+	
+	private String	empName;
+	private String	empId;
+	private String	documentTypeId;
+	private String	documentTitle;
+	private FormFile	uploadFile;	
+	private String  documentId;
+	private String	remark; 
+	public void reset(ActionMapping mapping,HttpServletRequest request)
+	{
+		empName			=	null;
+		empId			=	null;
+		documentTypeId	=	null;
+		documentTitle	=	null;
+		uploadFile		=	null;
+		documentId		=	null;
+		remark			=	null;
+	}
+
+	public String getEmpName() {
+		return empName;
+	}
+
+	public void setEmpName(String empName) {
+		this.empName = empName;
+	}
+
+	public String getEmpId() {
+		return empId;
+	}
+
+	public void setEmpId(String empId) {
+		this.empId = empId;
+	}
+
+	public String getDocumentTypeId() {
+		return documentTypeId;
+	}
+
+	public void setDocumentTypeId(String documentTypeId) {
+		this.documentTypeId = documentTypeId;
+	}
+
+	public String getDocumentTitle() {
+		return documentTitle;
+	}
+
+	public void setDocumentTitle(String documentTitle) {
+		this.documentTitle = documentTitle;
+	}
+
+	public FormFile getUploadFile() {
+		return uploadFile;
+	}
+
+	public void setUploadFile(FormFile uploadFile) {
+		this.uploadFile = uploadFile;
+	}
+
+	public String getDocumentId() {
+		return documentId;
+	}
+
+	public void setDocumentId(String documentId) {
+		this.documentId = documentId;
+	}
+
+	public String getRemark() {
+		return remark;
+	}
+
+	public void setRemark(String remark) {
+		this.remark = remark;
+	}
+	
+	
+	
+}

@@ -1,0 +1,826 @@
+package com.inf.dvo.mbm.Bean.utility;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.util.ArrayList;
+
+import com.inf.dvo.mbm.Bean.CommonMethodBean;
+import com.inf.dvo.mbm.DAO.CommonForm;
+import com.inf.dvo.mbm.DAO.Master.WMSForm;
+import com.inf.dvo.mbm.DBConnection.DBConnection;
+import com.sun.org.apache.bcel.internal.generic.InstructionConstants.Clinit;
+
+public class WMSBean 
+{
+	
+	DBConnection	dbConn	=	new DBConnection();
+	
+	/**
+	 * Method Name  : getUserWiseProjectDetails
+	 * Purpose		: To getUserWiseProjectDetails
+	 * @author		: Prashant
+	 * Date			: 10/09/2012 
+	 */	
+	public ArrayList<CommonForm> getUserWiseProjectDetails(String userId,String status,String userType) 
+	{
+		ArrayList<CommonForm> 	dataList	=	new ArrayList<CommonForm>();
+		Connection				con			=	null;
+		Statement				st			=	null;
+		ResultSet				rs			=	null;
+		String					query		=	"";
+		try
+		{
+			query	+=	"	select	pm.projectid,pm.project_name " +
+						"	from	projectmst pm " +
+						"	inner	join	project_users	pu	on	pu.projectid	=	pm.projectid ";
+			if(userType != null && userType.length() > 0 && userType.equalsIgnoreCase("EMPLOYEE"))
+			{
+				if(userId!=null && userId.length() > 0)
+				{
+				query	+=	"									and	pu.userid		=	'"+userId+"'";
+				}
+			}
+			if(status!=null && status.length() > 0)
+			{
+			query	+=	"	 									and	pm.status		=	'"+status+"'" ;
+			}
+			query	+=	"	inner 	join	usermst		um	on	um.userid			=	pu.userid " +
+						"	group	by	pm.projectid " +
+						"	order 	by	pm.project_name ";	
+				
+			con		=	dbConn.connect();
+			st		=	con.createStatement();
+			rs		=	st.executeQuery(query);
+			while(rs.next())
+			{
+				CommonForm	cForm	=	new CommonForm();
+				cForm.setField1(rs.getString(1));//project Id
+				cForm.setField2(rs.getString(2));//project_name
+				
+				dataList.add(cForm);
+			}
+		}
+		catch(Exception e)
+		{
+			System.out.println("ERROR In WMSBean.getUserWiseProjectDetails : "+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				System.out.println("Exception While Closing The Connection in WMSBean.getUserWiseProjectDetails :"+e);
+			}
+		}
+		return dataList;
+	}
+	
+	/**
+	 * Method Name  : saveWMS
+	 * Purpose		: To saveWMS
+	 * @author		: Prashant
+	 * Date			: 10/09/2012 
+	 * @param userId 
+	 */	
+	public String saveWMS(WMSForm wmsForm, String userName, String userId) 
+	{
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		String				outputString		=	"ERROR";
+		Connection			con					=	null;
+		PreparedStatement	pst					=	null;
+		String				query				=	"";
+		String				workDate			=	wmsForm.getWorkDate();
+		String				moduleName			=	wmsForm.getModuleName().trim().toUpperCase();
+		String				workDesc			=	wmsForm.getWorkDesc().trim();
+		String				hr					=	wmsForm.getNoOfHr().trim();
+		String				completed			=	wmsForm.getCompleted();
+		String				completedRemark		=	wmsForm.getCompletedRemark()!=null && wmsForm.getCompletedRemark().length() > 0 ? wmsForm.getCompletedRemark().trim().toUpperCase() : null;
+		String				committed			=	wmsForm.getCommited();
+		String				committedRemark		=	wmsForm.getCommitedRemark()!=null && wmsForm.getCommitedRemark().length() > 0 ? wmsForm.getCommitedRemark().trim().toUpperCase() : null;
+		String				status				=	"SAVED";
+		String				projectId			=	wmsForm.getProjectId();	
+		try
+		{
+			
+				con		=	dbConn.connect();
+				query	=	"	insert into wms 	(	userid, workdate, module_name, work_desc, hr, completed, completed_remark, commited, " +
+							"							commited_remark, status, createdby, createdon, updatedby, updatedon,projectid )" +
+							"	values				(	?, str_to_date(?,'%d/%m/%Y'), ?, ?, ?, ?, ?, ?, ?, ?, ?, sysdate(), ?, sysdate(),?	)";
+				
+				pst		=	con.prepareStatement(query);
+				
+				pst.setString(1,  userId);
+				pst.setString(2,  workDate);
+				pst.setString(3,  moduleName);
+				pst.setString(4,  workDesc);
+				pst.setString(5,  hr);
+				pst.setString(6,  completed);
+				pst.setString(7,  completedRemark);
+				pst.setString(8,  committed);
+				pst.setString(9,  committedRemark);
+				pst.setString(10, status);
+				pst.setString(11, userName);
+				pst.setString(12, userName);		
+				pst.setString(13, projectId);
+				
+				int	count	=	pst.executeUpdate();
+				String	projectName	=	commonMethodBean.getDataOnOneCondition("projectmst", "project_name", "projectid", projectId);
+				
+				if(count > 0)
+				{
+					outputString		=	"PASS.WORK SHEET SAVED SUCCESSFULLY FOR PROJECT : "+projectName+" DATED : "+workDate;
+				}
+				else
+				{
+					outputString		=	"FAIL.WORK SHEET NOT SAVED SUCCESSFULLY FOR PROJECT : "+projectName+".";
+				}
+				pst.close();		
+			
+		}
+		catch(Exception e)
+		{
+			outputString = "ERROR";
+			System.out.println("ERROR In WMSBean.saveWMS : "+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				outputString = "ERROR";
+				System.out.println("Exception While Closing The Connection in WMSBean.saveWMS : "+e);
+			}
+		}
+		return outputString;
+	}
+	
+	/**
+	 * Method Name  : modifyWMS
+	 * Purpose		: To modifyWMS
+	 * @author		: Prashant
+	 * Date			: 10/09/2012 
+	 * @param userId 
+	 */	
+	public String modifyWMS(WMSForm wmsForm, String userName, String userId) 
+	{
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		String				outputString		=	"ERROR";
+		Connection			con					=	null;
+		PreparedStatement	pst					=	null;
+		String				query				=	"";
+		String				wmsId				=	wmsForm.getWmsId();
+		String				workDate			=	wmsForm.getWorkDate();
+		String				moduleName			=	wmsForm.getModuleName().trim().toUpperCase();
+		String				workDesc			=	wmsForm.getWorkDesc().trim().toUpperCase();
+		String				hr					=	wmsForm.getNoOfHr().trim();
+		String				completed			=	wmsForm.getCompleted();
+		String				completedRemark		=	wmsForm.getCompletedRemark()!=null && wmsForm.getCompletedRemark().length() > 0 ? wmsForm.getCompletedRemark().trim().toUpperCase() : null;
+		String				committed			=	wmsForm.getCommited();
+		String				committedRemark		=	wmsForm.getCommitedRemark()!=null && wmsForm.getCommitedRemark().length() > 0 ? wmsForm.getCommitedRemark().trim().toUpperCase() : null;
+		String				projectId			=	wmsForm.getProjectId();	
+		try
+		{
+			
+				con		=	dbConn.connect();
+				query	=	"	update	wms " +
+							"	set		userid				=	?, " +
+							"			workdate			=	str_to_date(?,'%d/%m/%Y'), " +
+							"			module_name			=	?, " +
+							"			work_desc			=	?, " +
+							"			hr					=	?, " +
+							"			completed			=	?, " +
+							"			completed_remark 	=	?, " +
+							"			commited			=	?, " +
+							"			commited_remark		=	?, " +
+							"			updatedby			=	?, " +
+							"			updatedon			=	sysdate()," +
+							"			projectid			=	? " +
+							"	where	wmsid				=	? ";
+				
+				pst		=	con.prepareStatement(query);
+				
+				pst.setString(1,  userId);
+				pst.setString(2,  workDate);
+				pst.setString(3,  moduleName);
+				pst.setString(4,  workDesc);
+				pst.setString(5,  hr);
+				pst.setString(6,  completed);
+				pst.setString(7,  completedRemark);
+				pst.setString(8,  committed);
+				pst.setString(9,  committedRemark);
+				pst.setString(10, userName);
+				pst.setString(11, projectId);
+				pst.setString(12, wmsId);
+				
+				int	count	=	pst.executeUpdate();
+				String	projectName	=	commonMethodBean.getDataOnOneCondition("projectmst", "project_name", "projectid", projectId);
+				
+				if(count > 0)
+				{
+					outputString		=	"PASS.WORK SHEET MODIFIED SUCCESSFULLY FOR PROJECT : "+projectName+" DATED : "+workDate;
+				}
+				else
+				{
+					outputString		=	"FAIL.WORK SHEET NOT MODIFIED FOR PROJECT : "+projectName+".";
+				}
+				pst.close();		
+			
+		}
+		catch(Exception e)
+		{
+			outputString = "ERROR";
+			System.out.println("ERROR In WMSBean.modifyWMS : "+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				outputString = "ERROR";
+				System.out.println("Exception While Closing The Connection in WMSBean.modifyWMS : "+e);
+			}
+		}
+		return outputString;
+	}
+	
+	/**
+	 * Method Name  : setDataForModification
+	 * Purpose		: To setDataForModification
+	 * @author		: Prashant
+	 * Date			: 10/09/2012 
+	 * @param userId 
+	 */	
+	public void setDataForModification(WMSForm wmsForm) 
+	{
+		Connection		con			=	null;
+		Statement		st			=	null;
+		ResultSet		rs			=	null;
+		String			query		=	"";
+		try
+		{
+			query	+=	"	select 	wmsid, projectid, userid, date_format(workdate,'%d/%m/%Y'), module_name, work_desc, hr, completed, completed_remark, commited, " +
+						"			commited_remark " +
+						"	from 	wms " +
+						"	where	wmsid	=	'"+wmsForm.getWmsId()+"'" ;	
+				
+			con		=	dbConn.connect();
+			st		=	con.createStatement();
+			rs		=	st.executeQuery(query);
+			while(rs.next())
+			{
+				wmsForm.setWmsId(rs.getString(1));		//wmsid
+				wmsForm.setProjectId(rs.getString(2));  //projectid
+				wmsForm.setUserId(rs.getString(3));		//userid
+				wmsForm.setWorkDate(rs.getString(4));	//workdate
+				wmsForm.setModuleName(rs.getString(5));	//module_name
+				wmsForm.setWorkDesc(rs.getString(6));	//work_desc
+				wmsForm.setNoOfHr(rs.getString(7));		//hr
+				wmsForm.setCompleted(rs.getString(8));	//completed
+				wmsForm.setCompletedRemark(rs.getString(9)); //completed_remark
+				wmsForm.setCommited(rs.getString(10));		//commited
+				wmsForm.setCommitedRemark(rs.getString(11));// commited_remark
+			}
+		}
+		catch(Exception e)
+		{
+			System.out.println("ERROR In WMSBean.setDataForModification : "+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				System.out.println("Exception While Closing The Connection in WMSBean.setDataForModification : "+e);
+			}
+		}
+		
+	}
+	
+	/**
+	 * Method Name  : getUserWiseSubmitedList
+	 * Purpose		: To getUserWiseSubmitedList
+	 * @author		: Prashant
+	 * Date			: 10/09/2012 
+	 * @param userId 
+	 */	
+	public ArrayList<CommonForm> getUserWiseSubmitedList(String userId,String status,String userType) 
+	{
+		ArrayList<CommonForm> 	dataList	=	new ArrayList<CommonForm>();
+		Connection				con			=	null;
+		Statement				st			=	null;
+		ResultSet				rs			=	null;
+		String					query		=	"";
+		int						srNo		=	1;
+		
+		try
+		{
+			query	+=	"	select 		wsm.wmsid, wsm.projectid, pm.project_name,wsm.userid, um.user_name,date_format(wsm.workdate,'%d/%m/%Y'), wsm.module_name, wsm.work_desc, wsm.hr, " +
+						"				wsm.completed, wsm.completed_remark, wsm.commited, wsm.commited_remark " +
+						"	from		wms wsm " +
+						"	inner join	projectmst pm	on	pm.projectid	=	wsm.projectid";
+			
+			if(userId!=null && userId.length() > 0 && userType!=null && userType.length() > 0 && userType.equalsIgnoreCase("EMPLOYEE"))
+			{
+			query	+=	"								and	wsm.userid		=	'"+userId+"'" ;
+			}
+			if(status!=null && status.length() > 0)
+			{
+			query	+=	"								and	wsm.status		=	'"+status+"'" ;
+			}
+			query	+=	"	inner join	usermst	um	on	um.userid	=	wsm.userid "+
+						"	order 	by	wsm.workdate ";
+			
+			con		=	dbConn.connect();
+			st		=	con.createStatement();
+			rs		=	st.executeQuery(query);
+			while(rs.next())
+			{
+				CommonForm	cForm	=	new CommonForm();
+				cForm.setField1(""+(srNo++));//srNo
+				cForm.setField2(rs.getString(1));//wmsid	
+				cForm.setField3(rs.getString(2));//projectid
+				cForm.setField4(rs.getString(3));//project_name
+				cForm.setField5(rs.getString(4));//userid
+				cForm.setField6(rs.getString(5));//user_name
+				cForm.setField7(rs.getString(6));//workdate
+				cForm.setField8(rs.getString(7));//module_name
+				cForm.setField9(rs.getString(8));//work_desc
+				cForm.setField10(rs.getString(9));//hr		
+				cForm.setField11(rs.getString(10));//completed
+				cForm.setField12(rs.getString(11)!=null && rs.getString(11).length() > 0 ? rs.getString(11) : "-");//completed_remark
+				cForm.setField13(rs.getString(12));//commited
+				cForm.setField14(rs.getString(13)!=null && rs.getString(13).length() > 0 ? rs.getString(13) : "-");//commited_remark
+				
+				dataList.add(cForm);
+			}
+		}
+		catch(Exception e)
+		{
+			System.out.println("ERROR In WMSBean.getUserWiseSubmitedList : "+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				System.out.println("Exception While Closing The Connection in WMSBean.getUserWiseSubmitedList : "+e);
+			}
+		}
+		return dataList;
+	}
+	
+	/**
+	 * Method Name  : deleteWorkReport
+	 * Purpose		: To deleteWorkReport
+	 * @author		: Prashant
+	 * Date			: 11/09/2012 
+	 * @param userId 
+	 */	
+	public String deleteWorkReport(String wmsId, String projectName,String work_date) 
+	{
+		String			outputString			=	"";
+		Connection		con						=	null;
+		Statement		st						=	null;
+		String			query					=	"";
+		int 			count					=	0;
+		try
+		{
+				query			=	"	delete " +
+									"	from	wms " +
+									"	where	wmsid	=	'"+wmsId+"'";
+			
+				con				=	dbConn.connect();
+				st				=	con.createStatement();	
+				count			=	st.executeUpdate(query);
+				
+				if(count > 0)
+				{
+					outputString	=	"PASS.WORK SHEET DETAILS FOR PROJECT : "+projectName+" DATED : "+work_date+" DELETED SUCCESSFULLY.";					
+				}
+				else
+				{
+					outputString	=	"FAIL.PROBLEM WHILE DELETING WORK SHEET DETAILS FOR PROJECT : "+projectName+" DATED : "+work_date;
+				}
+				
+				
+		}
+		catch(Exception e)
+		{
+			outputString = "ERROR";
+			System.out.println("ERROR In WMSBean.deleteWorkReport : "+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				outputString = "ERROR";
+				System.out.println("Exception While Closing The Connection in WMSBean.deleteWorkReport : "+e);
+			}
+		}
+		return outputString;
+	}
+	
+	/**
+	 * Method Name  : submitWorkSheet
+	 * Purpose		: To submitWorkSheet
+	 * @author		: Prashant
+	 * Date			: 12/09/2012 
+	 * @param userId 
+	 */	
+	public String submitWorkSheet(WMSForm wmsForm, String userName,String userId , String[] wmsId) 
+	{
+		String				outputString		=	"ERROR";
+		Connection			con					=	null;
+		PreparedStatement	pst					=	null;
+		String				query				=	"";
+		String				status				=	"SUBMIT";
+		int					count				=	0;
+		//String				wmsId[]				=	wmsForm.getChkArray();
+		try
+		{
+			
+				con		=	dbConn.connect();
+				query	=	"	update	wms " +
+							"	set		status		=	?, " +
+							"			updatedby	=	?, " +
+							"			updatedon	=	sysdate()" +
+							"	where	wmsid		=	?";
+				
+				pst		=	con.prepareStatement(query);
+				if(wmsId!=null && wmsId.length > 0)
+				{
+					for(int i=0;i<wmsId.length;i++)
+					{	
+						pst.setString(1, status);
+						pst.setString(2, userName);
+						pst.setString(3, wmsId[i]);//WMSID					
+						count	+=	pst.executeUpdate();
+					}	
+				}	
+				if(count > 0)
+				{
+					outputString		=	"PASS.WORK SHEET FOR SELECTED DETAILS SUBMITTED SUCCESSFULLY.";
+				}
+				else
+				{
+					outputString		=	"FAIL.PROBLEM WHILE SUBMITTING WORK SHEET.";
+				}
+				
+				pst.close();
+				
+			
+		}
+		catch(Exception e)
+		{
+			outputString = "ERROR";
+			System.out.println("ERROR In WMSBean.submitWorkSheet : "+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				outputString = "ERROR";
+				System.out.println("Exception While Closing The Connection in WMSBean.submitWorkSheet : "+e);
+			}
+		}
+		return outputString;
+	}
+	
+	/**
+	 * Method Name  : getPendingForSubmittedList
+	 * Purpose		: To getPendingForSubmittedList
+	 * @author		: Prashant
+	 * Date			: 12/09/2012 
+	 * @param userId 
+	 */	
+	public ArrayList<CommonForm> getPendingForSubmittedList(WMSForm wmsForm,String userId,String status,String userType) 
+	{
+		ArrayList<CommonForm> 	dataList			=	new ArrayList<CommonForm>();
+		CommonMethodBean		commonMethodBean	=	new CommonMethodBean();
+		Connection				con			=	null;
+		Statement				st			=	null;
+		ResultSet				rs			=	null;
+		String					query		=	"";
+		int						srNo		=	1;
+		String					projectId	=	wmsForm.getProjectId();
+		String					fromDate	=	wmsForm.getFromDate();
+		String					toDate		=	wmsForm.getToDate();
+		String					completed	=	wmsForm.getCompleted();
+		String					committed	=	wmsForm.getCommited();	
+		
+		try
+		{
+			query	+=	"	select 		wsm.wmsid, wsm.projectid, pm.project_name,wsm.userid, um.user_name,date_format(wsm.workdate,'%d/%m/%Y'), wsm.module_name, wsm.work_desc, wsm.hr," +
+						"				wsm.completed, wsm.completed_remark, wsm.commited, wsm.commited_remark,date_format(wsm.createdon,'%d/%m/%Y') " +
+						"	from		wms wsm " +
+						"	inner join	projectmst pm	on	pm.projectid	=	wsm.projectid" ;
+			if(userId!=null && userId.length() > 0)
+			{
+			query	+=	"								and	wsm.userid		=	'"+userId+"'" ;
+			}
+			if(projectId!=null && projectId.length() > 0)
+			{
+			query	+=	"								and	wsm.projectid	=	'"+projectId+"'" ;
+			}
+			if(fromDate!=null && fromDate.length() > 0)
+			{
+			query	+=	"								and	wsm.workdate 	>=	str_to_date('"+fromDate+"','%d/%m/%Y')";
+			}
+			if(toDate!=null && toDate.length() > 0)
+			{
+			query	+=	"								and	wsm.workdate 	<=	str_to_date('"+toDate+"','%d/%m/%Y')";
+			}
+			if(completed!=null && completed.length() > 0)
+			{
+			query	+=	"								and	wsm.completed	=	'"+completed+"'";
+			}
+			if(committed!=null && committed.length() > 0)
+			{
+			query	+=	"								and	wsm.commited	=	'"+committed+"'" ;
+			}
+			if(status!=null && status.length() > 0)
+			{
+			query	+=	"								and	wsm.status		=	'"+status+"'";
+			}
+			query	+=	"	inner join	usermst	um	on	um.userid			=	wsm.userid " +
+						"	order 	by	pm.project_name,wsm.workdate,wsm.createdon ";
+			
+			con		=	dbConn.connect();
+			st		=	con.createStatement();
+			rs		=	st.executeQuery(query);
+			while(rs.next())
+			{
+				CommonForm	cForm	=	new CommonForm();
+				cForm.setField1(""+(srNo++));//srNo
+				cForm.setField2(rs.getString(1));//wmsid	
+				cForm.setField3(rs.getString(2));//projectid
+				cForm.setField4(rs.getString(3));//project_name
+				cForm.setField5(rs.getString(4));//userid
+				cForm.setField6(rs.getString(5));//user_name
+				cForm.setField7(rs.getString(6));//workdate
+				cForm.setField8(rs.getString(7));//module_name
+				cForm.setField9(rs.getString(8));//work_desc
+				cForm.setField10(commonMethodBean.applyFormater(rs.getString(9)));//hr		
+				cForm.setField11(rs.getString(10));//completed
+				cForm.setField12(rs.getString(11)!=null && rs.getString(11).length() > 0 ? rs.getString(11) : "-");//completed_remark
+				cForm.setField13(rs.getString(12));//commited
+				cForm.setField14(rs.getString(13)!=null && rs.getString(13).length() > 0 ? rs.getString(13) : "-");//commited_remark
+				cForm.setField15(rs.getString(14)!=null && rs.getString(14).length() > 0 ? rs.getString(14) : "-");//commited_remark
+				
+				dataList.add(cForm);
+			}
+		}
+		catch(Exception e)
+		{
+			System.out.println("ERROR In WMSBean.getUserWiseSubmitedList : "+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				System.out.println("Exception While Closing The Connection in WMSBean.getUserWiseSubmitedList : "+e);
+			}
+		}
+		return dataList;
+	}
+	
+	/**
+	 * Method Name  : getWorkSheetList
+	 * Purpose		: To getWorkSheetList
+	 * @author		: Prashant
+	 * Date			: 14/09/2012 
+	 * @param  
+	 */	
+	public ArrayList<CommonForm> getWorkSheetList(String userId, WMSForm wmsForm, String userType) 
+	{
+		ArrayList<CommonForm>	dataList			=	new ArrayList<CommonForm>();
+		CommonMethodBean		commonMethodBean	=	new CommonMethodBean();
+		Connection				con			=	null;
+		Statement				st			=	null;
+		ResultSet				rs			=	null;
+		String					query		=	"";
+		int						srNo		=	1;
+		String					projectId	=	wmsForm.getProjectId();
+		String					fromDate	=	wmsForm.getFromDate();
+		String					toDate		=	wmsForm.getToDate();
+		String					completed	=	wmsForm.getCompleted();
+		String					committed	=	wmsForm.getCommited();
+		String					status		=	wmsForm.getStatus();
+		String					clientId	=	wmsForm.getClientId();
+		String					clientName	=	"";
+		String					designation	=	"";
+		String					deginationName	=	"";
+		try
+		{
+			query	+=	"	select 		wsm.wmsid, wsm.projectid, pm.project_name,wsm.userid, um.user_name,date_format(wsm.workdate,'%d/%m/%Y'), wsm.module_name, wsm.work_desc, wsm.hr," +
+						"				wsm.completed, wsm.completed_remark, wsm.commited, wsm.commited_remark,wsm.status,pm.clientid,um.employeeid,date_format(wsm.createdon,'%d/%m/%Y'),dm.department_name " +
+						"	from		wms wsm " +
+						"	inner join	projectmst pm	on	pm.projectid	=	wsm.projectid " ;
+			if(userType != null && userType.length() > 0 && userType.equalsIgnoreCase("EMPLOYEE"))
+			{
+				if(userId!=null && userId.length() > 0)
+				{
+				query	+=	"								and	wsm.userid		=	'"+userId+"'" ;
+				}
+			}
+			if(projectId!=null && projectId.length() > 0)
+			{
+			query	+=	"								and	wsm.projectid	=	'"+projectId+"'" ;
+			}
+			if(fromDate!=null && fromDate.length() > 0)
+			{
+			query	+=	"								and	wsm.workdate 	>=	str_to_date('"+fromDate+"','%d/%m/%Y')";
+			}
+			if(toDate!=null && toDate.length() > 0)
+			{
+			query	+=	"								and	wsm.workdate 	<=	str_to_date('"+toDate+"','%d/%m/%Y')";
+			}
+			if(completed!=null && completed.length() > 0)
+			{
+			query	+=	"								and	wsm.completed	=	'"+completed+"'";
+			}
+			if(committed!=null && committed.length() > 0)
+			{
+			query	+=	"								and	wsm.commited	=	'"+committed+"'" ;
+			}
+			if(status!=null && status.length() > 0)
+			{
+			query	+=	"								and	wsm.status		=	'"+status+"'" ;
+			}
+			if(clientId!=null && clientId.length() > 0)
+			{
+			query	+=	"								and	pm.clientid		=	'"+clientId+"'" ;
+			}
+			query	+=	"	inner join	usermst	um		on	um.userid		=	wsm.userid " +
+						"	inner join  employee_master  em    on  em.employeeid   =   um.employeeid" +
+						"	inner join  department_master dm    on  dm.departmentid =   em.department" +
+						"	order 	by		wsm.workdate ";
+			
+			con		=	dbConn.connect();
+			st		=	con.createStatement();
+			rs		=	st.executeQuery(query);
+			while(rs.next())
+			{
+				CommonForm	cForm	=	new CommonForm();
+				cForm.setField1(""+(srNo++));//srNo
+				cForm.setField2(rs.getString(1));//wmsid	
+				cForm.setField3(rs.getString(2));//projectid
+				cForm.setField4(rs.getString(3));//project_name
+				cForm.setField5(rs.getString(4));//userid
+				cForm.setField6(rs.getString(5).toUpperCase());//user_name
+				cForm.setField7(rs.getString(6));//workdate
+				cForm.setField8(rs.getString(7));//module_name
+				cForm.setField9(rs.getString(8));//work_desc
+				cForm.setField10(commonMethodBean.applyFormater(rs.getString(9)));//hr		
+				cForm.setField11(rs.getString(10));//completed
+				cForm.setField12(rs.getString(11)!=null && rs.getString(11).length() > 0 ? rs.getString(11) : "-");//completed_remark
+				cForm.setField13(rs.getString(12));//commited
+				cForm.setField14(rs.getString(13)!=null && rs.getString(13).length() > 0 ? rs.getString(13) : "-");//commited_remark
+				cForm.setField15(rs.getString(14));//status
+				clientName		=	commonMethodBean.getDataOnOneCondition("client_mst", "clientname", "clientid", rs.getString(15));
+				cForm.setField16(clientName!=null && clientName.length()>0 ? clientName : "-");//clientName
+				designation		=	commonMethodBean.getDataOnOneCondition("employee_master", "designation", "employeeid", rs.getString(16));
+				deginationName 	=	commonMethodBean.getDataOnOneCondition("groupvalue", "groupvalue_name", "groupvalueid", designation);
+				cForm.setField17(deginationName!=null && deginationName.length()>0 ? deginationName : "-");
+				cForm.setField18(rs.getString(17));//Entrydate
+				cForm.setField19(rs.getString(18));//department_name
+				dataList.add(cForm);
+			}
+		}
+		catch(Exception e)
+		{
+			System.out.println("Exception In WMSBean.getWorkSheetList : "+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				System.out.println("Exception While Closing The Connection in WMSBean.getWorkSheetList : "+e);
+			}
+		}
+		return dataList;
+	}
+	
+	/**
+	 * Method Name 	: 	generateMailBodyForWMS
+	 * Purpose		:	To generateMailBodyForWMS
+	 * @author user	:	Prashant
+	 * Date			:	19/10/2012
+	 */
+	public String generateMailBodyForWMS(ArrayList<CommonForm> sesSelectedWorkList) 
+	{
+		String	mailBody	=	"";
+		if(sesSelectedWorkList!=null && sesSelectedWorkList.size() > 0)
+		{
+			
+				mailBody	=   "	<table width='100%' >" +
+								"	<tr>" +
+								"	<td align='left' valign='middle'><table width='100%' border='0' style='font-family:Arial, Helvetica, sans-serif;color:#000000;border: 1px solid #085798;width: 100%;margin: 20px 0 20px 0 !important;'>" +
+								"   <tr style='height:25px;font-size:13px;font-weight:bold;background-color: #D4E3E8;padding-left:3px;' >" +
+								"   <th width='1%' align='left' valign='top'>#</th>" +
+								"	<th width='10%' align='left' valign='top'>Project Name</th>" +
+								"	<th width='10%' align='left' valign='top'>Module Name </th>" +
+								"	<th width='23%' align='left' valign='top'>Work Description</th>" +
+								"	<th width='4%' align='left' valign='top'>Hrs</th>" +
+								"	<th width='6%' align='left' valign='top'>Complete</th>" +
+								"	<th width='13%' align='left' valign='top'>Completed Remark</th>" +
+								"	<th width='6%' align='left' valign='top'>Commit</th>" +
+								"	<th width='13%' align='left' valign='top'>Committed Remark</th>" +
+								"	<th  align='left' valign='top' width='9%'>Work Date</th>" +
+								"	<th  align='left' valign='top' width='9%'>Entry Date</th>" +
+								"	</tr>" ;
+				for(int i=0;i<sesSelectedWorkList.size();i++)
+				{
+					CommonForm	cForm	=	sesSelectedWorkList.get(i);
+				mailBody	+=	"	<tr style='font-family:Arial,Helvetica,sans-serif;font-size:12px;vertical-align:middle;height:15px;padding-left:3px;background-color: #E6F6F6; '>" +
+								"	<td width='1%' align='left' valign='top'>"+(i+1)+"</td>" +
+								"	<td width='10%' align='left' valign='top'>"+cForm.getField4()+"</td>" +
+								"	<td width='10%' align='left' valign='top'>"+cForm.getField8()+"</td>" +
+								"	<td width='23%' align='left' valign='top'>"+cForm.getField9()+"</td>" +								
+								"	<td width='4%' align='left' valign='top'>"+cForm.getField10()+"</td>" +
+								"	<td width='6%' align='left' valign='top'>"+cForm.getField11()+"</td>" +
+								"	<td width='13%' align='left' valign='top'>"+cForm.getField12()+"</td>" +
+								"	<td width='6%' align='left' valign='top'>"+cForm.getField13()+"</td>" +
+								"	<td width='13%' align='left' valign='top'>"+cForm.getField14()+"</td>" +
+								"	<td  align='left' valign='top' width='9%'>"+cForm.getField7()+"</td>" +
+								"	<td  align='left' valign='top' width='9%'>"+cForm.getField15()+"</td>" +
+								"	</tr>" ;
+								
+				}				
+				mailBody	+=	"	</table></td>" +
+								"	</tr>" +
+								"	</table>";										
+		}
+		
+		return mailBody;
+	}	
+}

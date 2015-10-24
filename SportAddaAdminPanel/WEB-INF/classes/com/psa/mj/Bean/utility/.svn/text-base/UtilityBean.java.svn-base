@@ -1,0 +1,178 @@
+package com.inf.dvo.mbm.Bean.utility;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import com.inf.dvo.mbm.Bean.CommonMethodBean;
+import com.inf.dvo.mbm.DAO.Master.UtilityForm;
+import com.inf.dvo.mbm.DBConnection.DBConnection;
+
+public class UtilityBean 
+{
+	
+	DBConnection	connect	=	new DBConnection();
+	/**
+	 * Method Name  : getLogingUserPassword
+	 * Purpose		: To getLogingUserPassword
+	 * @author		: Prashant
+	 * Date			: 28/04/2012 
+	 */			
+	public String getLogingUserPassword(String userId, String userName)
+	{
+		String					outputString	=	"";
+		Connection				con				=	null;
+		Statement				st				=	null;
+		ResultSet				rs				=	null;
+		String					query			=	"";
+		try
+		{
+			query		=	" 	select	password " +
+							"	from	usermst " +
+							"	where		userid		=	'"+userId+"' " +
+							"			and user_name	=	'"+userName+"'";
+			con			=	connect.connect();
+			st			=	con.createStatement();
+			rs			=	st.executeQuery(query);
+			if(rs.next())
+			{
+				outputString	=	rs.getString(1);
+			}
+		}
+		catch(Exception e)
+		{
+			System.out.println("Exception In UtilityBean.getLogingUserPassword : "+e); 
+		}
+		return outputString;
+	}
+	
+	/**
+	 * Method Name  : changePassword
+	 * Purpose		: To changePassword
+	 * @author		: Prashant
+	 * Date			: 28/04/2012 
+	 */	
+	public String changePassword(UtilityForm utilityForm, String userName)
+	{
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		String				outputString		=	"";
+		Connection			con					=	null;
+		PreparedStatement	pst					=	null;
+		String				query				=	"";
+		String				userId				=	commonMethodBean.getDataOnOneCondition("usermst", "userid", "user_name", userName);
+		String				password			=	utilityForm.getNewPassword();
+		
+		try
+		{
+					query		+=	"	update	usermst " +
+									"	set		password	=	?," +
+									"			updatedby	=	?, " +
+									"			updatedon	=	sysdate()" +
+									"	where	userid		=	? ";
+					con			=	connect.connect();
+					pst			=	con.prepareStatement(query);
+					
+					pst.setString(1, password);
+					pst.setString(2, userName);
+					pst.setString(3, userId);
+					
+					int	cnt		=	pst.executeUpdate();
+					if(cnt > 0)
+					{
+						outputString	=	"PASS.PASSWORD CHANGED SUCCESSFULLY.";
+					}
+			
+		}
+		catch(Exception e)
+		{
+			outputString = "ERROR";
+			System.out.println("ERROR In UtilityBean.changePassword : "+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				outputString = "ERROR";
+				System.out.println("Exception While Closing The Connection in UtilityBean.changePassword : "+e);
+			}
+		}
+		return outputString;
+	}
+	
+	/**
+	 * Method Name  : resetPassword
+	 * Purpose		: To resetPassword
+	 * @author		: Prashant
+	 * Date			: 28/04/2012 
+	 */	
+	public String resetPassword(UtilityForm utilityForm, String userName) 
+	{
+		CommonMethodBean	commonMethodBean	=	new CommonMethodBean();
+		String				outputString		=	"";
+		Connection			con					=	null;
+		PreparedStatement	pst					=	null;
+		String				query				=	"";
+		
+		String				userId				=	utilityForm.getLoginId();
+		String				password			=	commonMethodBean.getDataOnOneCondition("usermst", "user_name", "userid", userId);
+		
+		//String				userId				=	commonMethodBean.getDataOnOneCondition("usermst", "userid", "user_name", userName);
+		
+		try
+		{
+					query		+=	"	update	usermst " +
+									"	set		password	=	?," +
+									"			updatedby	=	?," +
+									"			updatedon	=	sysdate()" +
+									"	where	userid		=	? ";
+					con			=	connect.connect();
+					pst			=	con.prepareStatement(query);
+					
+					/*pst.setString(1, userName);
+					pst.setString(2, userName);
+					pst.setString(3, userId);*/
+					
+					pst.setString(1, password);
+					pst.setString(2, userName);
+					pst.setString(3, userId);
+					
+					int	cnt		=	pst.executeUpdate();
+					if(cnt > 0)
+					{
+						outputString	=	"PASS.PASSWORD RESET SUCCESSFULLY.";
+					}
+			
+		}
+		catch(Exception e)
+		{
+			outputString = "ERROR";
+			System.out.println("ERROR In UtilityBean.resetPassword : "+e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				outputString = "ERROR";
+				System.out.println("Exception While Closing The Connection in UtilityBean.resetPassword : "+e);
+			}
+		}
+		return outputString;
+	}
+
+}

@@ -1,0 +1,632 @@
+package com.inf.dvo.mbm.Bean.Master;
+
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.text.DateFormatSymbols;
+import java.util.ArrayList;
+
+import com.inf.dvo.mbm.Bean.CommonMethodBean;
+import com.inf.dvo.mbm.DAO.CommonForm;
+import com.inf.dvo.mbm.DAO.Master.AttendanceRecordForm;
+import com.inf.dvo.mbm.DBConnection.DBConnection;
+
+public class AttendanceRecordBean 
+{
+	DBConnection	dbConn	=	new DBConnection();
+
+	
+	/**
+	 * Method Name  : getMonthForInt
+	 * Purpose		: To getMonthForInt
+	 * @author		: Prashant
+	 * Date			: 12/04/2012 
+	 */
+	public String getMonthForInt(int m) 
+	{
+	    String 				month 	= 	"invalid";
+	    DateFormatSymbols 	dfs 	= 	new DateFormatSymbols();
+	    String[] 			months 	= 	dfs.getMonths();
+	    
+	    if (m >= 0 && m <= 11 ) 
+	    {
+	        month = months[m];
+	    }
+	    return month;
+	}
+
+	/**
+	 * Method Name  : getMonthList
+	 * Purpose		: To getMonthList
+	 * @author		: Prashant
+	 * Date			: 12/04/2012 
+	 */
+	public ArrayList<CommonForm> getMonthList(String[] monthArray) 
+	{
+		ArrayList<CommonForm> dataList	=	new ArrayList<CommonForm>();
+		
+		if(monthArray!= null && monthArray.length > 0)
+		{
+			for(int i=0;i<monthArray.length;i++)
+			{
+				if(monthArray[i]!= null)
+				{	
+					CommonForm cForm	=	new CommonForm();
+					cForm.setField1(monthArray[i]);
+					cForm.setField2(monthArray[i]);
+				
+					dataList.add(cForm);
+				}	
+			}
+		}	
+		return	dataList;
+	}
+
+	/**
+	 * Method Name  : getYearList
+	 * Purpose		: To getYearList
+	 * @author		: Prashant
+	 * Date			: 12/04/2012 
+	 */
+	public ArrayList<CommonForm> getYearList(int[] yearArray) 
+	{
+		ArrayList<CommonForm> dataList	=	new ArrayList<CommonForm>();
+		
+		if(yearArray!= null && yearArray.length > 0)
+		{
+			for(int i=0;i<yearArray.length;i++)
+			{
+					CommonForm cForm	=	new CommonForm();
+					cForm.setField1(""+yearArray[i]);
+					cForm.setField2(""+yearArray[i]);	
+					dataList.add(cForm);
+					
+			}
+		}	
+		return	dataList;
+	}
+
+	/**
+	 * Method Name  : getEmployeeList
+	 * Purpose		: To getEmployeeList
+	 * @author		: Prashant
+	 * Date			: 12/04/2012 
+	 * @param status 
+	 */
+	public ArrayList<CommonForm> getEmployeeList(String status) 
+	{
+		ArrayList<CommonForm>	dataList	=	new ArrayList<CommonForm>();
+		Connection				con			=	null;
+		Statement				st			=	null;
+		ResultSet				rs			=	null;
+		String					query		=	"";
+		int						srNo		=	1;		
+		try
+		{
+			query		=	"	select 	em.employeeid,em.employee_name,em.department,dm.department_name,em.designation,gvd.groupvalue_name,em.status " +
+							"	from	employee_master em " +
+							"	inner	join	department_master	dm 	on	em.department		=	dm.departmentid ";
+			if(status!= null && status.length() > 0)
+			{
+			query		+=	"											and 	em.status		=	'"+status+"'" ;
+			}
+			query		+=	"	inner	join	groupvalue 		gvd	on	em.designation			=	gvd.groupvalueid " +
+							"	order by em.status ";
+			
+			con			=	dbConn.connect();
+			st			=	con.createStatement();
+			rs			=	st.executeQuery(query);
+			while(rs.next())
+			{
+				CommonForm	cForm	=	new CommonForm();
+				cForm.setField1(""+(srNo++));//SRNO
+				cForm.setField2(rs.getString(1));//employeeid
+				cForm.setField3(rs.getString(2));//employee_name
+				cForm.setField4(rs.getString(3));//departmentId
+				cForm.setField5(rs.getString(4));//department_name
+				cForm.setField6(rs.getString(5));//designationId
+				cForm.setField7(rs.getString(6));//designation_name
+				cForm.setField8("");//noofdays For Excel
+				cForm.setField9("-");//noofdays For Display Table
+				cForm.setField10(rs.getString(7));//Status
+				dataList.add(cForm);
+			}
+		}
+		catch (Exception e) 
+		{
+			System.out.println("ERROR In AttendanceRecordBean.getEmployeeList : " +e);
+		}
+		return	dataList;
+	}
+
+	/**
+	 * Method Name  : saveAttendanceRecord
+	 * Purpose		: To saveAttendanceRecord
+	 * @author		: Prashant
+	 * Date			: 13/04/2012 
+	 * @param mode 
+	 */
+	public String saveAttendanceRecord(AttendanceRecordForm arForm,ArrayList<CommonForm> dataList, String userName, String mode) 
+	{
+		String				outputString		=	"";
+		AttendanceRecordBean	attendanceRecordBean	=	new AttendanceRecordBean();
+		CommonMethodBean	commonMethodBean 	=	new CommonMethodBean();
+		Connection			con					=	null;
+		PreparedStatement	pst					=	null;
+		String				query				=	"";
+		
+		String				month				=	arForm.getMonth();
+		String				year				=	arForm.getYear();
+		String				workingDays			=	arForm.getWorkingDay();
+		//boolean				flag			=	true;
+		try
+		{
+			con			=	dbConn.connect();
+			if(mode!= null && mode.length() > 0 && mode.equalsIgnoreCase("new"))
+			{	
+				query		=	"	insert into attendance_sheet_header ( month, year, workingdays, createdby, createdon, updatedby, updatedon ) " +
+								"	values	( ?, ?, ?, ?, sysdate(), ?, sysdate()	) ";
+				pst			=	con.prepareStatement(query);
+				
+				pst.setString(1, month);
+				pst.setString(2, year);
+				pst.setString(3, workingDays);
+				pst.setString(4, userName);
+				pst.setString(5, userName);
+				
+				int		count	=	pst.executeUpdate();
+				if(count > 0)
+				{
+					outputString	=	"PASS.ATTENDANCE RECORD AGAINST MONTH : "+month.toUpperCase()+" SAVED SUCCESSFULLY.";
+				}
+				pst.close();
+				
+				if(count > 0)
+				{
+					String	attendanceHeaderId		=	commonMethodBean.getMonthAndYearWiseAttendanceId("attendance_sheet_header","attendencesheetid","month","year",month,year);
+					if(dataList!= null && dataList.size() > 0)
+					{
+						for(int i=0;i<dataList.size();i++)
+						{
+							CommonForm	cForm		=	dataList.get(i);
+							String		empId		=	cForm.getField1();//EMPLOYEEID(VALUES FROM EXCEL) 
+							String		noOfDays	=	cForm.getField2();//NO OF WORKING DAYS(VALUES FROM EXCEL)
+							
+							query		=	"	insert into attendance_sheet_dtls ( attendanceid, employeeid, noofdays, workingdays, createdby, createdon, updatedby, updatedon	) " +
+											"	values	(?, ?, ?, ?, ?, sysdate(), ?, sysdate() ) ";
+							
+							pst			=	con.prepareStatement(query);
+							pst.setString(1, attendanceHeaderId);
+							pst.setString(2, empId);
+							pst.setString(3, noOfDays);
+							pst.setString(4, workingDays);
+							pst.setString(5, userName);
+							pst.setString(6, userName);
+							
+							int	cnt	=	pst.executeUpdate();
+							if(cnt > 0)
+							{
+								//outputString	=	"PASS.ATTENDANCE RECORD AGAINST MONTH : "+month+" SAVED SUCCESSFULLY.";
+							}
+							
+							pst.close();
+						}//end of for loop
+					}//end of datalist if loop
+				}//end of if count loop
+			}//end of mode 
+			
+			if(mode!= null && mode.length() > 0 && mode.equalsIgnoreCase("old"))
+			{
+				int		count		=	0;
+				int		deleteCount	=	0;
+				Statement	st		=	null;
+				String	attendanceHeaderId		=	commonMethodBean.getMonthAndYearWiseAttendanceId("attendance_sheet_header","attendencesheetid","month","year",month,year);
+				query	=	"	update	attendance_sheet_header " +
+							"	set		workingdays			=	? " +
+							"	where	attendencesheetid	=	? ";
+				pst		=	con.prepareStatement(query);
+				pst.setString(1, workingDays);
+				pst.setString(2, attendanceHeaderId);
+				
+				count	=	pst.executeUpdate();
+				if(count > 0)
+				{
+					query			=	"	delete " +
+										"	from	attendance_sheet_dtls " +
+										"	where	attendanceid	=	'"+attendanceHeaderId+"'" ;
+					st				=	con.createStatement();
+					deleteCount		=	st.executeUpdate(query);
+					if(deleteCount > 0)
+					{
+						if(dataList!= null && dataList.size() > 0)
+						{
+							boolean salarySlipFlag	=	true;
+							for(int i=0;i<dataList.size();i++)
+							{
+								CommonForm	cForm		=	dataList.get(i);
+								String		empId		=	cForm.getField1();//EMPLOYEEID(VALUES FROM EXCEL) 
+								String		noOfDays	=	cForm.getField2();//NO OF WORKING DAYS(VALUES FROM EXCEL)
+								
+								query		=	"	insert into attendance_sheet_dtls ( attendanceid, employeeid, noofdays, workingdays, createdby, createdon, updatedby, updatedon	) " +
+												"	values	(?, ?, ?, ?, ?, sysdate(), ?, sysdate() ) ";
+								
+								pst			=	con.prepareStatement(query);
+								pst.setString(1, attendanceHeaderId);
+								pst.setString(2, empId);
+								pst.setString(3, noOfDays);
+								pst.setString(4, workingDays);
+								pst.setString(5, userName);
+								pst.setString(6, userName);
+								
+								int	cnt	=	pst.executeUpdate();
+								if(cnt > 0)
+								{
+									outputString	=	"PASS.ATTENDANCE RECORD AGAINST MONTH : "+month.toUpperCase()+" OVERWRITE SUCCESSFULLY.";
+									/*NEW CHANGE
+									if(salarySlipFlag == true)
+									{	
+										//String	salarySlipId	=	commonMethodBean.getMonthAndYearWiseAttendanceId("salary_slip_header", "salaryslipid", "month", "year", month, year);
+										ArrayList<CommonForm> salarySlipIdList	=	attendanceRecordBean.getsalarySlipHeaderIdList(month,year);
+										if(salarySlipIdList!=null && salarySlipIdList.size() > 0)
+										{
+											for(int datacnt=0;datacnt < salarySlipIdList.size();datacnt++)
+											{	
+												CommonForm	salarySlipIdFrom	=	salarySlipIdList.get(datacnt);
+												String	salarySlipId	=	salarySlipIdFrom.getField1();
+												
+												query	=	" 	delete " +
+															"	from	salary_slip_dtls" +
+															"	where	salaryslipid	=	'"+salarySlipId+"' ";
+												st		=	con.createStatement();
+												int salarySlipCount	=	st.executeUpdate(query);
+												if(salarySlipCount > 0)
+												{
+													salarySlipFlag	= false;
+													
+													query	=	" 	delete " +
+																"	from	salary_slip_header" +
+																"	where	salaryslipid	=	'"+salarySlipId+"'";
+													st	=	con.createStatement();
+													salarySlipCount	=	st.executeUpdate(query);
+												}
+											}//end of for loop	
+										}
+									}	
+									/*END CHANGE*/
+								}
+								
+								pst.close();
+							}//end of for loop
+						}//end of datalist if loop
+					}//end of delete id loop
+				}//end of count if loop
+			}//end of mode loop
+		}
+		catch (Exception e) 
+		{
+			outputString	=	"ERROR";
+			System.out.println("ERROR In AttendanceRecordBean.saveAttendanceRecord : " +e);
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				outputString = "ERROR";
+				System.out.println("Exception While Closing The Connection in AttendanceRecordBean.saveAttendanceRecord :"+e);
+			}
+		}
+		return outputString;
+	}
+	
+	/**
+	 * Method Name  : getsalarySlipHeaderIdList
+	 * Purpose		: To getsalarySlipHeaderIdList
+	 * @author		: Prashant
+	 * Date			: 03/05/2012 
+	 */
+	private ArrayList<CommonForm> getsalarySlipHeaderIdList(String month,String year) 
+	{
+		ArrayList<CommonForm> dataList		=	new ArrayList<CommonForm>();
+		Connection				con			=	null;
+		Statement				st			=	null;
+		ResultSet				rs			=	null;
+		String					query		=	"";
+		
+		try
+		{
+			query	=	" 	select	salaryslipid" +
+						"	from	salary_slip_header" +
+						"	where	month 		= '"+month+"'" +
+						"			and year 	= '"+year+"'";
+			con		=	dbConn.connect();
+			st		=	con.createStatement();
+			rs		=	st.executeQuery(query);
+			while(rs.next())
+			{
+				CommonForm	cForm	=	new CommonForm();
+				cForm.setField1(rs.getString(1));
+				dataList.add(cForm);
+			}
+		}
+		catch (Exception e) 
+		{
+			System.out.println("ERROR In AttendanceRecordBean.getsalarySlipHeaderIdList : " +e); 
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				System.out.println("Exception While Closing The Connection in AttendanceRecordBean.getsalarySlipHeaderIdList :"+e);
+			}
+		}
+		return dataList;
+	}
+
+	/**
+	 * Method Name  : getCountOfMonthWiseYear
+	 * Purpose		: To getCountOfMonthWiseYear
+	 * @author		: Prashant
+	 * Date			: 13/04/2012 
+	 */
+	public int getCountOfMonthWiseYear(String month, String year)
+	{
+		int			count	=	0;
+		Connection	con		=	null;
+		Statement	st		=	null;
+		ResultSet	rs		=	null;
+		String		query	=	"";
+		try
+		{
+				query	=	"	select 	count(attendencesheetid) " +
+							"	from	attendance_sheet_header " +
+							"	where	month	=	'"+month+"' " +
+							"			and year	=	'"+year+"' " ;
+				con		=	dbConn.connect();
+				st		=	con.createStatement();
+				rs		=	st.executeQuery(query);
+				
+				while(rs.next())
+				{
+					count	=	rs.getInt(1);
+				}
+		}
+		catch (Exception e) 
+		{
+			System.out.println("ERROR In AttendanceRecordBean.getCountOfMonthWiseYear : " +e); 
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				System.out.println("Exception While Closing The Connection in AttendanceRecordBean.getCountOfMonthWiseYear :"+e);
+			}
+		}
+		return count;
+	}
+	
+	/**
+	 * Method Name  : getUploadedAttendanceList
+	 * Purpose		: To getUploadedAttendanceList
+	 * @author		: Prashant
+	 * Date			: 14/04/2012 
+	 */
+	public ArrayList<CommonForm> getUploadedAttendanceList(AttendanceRecordForm arForm) 
+	{
+		ArrayList<CommonForm>	dataList	=	new ArrayList<CommonForm>();
+		Connection				con			=	null;
+		Statement				st			=	null;
+		ResultSet				rs			=	null;
+		String					query		=	"";
+		int						srNo		=	1;
+		String					month		=	arForm.getMonth();
+		String					year		=	arForm.getYear();
+		String					empId		=	arForm.getEmpId();
+		try
+		{
+			query		+=	"	select 	asdt.attendancedtlsid, asdt.attendanceid,ash.month,ash.year,asdt.employeeid,em.employee_name,em.department,dm.department_name," +
+							"			em.designation,gvd.groupvalue_name,asdt.noofdays,asdt.workingdays  " +
+							"	from	attendance_sheet_dtls asdt " +
+							"	inner join	attendance_sheet_header 	ash		on		asdt.attendanceid	=	ash.attendencesheetid " ;
+			if(month!= null && month.length() > 0)
+			{
+			query		+=	"													and		ash.month			=	'"+month+"' " ;
+			}
+			if(year!= null && year.length() > 0)
+			{
+			query		+=	"													and		ash.year			=	'"+year+"' ";
+			}
+			query		+=	"	inner join	employee_master 			em 		on		asdt.employeeid		=	em.employeeid " ;
+			if(empId!= null && empId.length() > 0)
+			{
+			query		+=	"													and		em.employeeid		=	'"+empId+"' "; 
+			}
+			
+			query		+=	"	left outer join department_master		dm		on		dm.departmentid		=	em.department " +
+							"	left outer join groupvalue				gvd		on		gvd.groupvalueid	=	em.designation " +
+							"	order by ash.year,ash.month ";
+			
+			con			=	dbConn.connect();
+			st			=	con.createStatement();
+			rs			=	st.executeQuery(query);
+			while(rs.next())
+			{
+				CommonForm	cForm	=	new CommonForm();
+				cForm.setField1(""+(srNo++));//Srno
+				cForm.setField2(rs.getString(1));//attendancedtlsid
+				cForm.setField3(rs.getString(2));//attendanceid
+				cForm.setField4(rs.getString(3));//month
+				cForm.setField5(rs.getString(4));//year
+				cForm.setField6(rs.getString(5));//employeeid
+				cForm.setField7(rs.getString(6));//employee_name
+				cForm.setField8(rs.getString(7));//departmentId
+				cForm.setField9(rs.getString(8));//department_name	
+				cForm.setField10(rs.getString(9));//designationId
+				cForm.setField11(rs.getString(10));//groupvalue_name(Desgination Name)
+				cForm.setField12(rs.getString(11));//noofdays
+				cForm.setField13(rs.getString(12));//workingdays
+				dataList.add(cForm);
+			}
+		}
+		catch (Exception e) 
+		{
+			System.out.println("ERROR In AttendanceRecordBean.getUploadedAttendanceList : " +e); 
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				System.out.println("Exception While Closing The Connection in AttendanceRecordBean.getUploadedAttendanceList :"+e);
+			}
+		}
+		return dataList;
+	}
+	
+	/**
+	 * Method Name  : checkSalarySlipGeneration
+	 * Purpose		: To checkSalarySlipGeneration
+	 * @author		: Prashant
+	 * Date			: 04/05/2012 
+	 */
+	public int checkSalarySlipGeneration(String month, String year)
+	{
+		int			count	=	0;
+		Connection	con		=	null;
+		Statement	st		=	null;
+		ResultSet	rs		=	null;
+		String		query	=	"";
+		try
+		{
+				query	=	" 	select	count(salaryslipid) " +
+							"	from	salary_slip_header " +
+							"	where	0 = 0" +
+							"			and month	=	'"+month+"'	" +
+							"			and year	=	'"+year+"'" ;
+				
+				con		=	dbConn.connect();
+				st		=	con.createStatement();
+				rs		=	st.executeQuery(query);
+				
+				while(rs.next())
+				{
+					count	=	rs.getInt(1);
+				}
+		}
+		catch (Exception e) 
+		{
+			System.out.println("ERROR In AttendanceRecordBean.checkSalarySlipGeneration : " +e); 
+		}
+		finally
+		{
+			try
+			{
+				if(con != null)
+				{
+					con.close();
+					con	=	null;
+				}
+			}
+			catch(Exception e)
+			{
+				System.out.println("Exception While Closing The Connection in AttendanceRecordBean.checkSalarySlipGeneration :"+e);
+			}
+		}
+		return count;
+	}
+	
+	/**
+	 * Method Name  : getEmployeeListForLeaves
+	 * Purpose		: To getEmployeeListForLeaves
+	 * @author		: Sourabh
+	 * Date			: 21/08/2013 
+	 * @param status 
+	 */
+	public ArrayList<CommonForm> getEmployeeListForLeaves(String status,String workingDays) 
+	{
+		ArrayList<CommonForm>	dataList	=	new ArrayList<CommonForm>();
+		Connection				con			=	null;
+		Statement				st			=	null;
+		ResultSet				rs			=	null;
+		String					query		=	"";
+		int						srNo		=	1;		
+		try
+		{
+			query		=	"	select 	em.employeeid,em.employee_name,em.department,dm.department_name,em.designation,gvd.groupvalue_name,em.status, "+ 
+							"	ifnull(COUNT(lh.leave_request_id),'0') "+ 
+							"	from	employee_master em "+
+							"	inner	join	department_master	dm 	on	em.department		=	dm.departmentid  ";
+			
+			if(status!= null && status.length() > 0)
+			{
+			query		+=	"											and 	em.status		=	'"+status+"'" ;
+			}
+
+			query		+=	"	inner	join	groupvalue 		gvd	on	em.designation			=	gvd.groupvalueid "+
+							"	left outer  join leave_request_header	lh	on	lh.empid		=	em.employeeid    "+
+							"	and 	lh.status		=	'APPROVE' "+
+							"	group   by 	em.employee_name "+
+							"	order 	by 	em.status ";
+			
+			
+			con			=	dbConn.connect();
+			st			=	con.createStatement();
+			rs			=	st.executeQuery(query);
+			while(rs.next())
+			{
+				CommonForm	cForm	=	new CommonForm();
+				cForm.setField1(""+(srNo++));//SRNO
+				cForm.setField2(rs.getString(1));//employeeid
+				cForm.setField3(rs.getString(2));//employee_name
+				cForm.setField4(rs.getString(3));//departmentId
+				cForm.setField5(rs.getString(4));//department_name
+				cForm.setField6(rs.getString(5));//designationId
+				cForm.setField7(rs.getString(6));//designation_name
+				cForm.setField8("");//noofdays For Excel
+				cForm.setField9("-");//noofdays For Display Table
+				cForm.setField10(rs.getString(7));//Status
+				cForm.setField11(rs.getString(8));//ifnull(SUM(lh.leave_request_id),'0') 
+				cForm.setField12(workingDays);//working days
+				cForm.setField13((Integer.toString(Integer.parseInt(workingDays)-Integer.parseInt(rs.getString(8)))));//Actual working days
+				dataList.add(cForm);
+			}
+		}
+		catch (Exception e) 
+		{
+			System.out.println("ERROR In AttendanceRecordBean.getEmployeeListForLeaves : " +e);
+		}
+		return	dataList;
+	}
+}

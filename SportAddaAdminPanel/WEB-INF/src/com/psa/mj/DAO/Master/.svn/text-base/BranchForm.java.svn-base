@@ -1,0 +1,109 @@
+package com.inf.dvo.mbm.DAO.Master;
+
+import javax.servlet.http.HttpServletRequest;
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionMapping;
+
+
+public class BranchForm extends ActionForm
+{
+
+	private static final long serialVersionUID = 1L;
+	
+	private String	bankName;
+	private String	bankId;
+	private	String	cityId;
+	private String	cityName;
+	private String	branchId;
+	private String	branchName;
+	private String	ifscCode;
+	private String	status;
+	private String	branchAddr;
+	
+	public void reset(ActionMapping mapping,HttpServletRequest request)
+	{
+		bankName		=	null;
+		bankId			=	null;
+		cityName		=	null;
+		cityId			=	null;
+		branchId		=	null;
+		branchName		=	null;
+		ifscCode		=	null;
+		status			=	null;
+		branchAddr		=	null;
+	}
+
+	public String getBankName() {
+		return bankName;
+	}
+
+	public void setBankName(String bankName) {
+		this.bankName = bankName;
+	}
+
+	public String getBankId() {
+		return bankId;
+	}
+
+	public void setBankId(String bankId) {
+		this.bankId = bankId;
+	}
+
+	public String getCityId() {
+		return cityId;
+	}
+
+	public void setCityId(String cityId) {
+		this.cityId = cityId;
+	}
+
+	public String getCityName() {
+		return cityName;
+	}
+
+	public void setCityName(String cityName) {
+		this.cityName = cityName;
+	}
+
+	public String getBranchName() {
+		return branchName;
+	}
+
+	public void setBranchName(String branchName) {
+		this.branchName = branchName;
+	}
+
+	public String getIfscCode() {
+		return ifscCode;
+	}
+
+	public void setIfscCode(String ifscCode) {
+		this.ifscCode = ifscCode;
+	}
+
+	public String getStatus() {
+		return status;
+	}
+
+	public void setStatus(String status) {
+		this.status = status;
+	}
+
+	public String getBranchId() {
+		return branchId;
+	}
+
+	public void setBranchId(String branchId) {
+		this.branchId = branchId;
+	}
+
+	public String getBranchAddr() {
+		return branchAddr;
+	}
+
+	public void setBranchAddr(String branchAddr) {
+		this.branchAddr = branchAddr;
+	}
+	
+	
+}

@@ -1,0 +1,57 @@
+package com.inf.dvo.mbm.DAO.Master;
+
+import javax.servlet.http.HttpServletRequest;
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionMapping;
+
+public class DepartmentForm extends ActionForm
+{
+
+	private static final long serialVersionUID = 1L;
+	private String	departmentId;
+	private String	departmentName;
+	private String  departmentDesc;
+	private String	status;
+	
+	public void reset(ActionMapping mapping,HttpServletRequest request)
+	{
+		departmentId	=	null;
+		departmentName	=	null;
+		departmentDesc	=	null;
+		status			=	null;
+	}
+
+	public String getDepartmentId() {
+		return departmentId;
+	}
+
+	public void setDepartmentId(String departmentId) {
+		this.departmentId = departmentId;
+	}
+
+	public String getDepartmentName() {
+		return departmentName;
+	}
+
+	public void setDepartmentName(String departmentName) {
+		this.departmentName = departmentName;
+	}
+
+	public String getDepartmentDesc() {
+		return departmentDesc;
+	}
+
+	public void setDepartmentDesc(String departmentDesc) {
+		this.departmentDesc = departmentDesc;
+	}
+
+	public String getStatus() {
+		return status;
+	}
+
+	public void setStatus(String status) {
+		this.status = status;
+	}
+	
+	
+}

@@ -1,0 +1,276 @@
+package com.inf.dvo.mbm.actions.Master;
+
+import java.io.IOException;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionForward;
+import org.apache.struts.action.ActionMapping;
+
+import com.inf.dvo.mbm.Bean.CommonMethodBean;
+import com.inf.dvo.mbm.Bean.Master.BranchBean;
+import com.inf.dvo.mbm.DAO.CommonForm;
+import com.inf.dvo.mbm.DAO.Master.BranchForm;
+import com.inf.dvo.mbm.actions.CMGMTDispatchAction;
+
+
+public class BranchAction extends  CMGMTDispatchAction
+{
+	
+	/**
+	 * Action Name 	: showBranchMasterList
+	 * Purpose		: To showBranchMasterList
+	 * @author		: Prashant
+	 * Date			: 23/03/2012
+	 */
+	public ActionForward showBranchMasterList(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		BranchForm	branchForm	=	(BranchForm)form;
+		branchForm.reset(mapping, request);
+		HttpSession				session				=	request.getSession();
+		CommonMethodBean		commonMethodBean	=	new CommonMethodBean();
+		String rarId		=	"12";
+		String userProcess	=	(String)session.getAttribute("userProcess");		
+		String validLink	=	commonMethodBean.getValidOrNot(userProcess, ","+rarId+",");
+		if(validLink!=null && validLink.equalsIgnoreCase("NOTVALID"))
+		{
+			return mapping.findForward("invalid");
+		}
+		return mapping.findForward("showBranchListPage");
+	}
+	
+	/**
+	 * Action Name 	: showSearchBankMasterList
+	 * Purpose		: To showSearchBankMasterList 
+	 * @author		: Prashant
+	 * Date			: 21/03/2012
+	 */
+	
+	public ActionForward showSearchBankMasterList(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		BranchForm		branchForm			=	(BranchForm)form;
+		BranchBean		branchBean			=	new BranchBean();
+		
+		ArrayList<CommonForm> dataList		=	branchBean.getSearchBranchList(branchForm);
+		if(dataList!= null && dataList.size() > 0)
+		{
+			request.setAttribute("reqBranchMasterList",dataList);
+		}
+		else
+		{
+			request.setAttribute("msgType", "FAIL");
+			request.setAttribute("saveResult", "NO DATA FOUND.");
+		}
+		return mapping.findForward("showBranchListPage");
+	}
+	
+	/**
+	 * Action Name 	: showBranchMasterPage
+	 * Purpose		: To showBranchMasterPage
+	 * @author		: Prashant
+	 * Date			: 23/03/2012
+	 */
+	
+	public ActionForward showBranchMasterPage(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		BranchForm	branchForm		=	(BranchForm)form;
+		branchForm.reset(mapping, request);
+			
+		request.setAttribute("actions","add");
+		
+		return mapping.findForward("showBranchMasterPage");
+	}
+	
+	/**
+	 * Action Name 	: saveBranchMaster
+	 * Purpose		: To saveBranchMaster
+	 * @author		: Prashant
+	 * Date			: 23/03/2012
+	 */
+	
+	public ActionForward saveBranchMaster(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		HttpSession	session		=	request.getSession();
+		
+		BranchForm	branchForm	=	(BranchForm)form;
+		BranchBean	branchBean	=	new BranchBean();
+		
+		String		mappingString	=	"ERROR";
+		String		mode			=	request.getParameter("mode");
+		String		userName		=	(String)session.getAttribute("username");
+		
+		String		saveResult		=	branchBean.saveBranchMaster(branchForm,userName);
+		
+		if(saveResult!= null && saveResult.length() > 0 && !saveResult.equalsIgnoreCase("ERROR"))
+		{
+				String	msgType		=	saveResult.substring(0,4);
+				saveResult			=	saveResult.substring(5,saveResult.length());
+				
+				request.setAttribute("msgType",msgType);
+				request.setAttribute("saveResult",saveResult);
+				
+				if(msgType!= null && msgType.length() > 0 && msgType.equals("PASS"))
+				{
+					if(mode!= null && mode.length() > 0 && mode.equalsIgnoreCase("SAVE"))
+					{
+						mappingString	=	"showBranchMasterPage";
+						
+						branchForm.reset(mapping, request);
+						
+						
+						request.setAttribute("actions","add");
+					}
+					else if(mode!= null && mode.length() > 0 && mode.equalsIgnoreCase("SAVEEXIT"))
+					{
+						mappingString	=	"showBranchListPage";
+						
+						branchForm.reset(mapping, request);
+						request.setAttribute("actions","add");
+					}
+						
+				}
+				else if(msgType!= null && msgType.length() > 0 && msgType.equals("FAIL"))
+				{
+					mappingString	=	"showBranchMasterPage";
+					
+					request.setAttribute("actions","add");
+				}
+		}
+		return mapping.findForward(mappingString);
+	}
+	
+	
+	/**
+	 * Action Name 	: showBranchModifyMaster
+	 * Purpose		: To showBranchModifyMaster
+	 * @author		: Prashant
+	 * Date			: 23/03/2012
+	 */
+	
+	public ActionForward showBranchModifyMaster(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		BranchForm	branchForm		=	(BranchForm)form;
+		BranchBean	branchBean		=	new BranchBean();
+		
+		String		branchId		=	request.getParameter("branch_id")!= null && request.getParameter("branch_id").length() > 0 ? request.getParameter("branch_id") : "";
+		
+		ArrayList<CommonForm> modifyData	=	branchBean.getDataForModify(branchId);
+		if(modifyData!= null && modifyData.size() > 0)
+		{
+			CommonForm	cForm	=	modifyData.get(0);
+			branchForm.setBranchId(cForm.getField1());//branchid
+			branchForm.setBankId(cForm.getField2());//bankid
+			branchForm.setBankName(cForm.getField3());//bank_name
+			branchForm.setBranchName(cForm.getField4());//branch_name
+			branchForm.setBranchAddr(cForm.getField5());//branch_address
+			branchForm.setCityId(cForm.getField6());//cityid
+			branchForm.setCityName(cForm.getField7());//city_name
+			branchForm.setIfscCode(cForm.getField8());//branch_ifsc_code
+		}
+		
+		request.setAttribute("actions","edit");
+		
+		return mapping.findForward("showBranchMasterPage");
+	}
+	
+	/**
+	 * Action Name 	: modifyBranchMaster
+	 * Purpose		: To modifyBranchMaster
+	 * @author		: Prashant
+	 * Date			: 23/03/2012
+	 */
+	
+	public ActionForward modifyBranchMaster(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		HttpSession	session			=	request.getSession();
+		
+		BranchForm	branchForm		=	(BranchForm)form;
+		BranchBean	branchBean		=	new BranchBean();
+		
+		String		mappingString	=	"ERROR";
+		String		userName		=	(String)session.getAttribute("username");
+		
+		String		saveResult		=	branchBean.getModifyBranchMaster(branchForm,userName);
+		
+		if(saveResult!= null && saveResult.length() > 0 && !saveResult.equalsIgnoreCase("ERROR"))
+		{
+				String	msgType		=	saveResult.substring(0,4);
+				saveResult			=	saveResult.substring(5,saveResult.length());
+				
+				request.setAttribute("msgType",msgType);
+				request.setAttribute("saveResult",saveResult);
+				
+				if(msgType!= null && msgType.length() > 0 && msgType.equals("PASS"))
+				{
+					branchForm.reset(mapping, request);
+					mappingString	=	"showBranchListPage";
+				}
+				else if(msgType!= null && msgType.length() > 0 && msgType.equals("FAIL"))
+				{
+					mappingString	=	"showBranchMasterPage";
+					request.setAttribute("actions","edit");
+				}
+		}
+		return mapping.findForward(mappingString);
+	}
+	
+	/**
+	 * Action Name 	: deleteBranch
+	 * Purpose		: To deleteBranch
+	 * @author		: Prashant
+	 * Date			: 23/03/2012
+	 */
+	
+	public ActionForward deleteBranch(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response)throws IOException,SQLException
+	{
+		
+		BranchForm	branchForm		=	(BranchForm)form;
+		BranchBean	branchBean		=	new BranchBean();
+		
+		String		mappingString	=	"ERROR";
+		
+		String		branchId			=	request.getParameter("branch_id");
+		String		branchName			=	request.getParameter("branch_name");
+		String		bankName			=	request.getParameter("bank_Name");
+		
+		String		saveResult		=	branchBean.deleteBranch(branchId,branchName,bankName);
+		
+		if(saveResult != null && saveResult.length() > 0 && !saveResult.equalsIgnoreCase("ERROR"))
+		{
+			String	msgType		=	saveResult.substring(0,4);
+			saveResult			=	saveResult.substring(5,saveResult.length());
+			
+			request.setAttribute("msgType",msgType);
+			request.setAttribute("saveResult",saveResult);
+			
+			if(msgType!= null && msgType.length() > 0 && msgType.equals("PASS"))
+			{
+				//branchForm.reset(mapping, request);
+				mappingString	=	"showBranchListPage";
+				
+				ArrayList<CommonForm> dataList		=	branchBean.getSearchBranchList(branchForm);
+				if(dataList!= null && dataList.size() > 0)
+				{
+					request.setAttribute("reqBranchMasterList",dataList);
+				}
+				
+			}
+			else if(msgType!= null && msgType.length() > 0 && msgType.equals("FAIL"))
+			{
+				mappingString	=	"showBranchListPage";
+				
+				ArrayList<CommonForm> dataList		=	branchBean.getSearchBranchList(branchForm);
+				if(dataList!= null && dataList.size() > 0)
+				{
+					request.setAttribute("reqBranchMasterList",dataList);
+				}
+			}
+			
+		}
+		return mapping.findForward(mappingString);
+	}
+	
+}

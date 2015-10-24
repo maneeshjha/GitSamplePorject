@@ -1,0 +1,177 @@
+package com.inf.dvo.mbm.DAO.Master;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionMapping;
+
+public class ClientForm extends ActionForm {
+	
+	private static final long serialVersionUID = 1L;
+	private String	clientId;
+	private String	clientName;
+	private String	status;
+	private String	clientCode;
+	private String	address1;
+	private String	address2;
+	private String	address3;
+	private String	country;
+	private String	state;
+	private String	city;
+	private String	personName;
+	private String	designation;
+	private String	directNo;
+	private String	mobileNo;
+	private String	landLineNo;
+	private String	emailId;
+	private String	countryId;
+	private String	stateId;
+	private String	cityId;
+		
+	
+	
+	public String getCountryId() {
+		return countryId;
+	}
+	public void setCountryId(String countryId) {
+		this.countryId = countryId;
+	}
+	public String getStateId() {
+		return stateId;
+	}
+	public void setStateId(String stateId) {
+		this.stateId = stateId;
+	}
+	public String getCityId() {
+		return cityId;
+	}
+	public void setCityId(String cityId) {
+		this.cityId = cityId;
+	}
+	public String getPersonName() {
+		return personName;
+	}
+	public void setPersonName(String personName) {
+		this.personName = personName;
+	}
+	public String getDesignation() {
+		return designation;
+	}
+	public void setDesignation(String designation) {
+		this.designation = designation;
+	}
+	public String getDirectNo() {
+		return directNo;
+	}
+	public void setDirectNo(String directNo) {
+		this.directNo = directNo;
+	}
+	public String getMobileNo() {
+		return mobileNo;
+	}
+	public void setMobileNo(String mobileNo) {
+		this.mobileNo = mobileNo;
+	}
+	public String getLandLineNo() {
+		return landLineNo;
+	}
+	public void setLandLineNo(String landLineNo) {
+		this.landLineNo = landLineNo;
+	}
+	public String getEmailId() {
+		return emailId;
+	}
+	public void setEmailId(String emailId) {
+		this.emailId = emailId;
+	}
+	public String getClientCode() {
+		return clientCode;
+	}
+	public void setClientCode(String clientCode) {
+		this.clientCode = clientCode;
+	}
+	public String getAddress1() {
+		return address1;
+	}
+	public void setAddress1(String address1) {
+		this.address1 = address1;
+	}
+	public String getAddress2() {
+		return address2;
+	}
+	public void setAddress2(String address2) {
+		this.address2 = address2;
+	}
+	public String getAddress3() {
+		return address3;
+	}
+	public void setAddress3(String address3) {
+		this.address3 = address3;
+	}
+	public String getCountry() {
+		return country;
+	}
+	public void setCountry(String country) {
+		this.country = country;
+	}
+	public String getState() {
+		return state;
+	}
+	public void setState(String state) {
+		this.state = state;
+	}
+	public String getCity() {
+		return city;
+	}
+	public void setCity(String city) {
+		this.city = city;
+	}
+	public String getClientId() {
+		return clientId;
+	}
+	public void setClientId(String clientId) {
+		this.clientId = clientId;
+	}
+	public String getClientName() {
+		return clientName;
+	}
+	public void setClientName(String clientName) {
+		this.clientName = clientName;
+	}
+	public String getStatus() {
+		return status;
+	}
+	public void setStatus(String status) {
+		this.status = status;
+	}
+	public static long getSerialversionuid() {
+		return serialVersionUID;
+	} 
+	
+	
+	public void reset(ActionMapping mapping,HttpServletRequest request)
+	{
+			clientId		=	null;
+			clientName 		=	null;
+			status			=	null;
+			clientCode		=	null;
+			address1		=	null;
+			address2		=	null;
+			address3		=	null;
+			country			=	null;
+			state			=	null;
+			city			=	null;
+			personName		=	null;
+			designation		=	null;
+			directNo		=	null;
+			mobileNo		=	null;
+			landLineNo		=	null;
+			emailId			=	null;
+			countryId		=	null;
+			stateId			=	null;
+			cityId			=	null;
+	}
+	
+	
+
+}
